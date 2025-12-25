@@ -2,46 +2,56 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
 int main() {
+    //initialize GLFW
     glfwInit();
+
+    // gives hint to glfw about the context version (opengl version) and profile (core/compatibility)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    // create a window
+    // Parameters: width, height, title, monitor (for fullscreen, nullptr for windowed), share (for sharing resources, nullptr if not needed)
+    GLFWwindow* window = glfwCreateWindow(800, 800, "OpenGL Window", nullptr, nullptr);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Project", NULL, NULL);
-    if (!window) {
-        std::cout << "Failed to create GLFW window\n";
+    // check if window creation was successful
+    if(window == nullptr){
+        std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
+
+    // make the context of the window current on the calling thread
+    // current means that any subsequent OpenGL calls will affect this window's context
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD\n";
-        return -1;
+    // load OpenGL function pointers using glad
+    gladLoadGL();
+
+    // set the canvas width for openGL rendering
+    // in this case its from x = 0 to x = 800 and y = 0 to y = 800
+    glViewport(0, 0, 800, 800); // set the viewport size
+
+    // set the clear color for the window
+    // this color will be used whenever the color buffer is cleared
+    // this is the back buffer color
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // set the clear color
+
+    glClear(GL_COLOR_BUFFER_BIT); // clear the color buffer with the clear color
+
+    glfwSwapBuffers(window); // swap the front and back buffers
+
+    // loop until the user closes the window
+    while(!glfwWindowShouldClose(window)){
+
+        glfwPollEvents(); // process events like keyboard and mouse input
     }
 
-    // Main loop
-    while (!glfwWindowShouldClose(window)) {
-        //color red
-        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+    // delete window and its context before terminating GLFW
+    glfwDestroyWindow(window);
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-
+    // make the context of the window current on the calling thread
     glfwTerminate();
     return 0;
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
 }
