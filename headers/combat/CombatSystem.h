@@ -111,6 +111,7 @@ public:
     void SpawnCriticalDamageSmoke(const glm::vec3& pos, const glm::vec3& shipVel);
     void SpawnFireEmbers(const glm::vec3& pos, const glm::vec3& shipVel);
     void SpawnWaterRipple(const glm::vec3& shipPos, float altitude, float bankAngle);
+    void SpawnRoosterTailPlume(const glm::vec3& shipPos, float altitude, const glm::vec3& shipVel, float bankAngle);
     void Update(float dt);
     void Draw(const Shader& shader) const;
     void Clear();

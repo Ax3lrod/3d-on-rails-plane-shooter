@@ -654,13 +654,83 @@ void HUD::DrawCommsBox(const Shader& shader, int screenWidth, int screenHeight,
     float cy = portY + portSize * 0.5f;
 
     if (speakerId == 0) {
-        // Echo-1: Striker (Avian / Raptor Helmet Visor)
-        DrawRect(shader, cx - 18.0f, cy - 20.0f, 36.0f, 14.0f, glm::vec3(0.2f, 0.22f, 0.26f), 0.9f);
-        DrawRect(shader, cx - 14.0f, cy - 23.0f, 28.0f, 3.5f, themeColor, 0.95f); // Crest
-        DrawRect(shader, cx - 16.0f, cy - 7.0f, 32.0f, 9.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f); // Amber visor
-        DrawRect(shader, cx - 5.0f, cy + 3.0f, 10.0f, 7.0f, themeColor, 0.9f); // Beak vent
-        DrawRect(shader, cx - 21.0f, cy - 5.0f, 5.0f, 14.0f, glm::vec3(0.5f, 0.55f, 0.6f), 0.9f); // Mic
-        DrawRect(shader, cx - 19.0f, cy + 7.0f, 14.0f, 2.0f, glm::vec3(0.5f, 0.55f, 0.6f), 0.9f);
+        // Ex-Zodiac Hero Pilot (Kaya): Anime Girl with Midnight Blue Hair & Golden Ornaments (Image 2)
+        glm::vec3 hairDark(0.12f, 0.16f, 0.28f);
+        glm::vec3 hairMid(0.18f, 0.26f, 0.45f);
+        glm::vec3 hairLight(0.35f, 0.52f, 0.78f);
+        glm::vec3 skin(0.98f, 0.86f, 0.78f);
+        glm::vec3 blush(0.98f, 0.60f, 0.68f);
+        glm::vec3 gold(0.98f, 0.85f, 0.22f);
+        glm::vec3 iris(0.68f, 0.22f, 0.72f);
+        glm::vec3 tunic(0.72f, 0.22f, 0.60f);
+
+        // 1. Back hair volume
+        DrawRect(shader, cx - 22.0f, cy - 24.0f, 44.0f, 38.0f, hairDark, 1.0f);
+        DrawRect(shader, cx - 25.0f, cy - 14.0f, 6.0f, 28.0f, hairMid, 1.0f); // Left pigtail lock
+        DrawRect(shader, cx + 19.0f, cy - 14.0f, 6.0f, 28.0f, hairMid, 1.0f); // Right pigtail lock
+
+        // Golden hair ornaments (cylindrical beads on side locks)
+        DrawRect(shader, cx - 26.0f, cy + 2.0f, 8.0f, 6.0f, gold, 1.0f);
+        DrawRect(shader, cx + 18.0f, cy + 2.0f, 8.0f, 6.0f, gold, 1.0f);
+        DrawRect(shader, cx - 25.0f, cy + 10.0f, 6.0f, 5.0f, gold * 0.85f, 1.0f);
+        DrawRect(shader, cx + 19.0f, cy + 10.0f, 6.0f, 5.0f, gold * 0.85f, 1.0f);
+
+        // 2. Pilot tunic collar & shoulders
+        DrawRect(shader, cx - 20.0f, cy + 20.0f, 40.0f, 12.0f, tunic, 1.0f);
+        DrawRect(shader, cx - 6.0f, cy + 20.0f, 12.0f, 12.0f, glm::vec3(0.95f, 0.95f, 0.98f), 1.0f);
+        DrawRect(shader, cx - 2.0f, cy + 22.0f, 4.0f, 10.0f, gold, 1.0f);
+
+        // 3. Face shape & neck
+        DrawRect(shader, cx - 6.0f, cy + 13.0f, 12.0f, 9.0f, skin * 0.92f, 1.0f); // Neck
+        DrawRect(shader, cx - 16.0f, cy - 12.0f, 32.0f, 25.0f, skin, 1.0f);       // Upper/mid face
+        DrawRect(shader, cx - 12.0f, cy + 11.0f, 24.0f, 6.0f, skin, 1.0f);        // Chin taper
+
+        // Rosy Anime Blushes
+        DrawRect(shader, cx - 14.0f, cy + 3.0f, 6.0f, 3.0f, blush, 0.85f);
+        DrawRect(shader, cx + 8.0f, cy + 3.0f, 6.0f, 3.0f, blush, 0.85f);
+
+        // 4. Large Anime Eyes
+        // Sclera (whites)
+        DrawRect(shader, cx - 13.0f, cy - 6.0f, 9.0f, 8.0f, glm::vec3(1.0f), 1.0f);
+        DrawRect(shader, cx + 4.0f, cy - 6.0f, 9.0f, 8.0f, glm::vec3(1.0f), 1.0f);
+
+        // Purple Iris
+        DrawRect(shader, cx - 11.0f, cy - 6.0f, 6.0f, 8.0f, iris, 1.0f);
+        DrawRect(shader, cx + 5.0f, cy - 6.0f, 6.0f, 8.0f, iris, 1.0f);
+
+        // Cyan lower glow
+        DrawRect(shader, cx - 10.0f, cy - 1.0f, 4.0f, 2.0f, glm::vec3(0.3f, 0.9f, 1.0f), 1.0f);
+        DrawRect(shader, cx + 6.0f, cy - 1.0f, 4.0f, 2.0f, glm::vec3(0.3f, 0.9f, 1.0f), 1.0f);
+
+        // White Sparkle / Glint
+        DrawRect(shader, cx - 11.0f, cy - 5.0f, 2.5f, 2.5f, glm::vec3(1.0f), 1.0f);
+        DrawRect(shader, cx + 5.0f, cy - 5.0f, 2.5f, 2.5f, glm::vec3(1.0f), 1.0f);
+
+        // Upper Eyelash Line & Eyebrows
+        DrawRect(shader, cx - 14.0f, cy - 8.0f, 11.0f, 2.5f, glm::vec3(0.08f, 0.10f, 0.18f), 1.0f);
+        DrawRect(shader, cx + 3.0f, cy - 8.0f, 11.0f, 2.5f, glm::vec3(0.08f, 0.10f, 0.18f), 1.0f);
+        DrawRect(shader, cx - 13.0f, cy - 12.0f, 8.0f, 1.5f, hairDark, 0.95f);
+        DrawRect(shader, cx + 5.0f, cy - 12.0f, 8.0f, 1.5f, hairDark, 0.95f);
+
+        // Nose dot
+        DrawRect(shader, cx - 0.5f, cy + 2.0f, 1.5f, 2.0f, skin * 0.82f, 1.0f);
+
+        // 5. Talking Animated Mouth
+        bool mouthOpen = (std::sin(curTime * 18.0f) > 0.0f);
+        if (mouthOpen) {
+            DrawRect(shader, cx - 4.0f, cy + 7.0f, 8.0f, 5.0f, glm::vec3(0.78f, 0.25f, 0.35f), 1.0f);
+            DrawRect(shader, cx - 3.0f, cy + 7.0f, 6.0f, 2.0f, glm::vec3(1.0f), 1.0f); // Top teeth
+        } else {
+            DrawRect(shader, cx - 3.5f, cy + 8.5f, 7.0f, 2.0f, glm::vec3(0.65f, 0.20f, 0.30f), 1.0f);
+        }
+
+        // 6. Front Bangs & Side Locks (Framing the face)
+        DrawRect(shader, cx - 19.0f, cy - 24.0f, 38.0f, 11.0f, hairDark, 1.0f);
+        DrawRect(shader, cx - 17.0f, cy - 21.0f, 34.0f, 3.0f, hairLight, 0.85f); // Hair highlight line
+        // Center fringe strands
+        DrawRect(shader, cx - 4.0f, cy - 16.0f, 8.0f, 8.0f, hairDark, 1.0f);
+        DrawRect(shader, cx - 12.0f, cy - 15.0f, 6.0f, 7.0f, hairMid, 1.0f);
+        DrawRect(shader, cx + 6.0f, cy - 15.0f, 6.0f, 7.0f, hairMid, 1.0f);
     } else {
         // Echo-2: Aegis (Feline / Lynx Helmet Visor)
         DrawRect(shader, cx - 18.0f, cy - 18.0f, 36.0f, 13.0f, glm::vec3(0.18f, 0.24f, 0.28f), 0.9f);
@@ -1151,7 +1221,7 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
                           int selectedIndex, float masterVol, float musicVol, float sfxVol,
                           float currentHudScale,
                           bool invertY, bool crtFilter, bool cockpitDefault,
-                          bool flatShading) const {
+                          bool flatShading, bool retroPixel) const {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1167,8 +1237,8 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     shader.SetInt("uUseFog", 0);
     shader.SetInt("uUseColorOverride", 1);
 
-    float boxW = 760.0f;
-    float boxH = 530.0f;
+    float boxW = 780.0f;
+    float boxH = 560.0f;
     float slant = 26.0f;
     float bx = (vw - boxW) * 0.5f;
     float by = (vh - boxH) * 0.5f;
@@ -1182,8 +1252,8 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
 
     std::string headerStr = "★ FLIGHT CONFIGURATION & AUDIO ★";
     float headW = headerStr.length() * 6.0f * 2.3f;
-    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 20.0f, 2.3f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
-    DrawSlantedRect(shader, bx + 28.0f, by + 54.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
+    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 18.0f, 2.3f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
+    DrawSlantedRect(shader, bx + 28.0f, by + 50.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
 
     struct SettingRow {
         std::string label;
@@ -1202,7 +1272,7 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     else if (std::abs(currentHudScale - 1.25f) < 0.05f) hudScaleStr = "LARGE [125%]";
     else if (std::abs(currentHudScale - 1.50f) < 0.05f) hudScaleStr = "MAXIMUM [150%]";
 
-    SettingRow rows[8] = {
+    SettingRow rows[9] = {
         {"MASTER VOLUME", mBuf, masterVol, true},
         {"MUSIC VOLUME", bgmBuf, musicVol, true},
         {"SFX VOLUME", sfxBuf, sfxVol, true},
@@ -1210,11 +1280,12 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
         {"INVERT PITCH (Y)", invertY ? "INVERTED [PUSH UP]" : "NORMAL [PULL UP]", 0.0f, false},
         {"RETRO CRT SHADER", crtFilter ? "ENABLED [SCANLINES ON]" : "DISABLED [CLEAN HD]", 0.0f, false},
         {"DEFAULT CAMERA", cockpitDefault ? "1ST-PERSON COCKPIT" : "3RD-PERSON CHASE", 0.0f, false},
-        {"SHADING MODE", flatShading ? "ARCADE FLAT [FACETED]" : "SMOOTH 3D [INTERPOLATED]", 0.0f, false}
+        {"SHADING MODE", flatShading ? "ARCADE FLAT [FACETED]" : "SMOOTH 3D [INTERPOLATED]", 0.0f, false},
+        {"RENDER RESOLUTION", retroPixel ? "RETRO ARCADE [480x270]" : "HD CRISP [1080p]", 0.0f, false}
     };
 
-    for (int i = 0; i < 8; ++i) {
-        float rowY = by + 68.0f + i * 44.0f;
+    for (int i = 0; i < 9; ++i) {
+        float rowY = by + 62.0f + i * 46.0f;
         bool isSel = (i == selectedIndex);
 
         if (isSel) {

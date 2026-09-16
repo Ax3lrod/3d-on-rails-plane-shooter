@@ -21,6 +21,13 @@ public:
     void SetCRTEnabled(bool enabled) { crtEnabled = enabled; }
     bool IsCRTEnabled() const { return crtEnabled; }
 
+    void ToggleRetroPixel() { SetRetroPixelMode(!retroPixelMode); }
+    void SetRetroPixelMode(bool enabled);
+    bool IsRetroPixelMode() const { return retroPixelMode; }
+
+    int GetRenderWidth() const;
+    int GetRenderHeight() const;
+
     void SetWarpIntensity(float intensity) { warpIntensity = intensity; }
     float GetWarpIntensity() const { return warpIntensity; }
 
@@ -38,6 +45,7 @@ private:
     int width;
     int height;
     bool crtEnabled;
+    bool retroPixelMode;
     float warpIntensity;
     bool initialized;
 };

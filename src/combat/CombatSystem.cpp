@@ -459,10 +459,56 @@ void ParticleSystem::SpawnWaterRipple(const glm::vec3& shipPos, float altitude, 
     }
 }
 
+void ParticleSystem::SpawnRoosterTailPlume(const glm::vec3& shipPos, float altitude,
+                                             const glm::vec3& shipVel, float bankAngle) {
+    if (altitude > 3.8f || altitude < 0.05f) return;
+
+    float surfaceY = shipPos.y - altitude + 0.06f;
+    float intensity = std::clamp(1.0f - (altitude / 3.8f), 0.0f, 1.0f);
+    int sprayCount = 6 + static_cast<int>(intensity * 8.0f);
+
+    for (int i = 0; i < sprayCount; ++i) {
+        float rX = ((float)rand() / RAND_MAX - 0.5f) * (1.6f + intensity * 1.8f);
+        float rZ = 1.0f + ((float)rand() / RAND_MAX) * 2.2f;
+        glm::vec3 spawnPos(shipPos.x + rX, surfaceY, shipPos.z + rZ);
+
+        // Towering vertical plume velocity with outward fan & banking tilt
+        float vy = 15.0f + intensity * 20.0f + ((float)rand() / RAND_MAX) * 8.0f;
+        float vx = ((float)rand() / RAND_MAX - 0.5f) * (9.0f + intensity * 8.0f) + (bankAngle * 0.12f);
+        float vz = shipVel.z * 0.35f + 16.0f + ((float)rand() / RAND_MAX) * 8.0f;
+
+        glm::vec3 vel(vx, vy, vz);
+        // Frothing pure white foam to crystalline azure spray
+        glm::vec3 col = ((rand() % 3) == 0)
+            ? glm::vec3(0.96f, 1.0f, 1.0f)
+            : glm::vec3(0.48f, 0.88f, 1.0f);
+
+        float life = 0.42f + ((float)rand() / RAND_MAX) * 0.38f;
+        float size = 0.55f + ((float)rand() / RAND_MAX) * 0.70f;
+
+        particles.push_back({
+            spawnPos,
+            vel,
+            col,
+            life,
+            life,
+            size,
+            true
+        });
+    }
+
+    // Also spawn concentric water ripples on water surface
+    SpawnWaterRipple(shipPos, altitude, bankAngle);
+}
+
 void ParticleSystem::Update(float dt) {
     for (auto& p : particles) {
         if (!p.active) continue;
         p.position += p.velocity * dt;
+        // Gravity effect pulls vertical spray plumes down
+        if (p.velocity.y > 0.0f) {
+            p.velocity.y -= 44.0f * dt;
+        }
         p.lifetime -= dt;
         if (p.lifetime <= 0.0f) {
             p.active = false;
@@ -507,14 +553,15 @@ void ParticleSystem::Clear() {
 // TargetingReticle (Dual Reticle + Enemy Lock-on Diamond)
 // -------------------------------------------------------------
 TargetingReticle::TargetingReticle()
-    : crosshairMesh(Mesh::CreateCrosshair(1.6f, glm::vec3(0.2f, 1.0f, 0.4f))),
-      farPointMesh(Mesh::CreateCrosshair(0.9f, glm::vec3(1.0f, 0.85f, 0.2f))),
-      lockOnMesh(Mesh::CreateLockOnDiamond(3.2f, glm::vec3(1.0f, 0.15f, 0.15f))) {}
+    : crosshairMesh(Mesh::CreateCrosshair(1.75f, glm::vec3(0.96f, 0.24f, 0.32f))), // Ex-Zodiac Red/Coral Outer Brackets
+      farPointMesh(Mesh::CreateCrosshair(0.90f, glm::vec3(0.24f, 0.90f, 1.0f))),  // Ex-Zodiac Electric Cyan Inner Reticle
+      lockOnMesh(Mesh::CreateLockOnDiamond(3.2f, glm::vec3(1.0f, 0.2f, 0.2f))) {}
 
 void TargetingReticle::Draw(const Shader& shader, const glm::vec3& nearPos, const glm::vec3& farPos,
                             bool hasLockOn, const glm::vec3& lockTargetPos, float lockAngle) const {
     shader.SetInt("uUseLighting", 0);
-    shader.SetFloat("uAlpha", 0.9f);
+    shader.SetInt("uUseFog", 0);
+    shader.SetFloat("uAlpha", 0.95f);
 
     // Near reticle
     glm::mat4 modelNear = glm::mat4(1.0f);

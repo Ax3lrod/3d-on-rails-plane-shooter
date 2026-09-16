@@ -6,19 +6,19 @@
 PlayerStarfighter::PlayerStarfighter()
     : transform(glm::vec3(0.0f, 0.0f, 0.0f)),
       mesh(Mesh::CreateStarfighter(
-          glm::vec3(0.85f, 0.88f, 0.92f), // Pearlescent sleek hull
-          glm::vec3(0.12f, 0.45f, 0.85f), // High-tech cobalt blue wings
-          glm::vec3(0.1f, 0.85f, 0.95f)   // Luminous cyan canopy
+          glm::vec3(0.55f, 0.16f, 0.58f), // Ex-Zodiac Signature Royal Violet / Magenta Fuselage
+          glm::vec3(0.18f, 0.82f, 0.98f), // Electric Cyan Wingtips & Accent
+          glm::vec3(0.98f, 0.86f, 0.25f)  // Luminous Amber/Golden Canopy Glass
       )),
       fuselageMesh(Mesh::CreateStarfighterFuselage(
-          glm::vec3(0.85f, 0.88f, 0.92f),
-          glm::vec3(0.1f, 0.85f, 0.95f)
+          glm::vec3(0.55f, 0.16f, 0.58f),
+          glm::vec3(0.98f, 0.86f, 0.25f)
       )),
       leftWingMesh(Mesh::CreateStarfighterLeftWing(
-          glm::vec3(0.12f, 0.45f, 0.85f)
+          glm::vec3(0.18f, 0.82f, 0.98f)
       )),
       rightWingMesh(Mesh::CreateStarfighterRightWing(
-          glm::vec3(0.12f, 0.45f, 0.85f)
+          glm::vec3(0.18f, 0.82f, 0.98f)
       )),
       chargeOrbMesh(Mesh::CreateSphere(0.7f, 10, 12, glm::vec3(0.2f, 1.0f, 0.6f))),
       baseSpeed(48.0f),

@@ -89,7 +89,7 @@ public:
                           int selectedIndex, float masterVol, float musicVol, float sfxVol,
                           float currentHudScale,
                           bool invertY, bool crtFilter, bool cockpitDefault,
-                          bool flatShading = true) const;
+                          bool flatShading = true, bool retroPixel = true) const;
     void DrawLeaderboard(const Shader& shader, int screenWidth, int screenHeight,
                          const std::vector<HighScoreEntry>& scores) const;
     void DrawMissionBriefing(const Shader& shader, int screenWidth, int screenHeight, float time) const;

@@ -356,11 +356,11 @@ void Engine::ProcessInput(float) {
 
     if (state == GameState::SettingsMenu) {
         if (Input::IsMenuUpPressed()) {
-            selectedSettingsIndex = (selectedSettingsIndex + 7) % 8;
+            selectedSettingsIndex = (selectedSettingsIndex + 8) % 9;
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
         }
         if (Input::IsMenuDownPressed()) {
-            selectedSettingsIndex = (selectedSettingsIndex + 1) % 8;
+            selectedSettingsIndex = (selectedSettingsIndex + 1) % 9;
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
         }
         if (Input::IsMenuLeftPressed()) {
@@ -388,6 +388,8 @@ void Engine::ProcessInput(float) {
                 defaultCockpitMode = !defaultCockpitMode;
             } else if (selectedSettingsIndex == 7) {
                 flatShading = !flatShading;
+            } else if (selectedSettingsIndex == 8) {
+                if (postProcessor) postProcessor->ToggleRetroPixel();
             }
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.4f);
         }
@@ -416,6 +418,8 @@ void Engine::ProcessInput(float) {
                 defaultCockpitMode = !defaultCockpitMode;
             } else if (selectedSettingsIndex == 7) {
                 flatShading = !flatShading;
+            } else if (selectedSettingsIndex == 8) {
+                if (postProcessor) postProcessor->ToggleRetroPixel();
             }
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.4f);
         }
@@ -1105,9 +1109,8 @@ void Engine::Update(float dt) {
         if (environment && environment->currentSector == SectorStage::Sector1_Canyon && !player->isAllRangeMode) {
             float floorY = -7.5f;
             float altitude = player->transform.position.y - floorY;
-            if (altitude < 3.4f) {
-                particles->SpawnSurfacePlume(player->transform.position, altitude, shipVel, player->transform.rotation.z);
-                particles->SpawnWaterRipple(player->transform.position, altitude, player->transform.rotation.z);
+            if (altitude < 3.8f) {
+                particles->SpawnRoosterTailPlume(player->transform.position, altitude, shipVel, player->transform.rotation.z);
             }
         }
 
@@ -1257,6 +1260,7 @@ void Engine::Render() {
         shader.SetInt("uUseColorOverride", 0);
         shader.SetFloat("uAlpha", 1.0f);
         shader.SetInt("uUseFlatShading", flatShading ? 1 : 0);
+        shader.SetInt("uUseDithering", (postProcessor && postProcessor->IsRetroPixelMode()) ? 1 : 0);
 
         // Hangar Floor
         glm::mat4 floorModel = glm::mat4(1.0f);
@@ -1292,7 +1296,8 @@ void Engine::Render() {
                                   invertPitchY,
                                   postProcessor ? postProcessor->IsCRTEnabled() : false,
                                   defaultCockpitMode,
-                                  flatShading);
+                                  flatShading,
+                                  postProcessor ? postProcessor->IsRetroPixelMode() : true);
         } else if (state == GameState::Leaderboard) {
             hud->DrawLeaderboard(shader, windowWidth, windowHeight, highScores);
         } else if (state == GameState::MissionBriefing) {
@@ -1348,6 +1353,7 @@ void Engine::Render() {
     shader.SetInt("uUseColorOverride", 0);
     shader.SetFloat("uAlpha", 1.0f);
     shader.SetInt("uUseFlatShading", flatShading ? 1 : 0);
+    shader.SetInt("uUseDithering", (postProcessor && postProcessor->IsRetroPixelMode()) ? 1 : 0);
 
     environment->Draw(shader);
     enemies->Draw(shader);

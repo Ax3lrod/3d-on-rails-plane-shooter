@@ -16,6 +16,8 @@ BossDreadnought::BossDreadnought()
       turretMesh(Mesh::CreateBossTurret(glm::vec3(0.32f, 0.34f, 0.38f))),
       shieldMesh(Mesh::CreateSphere(3.2f, 10, 14, glm::vec3(0.2f, 0.7f, 1.0f))),
       coreMesh(Mesh::CreateBossCore(glm::vec3(1.0f, 0.35f, 0.1f))),
+      maceMesh(Mesh::CreateSpikedMace(1.25f, 0.85f, glm::vec3(0.14f, 0.14f, 0.20f), glm::vec3(0.95f, 0.75f, 0.20f))),
+      plasmaRingMesh(Mesh::CreateRing(1.8f, 2.3f, 16, glm::vec3(0.25f, 0.90f, 1.0f))),
       stateTime(0.0f),
       warningTimer(3.5f),
       approachProgress(0.0f),
@@ -26,7 +28,8 @@ BossDreadnought::BossDreadnought()
       nextExplosionTimer(0.0f),
       swayTime(0.0f),
       currentTurretYaw(0.0f),
-      corePulseTime(0.0f) {
+      corePulseTime(0.0f),
+      maceRotAngle(0.0f) {
 
     // Initialize Subsystems
     leftTurret = {
@@ -135,6 +138,8 @@ void BossDreadnought::Update(float dt, float playerZ, const glm::vec3& playerPos
     stateTime += dt;
     swayTime += dt;
     corePulseTime += dt * 5.0f;
+    maceRotAngle += 220.0f * dt;
+    if (maceRotAngle > 360.0f) maceRotAngle -= 360.0f;
 
     UpdateSubsystemsWorldPos();
 
@@ -580,4 +585,48 @@ void BossDreadnought::Draw(const Shader& shader) const {
 
         shader.SetInt("uUseLighting", 1);
     }
+
+    // 6. Dual Forward Spiked Mace Arms (Ex-Zodiac Boss Signature Hazard - Image 3)
+    glm::mat4 bossModel = transform.GetModelMatrix();
+    const int macesPerArm = 6;
+    for (int i = 0; i < macesPerArm; ++i) {
+        float t = static_cast<float>(i) / static_cast<float>(macesPerArm - 1);
+        float mZ = 3.8f + t * 9.5f;
+        float mX = 2.4f + t * 6.2f;
+        float mY = -0.6f - t * 0.5f;
+
+        // Port (Left) Spiked Mace
+        glm::mat4 leftMace = bossModel;
+        leftMace = glm::translate(leftMace, glm::vec3(-mX, mY, mZ));
+        leftMace = glm::rotate(leftMace, glm::radians(maceRotAngle + i * 40.0f), glm::vec3(0, 0, 1));
+        shader.SetMat4("uModel", leftMace);
+        maceMesh.Draw(shader);
+
+        // Starboard (Right) Spiked Mace
+        glm::mat4 rightMace = bossModel;
+        rightMace = glm::translate(rightMace, glm::vec3(mX, mY, mZ));
+        rightMace = glm::rotate(rightMace, glm::radians(-maceRotAngle - i * 40.0f), glm::vec3(0, 0, 1));
+        shader.SetMat4("uModel", rightMace);
+        maceMesh.Draw(shader);
+    }
+
+    // 7. Giant Dual Glowing Plasma Thruster Pods (Ex-Zodiac Image 3)
+    shader.SetInt("uUseLighting", 0);
+    shader.SetFloat("uAlpha", 0.95f);
+    float pulse = 1.0f + 0.12f * std::sin(corePulseTime * 3.5f);
+
+    glm::mat4 tLeft = bossModel;
+    tLeft = glm::translate(tLeft, glm::vec3(-3.2f, 1.2f, -7.5f));
+    tLeft = glm::scale(tLeft, glm::vec3(pulse));
+    shader.SetMat4("uModel", tLeft);
+    plasmaRingMesh.Draw(shader);
+
+    glm::mat4 tRight = bossModel;
+    tRight = glm::translate(tRight, glm::vec3(3.2f, 1.2f, -7.5f));
+    tRight = glm::scale(tRight, glm::vec3(pulse));
+    shader.SetMat4("uModel", tRight);
+    plasmaRingMesh.Draw(shader);
+
+    shader.SetInt("uUseLighting", 1);
+    shader.SetFloat("uAlpha", 1.0f);
 }

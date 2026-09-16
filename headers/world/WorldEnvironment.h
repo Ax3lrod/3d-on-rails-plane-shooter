@@ -61,6 +61,17 @@ struct SpaceDebris {
     float radius;
 };
 
+struct FloatingDomeObstacle {
+    glm::vec3 position;
+    float radius;
+};
+
+struct WindTurbineObstacle {
+    glm::vec3 position;
+    float rotation;
+    float rotSpeed;
+};
+
 class WorldEnvironment {
 public:
     SectorStage currentSector;
@@ -72,6 +83,8 @@ public:
     std::vector<HazardPillar> pillars;
     std::vector<SecretRelay> secretRelays;
     std::vector<SpaceDebris> spaceDebris;
+    std::vector<FloatingDomeObstacle> floatingDomes;
+    std::vector<WindTurbineObstacle> windTurbines;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -82,6 +95,8 @@ public:
     Mesh relayMesh;
     Mesh debrisMesh;
     Mesh horizonMesh;
+    Mesh domeMesh;
+    Mesh turbineMesh;
 
     float nextSpawnZ;
     float despawnDistBehind;

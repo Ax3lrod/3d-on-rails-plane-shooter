@@ -44,6 +44,8 @@ public:
     Mesh turretMesh;
     Mesh shieldMesh;
     Mesh coreMesh;
+    Mesh maceMesh;
+    Mesh plasmaRingMesh;
 
     // Subsystem Weakpoints
     BossWeakpoint leftTurret;
@@ -65,6 +67,7 @@ public:
     float swayTime;
     float currentTurretYaw;
     float corePulseTime;
+    float maceRotAngle;
 
     BossDreadnought();
 

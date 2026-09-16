@@ -9,18 +9,20 @@ WorldEnvironment::WorldEnvironment()
       goldRingMesh(Mesh::CreateRing(2.6f, 3.2f, 16, glm::vec3(1.0f, 0.85f, 0.2f))),
       silverRingMesh(Mesh::CreateRing(2.6f, 3.2f, 16, glm::vec3(0.3f, 0.85f, 1.0f))),
       asteroidMesh(Mesh::CreateAsteroid(2.4f, glm::vec3(0.55f, 0.52f, 0.48f))),
-      canyonMesh(Mesh::CreateCanyonSection(60.0f, 34.0f, 16.0f,
-                                           glm::vec3(0.08f, 0.44f, 0.72f),   // Radiant deep arcade water
-                                           glm::vec3(0.18f, 0.65f, 0.92f),   // Shimmering azure water crest
-                                           glm::vec3(0.86f, 0.45f, 0.24f))), // Warm terracotta canyon cliff
-      rockArchMesh(Mesh::CreateRockArch(34.0f, 16.0f, 7.0f, glm::vec3(0.88f, 0.48f, 0.26f))),
-      pillarMesh(Mesh::CreatePillar(1.5f, 14.0f, glm::vec3(0.35f, 0.32f, 0.38f))),
+      canyonMesh(Mesh::CreateCanyonSection(60.0f, 38.0f, 16.0f,
+                                           glm::vec3(0.10f, 0.38f, 0.82f),   // Vibrant cobalt ocean water
+                                           glm::vec3(0.22f, 0.70f, 0.98f),   // Shimmering azure water crest
+                                           glm::vec3(0.92f, 0.68f, 0.72f))), // Ex-Zodiac Pastel Pink Mesa
+      rockArchMesh(Mesh::CreateRockArch(38.0f, 16.0f, 7.5f, glm::vec3(0.92f, 0.68f, 0.72f))),
+      pillarMesh(Mesh::CreatePillar(1.5f, 14.0f, glm::vec3(0.90f, 0.75f, 0.78f))),
       relayMesh(Mesh::CreateRadarRelay(2.4f, glm::vec3(0.35f, 0.40f, 0.45f), glm::vec3(0.85f, 0.88f, 0.92f), glm::vec3(1.0f, 0.2f, 0.15f))),
       debrisMesh(Mesh::CreateSpaceDebris(14.0f, 2.0f, glm::vec3(0.45f, 0.48f, 0.52f))),
       horizonMesh(Mesh::CreateArcadeHorizon(420.0f, 180.0f,
-                                            glm::vec3(0.08f, 0.22f, 0.58f),   // Deep royal sapphire sky
-                                            glm::vec3(0.38f, 0.70f, 0.95f),   // Radiant horizon azure
-                                            glm::vec3(0.32f, 0.36f, 0.62f))), // Indigo low-poly mountains
+                                            glm::vec3(0.24f, 0.55f, 0.92f),   // Sega blue skies
+                                            glm::vec3(0.72f, 0.88f, 0.98f),   // Radiant ocean horizon
+                                            glm::vec3(0.68f, 0.75f, 0.92f))), // Distant pastel sawtooth peaks
+      domeMesh(Mesh::CreateFloatingDome(5.5f, glm::vec3(0.92f, 0.95f, 1.0f), glm::vec3(0.25f, 0.95f, 1.0f))),
+      turbineMesh(Mesh::CreateWindTurbine(26.0f, 9.5f, glm::vec3(0.92f, 0.94f, 0.96f), glm::vec3(0.98f, 0.98f, 1.0f))),
       nextSpawnZ(0.0f),
       despawnDistBehind(60.0f),
       lastPlayerZ(0.0f) {
@@ -92,6 +94,25 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
                 rotSpeed,
                 radius,
                 false
+            });
+        }
+
+        // 6. Floating High-Tech Dome Pavilions (Ex-Zodiac Image 1)
+        for (float z = startZ - 60.0f; z >= endZ; z -= 140.0f) {
+            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+            floatingDomes.push_back({
+                glm::vec3(side * (24.0f + ((float)rand() / RAND_MAX) * 4.0f), 8.5f, z),
+                5.5f
+            });
+        }
+
+        // 7. Giant Rotating Wind Turbines (Ex-Zodiac Image 3)
+        for (float z = startZ - 90.0f; z >= endZ; z -= 110.0f) {
+            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+            windTurbines.push_back({
+                glm::vec3(side * (18.5f + ((float)rand() / RAND_MAX) * 5.0f), -7.5f, z),
+                ((float)rand() / RAND_MAX) * 360.0f,
+                55.0f + ((float)rand() / RAND_MAX) * 30.0f
             });
         }
     } else {
@@ -168,6 +189,12 @@ void WorldEnvironment::Update(float playerZ, float dt) {
         d.rotation += d.rotSpeed * dt;
     }
 
+    // Rotate wind turbines
+    for (auto& wt : windTurbines) {
+        wt.rotation += wt.rotSpeed * dt;
+        if (wt.rotation > 360.0f) wt.rotation -= 360.0f;
+    }
+
     // Pulse secret relays
     for (auto& rel : secretRelays) {
         rel.pulseTimer += dt * 3.0f;
@@ -211,6 +238,18 @@ void WorldEnvironment::Update(float playerZ, float dt) {
                        [cullZ](const SpaceDebris& d) { return d.position.z > cullZ; }),
         spaceDebris.end()
     );
+
+    floatingDomes.erase(
+        std::remove_if(floatingDomes.begin(), floatingDomes.end(),
+                       [cullZ](const FloatingDomeObstacle& d) { return d.position.z > cullZ; }),
+        floatingDomes.end()
+    );
+
+    windTurbines.erase(
+        std::remove_if(windTurbines.begin(), windTurbines.end(),
+                       [cullZ](const WindTurbineObstacle& wt) { return wt.position.z > cullZ; }),
+        windTurbines.end()
+    );
 }
 
 void WorldEnvironment::Draw(const Shader& shader) const {
@@ -252,7 +291,24 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             pillarMesh.Draw(shader);
         }
 
-        // 4. Draw Secret Planetary Radar Relays
+        // 4. Draw Floating High-Tech Dome Pavilions (Ex-Zodiac Image 1)
+        for (const auto& dome : floatingDomes) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, dome.position);
+            shader.SetMat4("uModel", model);
+            domeMesh.Draw(shader);
+        }
+
+        // 5. Draw Giant Wind Turbines along plains (Ex-Zodiac Image 3)
+        for (const auto& wt : windTurbines) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, wt.position);
+            model = glm::rotate(model, glm::radians(wt.rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+            shader.SetMat4("uModel", model);
+            turbineMesh.Draw(shader);
+        }
+
+        // 6. Draw Secret Planetary Radar Relays
         for (const auto& rel : secretRelays) {
             if (rel.destroyed) continue;
             glm::mat4 model = glm::mat4(1.0f);
@@ -276,7 +332,7 @@ void WorldEnvironment::Draw(const Shader& shader) const {
         }
     }
 
-    // 5. Draw Asteroids (in both sectors)
+    // 7. Draw Asteroids (in both sectors)
     for (const auto& a : asteroids) {
         if (a.destroyed) continue;
         glm::mat4 model = glm::mat4(1.0f);
@@ -289,7 +345,7 @@ void WorldEnvironment::Draw(const Shader& shader) const {
         asteroidMesh.Draw(shader);
     }
 
-    // 6. Draw Rings (unlit glowing)
+    // 8. Draw Rings (unlit glowing)
     shader.SetInt("uUseLighting", 0);
     shader.SetFloat("uAlpha", 0.95f);
     for (const auto& r : rings) {
@@ -319,6 +375,8 @@ void WorldEnvironment::Clear() {
     asteroids.clear();
     secretRelays.clear();
     spaceDebris.clear();
+    floatingDomes.clear();
+    windTurbines.clear();
     nextSpawnZ = 0.0f;
     lastPlayerZ = 0.0f;
 

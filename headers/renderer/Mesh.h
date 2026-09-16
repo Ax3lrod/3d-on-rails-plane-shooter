@@ -66,6 +66,9 @@ public:
     static Mesh CreateRadarRelay(float size, const glm::vec3& baseColor, const glm::vec3& dishColor, const glm::vec3& beaconColor);
     static Mesh CreateSpaceDebris(float length, float width, const glm::vec3& color);
     static Mesh CreateShadowDisc(float radius, int segments = 16);
+    static Mesh CreateFloatingDome(float radius, const glm::vec3& domeColor, const glm::vec3& ringColor);
+    static Mesh CreateWindTurbine(float towerHeight, float bladeRadius, const glm::vec3& towerColor, const glm::vec3& bladeColor);
+    static Mesh CreateSpikedMace(float radius, float spikeLen, const glm::vec3& coreColor, const glm::vec3& spikeColor);
 };
 
 #endif

@@ -3,11 +3,31 @@
 
 PostProcessor::PostProcessor()
     : fbo(0), colorTexture(0), rbo(0), quadVAO(0), quadVBO(0),
-      width(1280), height(720), crtEnabled(false), warpIntensity(0.0f), initialized(false) {
+      width(1280), height(720), crtEnabled(false), retroPixelMode(true), warpIntensity(0.0f), initialized(false) {
 }
 
 PostProcessor::~PostProcessor() {
     Cleanup();
+}
+
+int PostProcessor::GetRenderWidth() const {
+    return retroPixelMode ? 480 : width;
+}
+
+int PostProcessor::GetRenderHeight() const {
+    return retroPixelMode ? 270 : height;
+}
+
+void PostProcessor::SetRetroPixelMode(bool enabled) {
+    if (retroPixelMode == enabled) return;
+    retroPixelMode = enabled;
+    if (fbo) {
+        glDeleteTextures(1, &colorTexture);
+        glDeleteRenderbuffers(1, &rbo);
+        glDeleteFramebuffers(1, &fbo);
+        fbo = colorTexture = rbo = 0;
+    }
+    SetupFBO();
 }
 
 bool PostProcessor::Init(int screenWidth, int screenHeight) {
@@ -28,7 +48,8 @@ bool PostProcessor::Init(int screenWidth, int screenHeight) {
     SetupQuad();
 
     initialized = true;
-    std::cout << "[PostProcessor] Post-processing pipeline initialized (" << width << "x" << height << ").\n";
+    std::cout << "[PostProcessor] Post-processing pipeline initialized (" << width << "x" << height 
+              << ", Internal: " << GetRenderWidth() << "x" << GetRenderHeight() << ").\n";
     return true;
 }
 
@@ -66,12 +87,17 @@ void PostProcessor::SetupFBO() {
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
+    int rw = GetRenderWidth();
+    int rh = GetRenderHeight();
+
+    GLenum filter = retroPixelMode ? GL_NEAREST : GL_LINEAR;
+
     // Create color texture attachment with HDR support (GL_RGBA16F)
     glGenTextures(1, &colorTexture);
     glBindTexture(GL_TEXTURE_2D, colorTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, rw, rh, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
@@ -79,7 +105,7 @@ void PostProcessor::SetupFBO() {
     // Create depth and stencil renderbuffer
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, rw, rh);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -106,7 +132,7 @@ void PostProcessor::Resize(int screenWidth, int screenHeight) {
 void PostProcessor::BeginRender() {
     if (!initialized) return;
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, GetRenderWidth(), GetRenderHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 }
@@ -120,6 +146,7 @@ void PostProcessor::Render(float time) {
     if (!initialized) return;
 
     glDisable(GL_DEPTH_TEST);
+    glViewport(0, 0, width, height);
     shader.Activate();
 
     glActiveTexture(GL_TEXTURE0);

@@ -597,52 +597,55 @@ Mesh Mesh::CreateCanyonSection(float length, float width, float wallHeight,
         }
     }
 
-    // 2. Left Cliff Wall (Faceted 3-Tier Low-Poly Canyon Face)
+    // 2. Left Cliff Wall (Ex-Zodiac Pastel Pink Mesa with Sandy Beach and Emerald Grassy Rim)
+    glm::vec3 beachCol(0.96f, 0.92f, 0.80f); // Sandy shoreline
+    glm::vec3 grassCol(0.42f, 0.85f, 0.50f); // Lush vibrant mesa top
+
     for (int iz = 0; iz < zSegs; ++iz) {
         float z0 = -hl + iz * dz;
         float z1 = z0 + dz;
         float shade = 0.90f + 0.18f * (iz % 2);
 
-        // Tier 1: Lower steep embankment
+        // Tier 1: Sandy shoreline embankment
         glm::vec3 b0(-hw, floorY, z0);
         glm::vec3 b1(-hw, floorY, z1);
-        glm::vec3 m0(-hw - 3.5f, floorY + wallHeight * 0.45f, z0);
-        glm::vec3 m1(-hw - 3.5f, floorY + wallHeight * 0.45f, z1);
-        AddQuad(verts, inds, b0, m0, m1, b1, wallCol * 0.88f * shade);
+        glm::vec3 m0(-hw - 3.5f, floorY + wallHeight * 0.25f, z0);
+        glm::vec3 m1(-hw - 3.5f, floorY + wallHeight * 0.25f, z1);
+        AddQuad(verts, inds, b0, m0, m1, b1, beachCol * shade);
 
-        // Tier 2: Mid cliff face
-        glm::vec3 u0(-hw - 6.5f, floorY + wallHeight * 0.80f, z0);
-        glm::vec3 u1(-hw - 6.5f, floorY + wallHeight * 0.80f, z1);
+        // Tier 2: Pastel pink/peach sandstone cliff face
+        glm::vec3 u0(-hw - 6.5f, floorY + wallHeight * 0.82f, z0);
+        glm::vec3 u1(-hw - 6.5f, floorY + wallHeight * 0.82f, z1);
         AddQuad(verts, inds, m0, u0, u1, m1, wallCol * 1.05f * shade);
 
-        // Tier 3: Upper rim / plateau
-        glm::vec3 t0(-hw - 11.0f, floorY + wallHeight, z0);
-        glm::vec3 t1(-hw - 11.0f, floorY + wallHeight, z1);
-        AddQuad(verts, inds, u0, t0, t1, u1, wallCol * 1.18f * shade);
+        // Tier 3: Upper rim / plateau lush green lawn
+        glm::vec3 t0(-hw - 13.0f, floorY + wallHeight, z0);
+        glm::vec3 t1(-hw - 13.0f, floorY + wallHeight, z1);
+        AddQuad(verts, inds, u0, t0, t1, u1, grassCol * shade);
     }
 
-    // 3. Right Cliff Wall (Faceted 3-Tier Low-Poly Canyon Face)
+    // 3. Right Cliff Wall (Ex-Zodiac Pastel Pink Mesa with Sandy Beach and Emerald Grassy Rim)
     for (int iz = 0; iz < zSegs; ++iz) {
         float z0 = -hl + iz * dz;
         float z1 = z0 + dz;
         float shade = 0.86f + 0.20f * ((iz + 1) % 2);
 
-        // Tier 1: Lower steep embankment
+        // Tier 1: Sandy shoreline embankment
         glm::vec3 b0(hw, floorY, z0);
         glm::vec3 b1(hw, floorY, z1);
-        glm::vec3 m0(hw + 3.5f, floorY + wallHeight * 0.45f, z0);
-        glm::vec3 m1(hw + 3.5f, floorY + wallHeight * 0.45f, z1);
-        AddQuad(verts, inds, b0, b1, m1, m0, wallCol * 0.82f * shade);
+        glm::vec3 m0(hw + 3.5f, floorY + wallHeight * 0.25f, z0);
+        glm::vec3 m1(hw + 3.5f, floorY + wallHeight * 0.25f, z1);
+        AddQuad(verts, inds, b0, b1, m1, m0, beachCol * shade);
 
-        // Tier 2: Mid cliff face
-        glm::vec3 u0(hw + 6.5f, floorY + wallHeight * 0.80f, z0);
-        glm::vec3 u1(hw + 6.5f, floorY + wallHeight * 0.80f, z1);
+        // Tier 2: Pastel pink/peach sandstone cliff face
+        glm::vec3 u0(hw + 6.5f, floorY + wallHeight * 0.82f, z0);
+        glm::vec3 u1(hw + 6.5f, floorY + wallHeight * 0.82f, z1);
         AddQuad(verts, inds, m0, m1, u1, u0, wallCol * 0.98f * shade);
 
-        // Tier 3: Upper rim / plateau
-        glm::vec3 t0(hw + 11.0f, floorY + wallHeight, z0);
-        glm::vec3 t1(hw + 11.0f, floorY + wallHeight, z1);
-        AddQuad(verts, inds, u0, u1, t1, t0, wallCol * 1.12f * shade);
+        // Tier 3: Upper rim / plateau lush green lawn
+        glm::vec3 t0(hw + 13.0f, floorY + wallHeight, z0);
+        glm::vec3 t1(hw + 13.0f, floorY + wallHeight, z1);
+        AddQuad(verts, inds, u0, u1, t1, t0, grassCol * shade);
     }
 
     return Mesh(verts, inds);
@@ -981,6 +984,180 @@ Mesh Mesh::CreateShadowDisc(float radius, int segments) {
         inds.push_back(0);
         inds.push_back(i + 1);
         inds.push_back(next + 1);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateFloatingDome(float radius, const glm::vec3& domeColor, const glm::vec3& ringColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    const int segs = 16;
+    float r = radius;
+    float domeH = radius * 0.75f;
+
+    // 1. Glowing Neon Equator Ring
+    float ringThickness = radius * 0.16f;
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 r0(std::cos(a0) * r, 0.0f, std::sin(a0) * r);
+        glm::vec3 r1(std::cos(a1) * r, 0.0f, std::sin(a1) * r);
+        glm::vec3 r0_up(std::cos(a0) * r, ringThickness, std::sin(a0) * r);
+        glm::vec3 r1_up(std::cos(a1) * r, ringThickness, std::sin(a1) * r);
+
+        AddQuad(verts, inds, r0, r1, r1_up, r0_up, ringColor);
+    }
+
+    // 2. Translucent Upper Observation Dome
+    glm::vec3 apex(0.0f, domeH, 0.0f);
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 r0_up(std::cos(a0) * r * 0.95f, ringThickness, std::sin(a0) * r * 0.95f);
+        glm::vec3 r1_up(std::cos(a1) * r * 0.95f, ringThickness, std::sin(a1) * r * 0.95f);
+
+        AddTriangle(verts, inds, apex, r0_up, r1_up, domeColor * (0.85f + 0.25f * (i % 2)));
+    }
+
+    // 3. Saucer Inverted Base Hull
+    glm::vec3 baseApex(0.0f, -radius * 0.35f, 0.0f);
+    glm::vec3 baseHullCol(0.12f, 0.14f, 0.20f);
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 r0(std::cos(a0) * r, 0.0f, std::sin(a0) * r);
+        glm::vec3 r1(std::cos(a1) * r, 0.0f, std::sin(a1) * r);
+
+        AddTriangle(verts, inds, baseApex, r1, r0, baseHullCol);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateWindTurbine(float towerHeight, float bladeRadius,
+                            const glm::vec3& towerColor, const glm::vec3& bladeColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Tapered Hexagonal Turbine Tower
+    const int segs = 6;
+    float rBase = 1.6f;
+    float rTop = 0.85f;
+
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 b0(std::cos(a0) * rBase, 0.0f, std::sin(a0) * rBase);
+        glm::vec3 b1(std::cos(a1) * rBase, 0.0f, std::sin(a1) * rBase);
+        glm::vec3 t0(std::cos(a0) * rTop, towerHeight, std::sin(a0) * rTop);
+        glm::vec3 t1(std::cos(a1) * rTop, towerHeight, std::sin(a1) * rTop);
+
+        float shade = 0.85f + 0.25f * (i % 2);
+        AddQuad(verts, inds, b0, b1, t1, t0, towerColor * shade);
+    }
+
+    // 2. Nacelle / Rotor Hub Pod
+    float hubY = towerHeight;
+    float hubLen = 3.5f;
+    float hubRad = 1.1f;
+    glm::vec3 hubCol(0.18f, 0.20f, 0.24f);
+
+    AddQuad(verts, inds,
+            {-hubRad, hubY - hubRad * 0.5f, -hubLen * 0.5f},
+            { hubRad, hubY - hubRad * 0.5f, -hubLen * 0.5f},
+            { hubRad, hubY + hubRad * 0.5f, -hubLen * 0.5f},
+            {-hubRad, hubY + hubRad * 0.5f, -hubLen * 0.5f}, hubCol);
+    AddQuad(verts, inds,
+            {-hubRad, hubY - hubRad * 0.5f,  hubLen * 0.5f},
+            { hubRad, hubY - hubRad * 0.5f,  hubLen * 0.5f},
+            { hubRad, hubY + hubRad * 0.5f,  hubLen * 0.5f},
+            {-hubRad, hubY + hubRad * 0.5f,  hubLen * 0.5f}, hubCol * 0.9f);
+
+    // 3. Three Aerofoil Rotor Blades with Red Warning Tips (Ex-Zodiac Image 3)
+    float bladeW = 0.65f;
+    glm::vec3 tipColor(0.92f, 0.18f, 0.22f); // Retro arcade red tips
+
+    for (int b = 0; b < 3; ++b) {
+        float angle = (float)b / 3.0f * glm::two_pi<float>();
+        glm::vec3 dir(std::cos(angle), std::sin(angle), 0.0f);
+        glm::vec3 right(-std::sin(angle), std::cos(angle), 0.0f);
+
+        glm::vec3 root0 = glm::vec3(0.0f, hubY, hubLen * 0.5f) - right * (bladeW * 0.5f);
+        glm::vec3 root1 = glm::vec3(0.0f, hubY, hubLen * 0.5f) + right * (bladeW * 0.5f);
+
+        glm::vec3 mid0 = root0 + dir * (bladeRadius * 0.75f);
+        glm::vec3 mid1 = root1 + dir * (bladeRadius * 0.75f);
+
+        glm::vec3 tip0 = root0 + dir * bladeRadius;
+        glm::vec3 tip1 = root1 + dir * bladeRadius;
+
+        // White blade body
+        AddQuad(verts, inds, root0, root1, mid1, mid0, bladeColor);
+        // Signature red warning tip
+        AddQuad(verts, inds, mid0, mid1, tip1, tip0, tipColor);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateSpikedMace(float radius, float spikeLen,
+                           const glm::vec3& coreColor, const glm::vec3& spikeColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float r = radius;
+
+    // 1. Faceted Octahedron Core Sphere
+    glm::vec3 top(0.0f, r, 0.0f);
+    glm::vec3 bottom(0.0f, -r, 0.0f);
+    glm::vec3 front(0.0f, 0.0f, r);
+    glm::vec3 back(0.0f, 0.0f, -r);
+    glm::vec3 left(-r, 0.0f, 0.0f);
+    glm::vec3 right(r, 0.0f, 0.0f);
+
+    AddTriangle(verts, inds, top, right, front, coreColor * 1.15f);
+    AddTriangle(verts, inds, top, front, left, coreColor * 0.95f);
+    AddTriangle(verts, inds, top, left, back, coreColor * 0.85f);
+    AddTriangle(verts, inds, top, back, right, coreColor * 1.05f);
+
+    AddTriangle(verts, inds, bottom, front, right, coreColor * 0.75f);
+    AddTriangle(verts, inds, bottom, left, front, coreColor * 0.65f);
+    AddTriangle(verts, inds, bottom, back, left, coreColor * 0.55f);
+    AddTriangle(verts, inds, bottom, right, back, coreColor * 0.70f);
+
+    // 2. Dangerous Conical/Pyramidal Spikes in 6 Principal Axes + 8 Diagonals
+    std::vector<glm::vec3> spikeDirs = {
+        { 1.0f,  0.0f,  0.0f}, {-1.0f,  0.0f,  0.0f},
+        { 0.0f,  1.0f,  0.0f}, { 0.0f, -1.0f,  0.0f},
+        { 0.0f,  0.0f,  1.0f}, { 0.0f,  0.0f, -1.0f},
+        glm::normalize(glm::vec3( 1.0f,  1.0f,  1.0f)),
+        glm::normalize(glm::vec3(-1.0f,  1.0f,  1.0f)),
+        glm::normalize(glm::vec3( 1.0f, -1.0f,  1.0f)),
+        glm::normalize(glm::vec3(-1.0f, -1.0f,  1.0f)),
+        glm::normalize(glm::vec3( 1.0f,  1.0f, -1.0f)),
+        glm::normalize(glm::vec3(-1.0f,  1.0f, -1.0f)),
+        glm::normalize(glm::vec3( 1.0f, -1.0f, -1.0f)),
+        glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f))
+    };
+
+    float baseW = radius * 0.28f;
+    for (const auto& d : spikeDirs) {
+        glm::vec3 tip = d * (radius + spikeLen);
+        glm::vec3 up = std::abs(d.y) > 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+        glm::vec3 u = glm::normalize(glm::cross(d, up)) * baseW;
+        glm::vec3 v = glm::normalize(glm::cross(d, u)) * baseW;
+        glm::vec3 b = d * radius;
+
+        AddTriangle(verts, inds, tip, b + u, b + v, spikeColor);
+        AddTriangle(verts, inds, tip, b + v, b - u, spikeColor * 0.9f);
+        AddTriangle(verts, inds, tip, b - u, b - v, spikeColor * 0.8f);
+        AddTriangle(verts, inds, tip, b - v, b + u, spikeColor * 0.95f);
     }
 
     return Mesh(verts, inds);

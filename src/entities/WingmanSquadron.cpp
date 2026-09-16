@@ -129,10 +129,10 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
     // 2. Story / Progress Radio Checkpoints
     if (!introTriggered && playerPos.z <= -25.0f) {
         introTriggered = true;
-        TriggerTransmission(WingmanID::Striker, "Echo-1 in position! Weapons online.",
-                            "Canyon sector looks quiet... for now.", 3.4f, audio);
-        TriggerTransmission(WingmanID::Aegis, "Echo-2 standing by. Watch your radar.",
-                            "Stay alert for canyon wall ambushes, Lead.", 3.4f, audio);
+        TriggerTransmission(WingmanID::Striker, "Phew... I'm glad to be out of there...",
+                            "Entering coastline sector. All systems green!", 3.6f, audio);
+        TriggerTransmission(WingmanID::Aegis, "Echo-2 standing by. Watch the wind turbines.",
+                            "Stay alert for enemy ambush formations, Lead.", 3.4f, audio);
     }
 
     if (!wave1Triggered && playerPos.z <= -240.0f) {
@@ -149,10 +149,10 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
 
     if (!bossTriggered && playerPos.z <= -930.0f) {
         bossTriggered = true;
-        TriggerTransmission(WingmanID::Striker, "Colossal dreadnought dead ahead!",
-                            "Look at the size of that warship!", 3.4f, audio);
-        TriggerTransmission(WingmanID::Aegis, "Heavy kinetic shields detected!",
-                            "Target the wing turret batteries first, Commander!", 3.6f, audio);
+        TriggerTransmission(WingmanID::Striker, "Warning! Colossal dreadnought dead ahead!",
+                            "Watch out! It's armed with spinning spiked maces!", 3.6f, audio);
+        TriggerTransmission(WingmanID::Aegis, "Target the wing turret batteries first!",
+                            "Concentrate laser fire on the exposed cooling vents!", 3.6f, audio);
     }
 
     // Player Wing Severed Radio Reaction

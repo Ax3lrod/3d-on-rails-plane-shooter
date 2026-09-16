@@ -149,3 +149,35 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 23.3**: Implement Critical Hull Damage FX (billowing black smoke and flame sparks for critical shield < 25% and severed wings).
 - [x] **Task 23.4**: Implement Flat-Faceted Arcade Shading Mode in `default.frag` with Settings toggle (`[ARCADE FLAT]` vs `[SMOOTH]`).
 - [x] **Task 23.5**: Compile, test, and verify Phase 22 and Phase 23 in Release build.
+
+## Phase 24: True Retro Pixel Resolution (Low-Res Framebuffer) & 4x4 Ordered Bayer Dithering
+- [x] **Task 24.1**: Implement retro low-resolution internal render target (480x270 / 16:9) in `PostProcessor` with `GL_NEAREST` filtering for authentic chunky polygon pixelation.
+- [x] **Task 24.2**: Implement 4x4 Ordered Bayer Dithering in `default.frag` for fog distance fade and dithered transparency stippling.
+- [x] **Task 24.3**: Add Settings menu toggle: `RENDER RESOLUTION: [RETRO ARCADE (480x270)] / [HD CRISP (1080p)]`.
+- [x] **Task 24.4**: Compile, test, and verify retro pixel scaling and dithering.
+
+## Phase 25: Ex-Zodiac Reticle Palette & Signature Violet Starfighter Livery
+- [x] **Task 25.1**: Restyle `TargetingReticle` in `Mesh` and `CombatSystem` with Red/Salmon outer brackets `[ ]` (`vec3(0.96, 0.24, 0.32)`) and bright Cyan inner crosshair (`vec3(0.24, 0.90, 1.0)`).
+- [x] **Task 25.2**: Update Player Starfighter default livery to Ex-Zodiac Signature: Royal Violet fuselage with Cyan wingtips and golden canopy glass.
+- [x] **Task 25.3**: Compile, test, and verify reticle and ship livery visuals.
+
+## Phase 26: Rooster Tail Water Spray Plume & Coastline Sea Environment
+- [x] **Task 26.1**: Implement vertical Rooster Tail Water Spray Plume in `ParticleSystem`: high-density upward jet of white/cyan water foam trailing behind the craft when flying near water.
+- [x] **Task 26.2**: Enhance Sector 1 environment: azure water surface, sandstone/pastel pink sea-cliffs with natural archways, and floating dome pavilions.
+- [x] **Task 26.3**: Compile, test, and verify water spray plumes and coastline terrain.
+
+## Phase 27: Retro Anime Pilot Comms Portrait & Story Dialogue
+- [x] **Task 27.1**: Implement high-detail pixel-art anime pilot portrait in `HUD::DrawCommsBox` matching `exzodiac2.png` (dark blue hair, gold accessories, animated eyes/mouth speaking).
+- [x] **Task 27.2**: Add narrative flight banter and radio calls triggered at key sector landmarks (low skim, archways, boss encounter).
+- [x] **Task 27.3**: Compile, test, and verify comms portrait and dialogue.
+
+## Phase 28: Rotating Wind Turbines & Boss Dual Spiked Mace Arms
+- [x] **Task 28.1**: Create 3D Wind Turbine / Windmill mesh with rotating 3-blade propeller and place along plains/cliffs matching `exzodiac3.png`.
+- [x] **Task 28.2**: Upgrade Boss Dreadnought with dual rotating Spiked Mace / Flail arms in front and glowing dual plasma thruster exhausts.
+- [x] **Task 28.3**: Compile, test, and verify windmill animation and boss weapon mechanics.
+
+## Phase 29: Final Playtesting, Verification & Git Remote Sync
+- [x] **Task 29.1**: Full Release compilation and verification.
+- [x] **Task 29.2**: End-to-end playtest of flight, visuals, and boss battle.
+- [x] **Task 29.3**: Stage, commit, and push all changes to GitHub remote repository.
+

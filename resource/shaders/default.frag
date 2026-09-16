@@ -19,8 +19,31 @@ uniform int uUseColorOverride;  // 1 to use uColorOverride, 0 to use VertexColor
 uniform vec3 uColorOverride;    // Custom tint color
 uniform float uAlpha;           // Transparency factor
 uniform int uUseFlatShading;    // 1 for retro arcade faceted flat normals, 0 for smooth
+uniform int uUseDithering;      // 1 for retro ordered Bayer dithering (Ex-Zodiac / Sega 32X)
+
+// 4x4 Ordered Bayer Matrix
+const float bayer4[16] = float[](
+     0.0/16.0,  8.0/16.0,  2.0/16.0, 10.0/16.0,
+    12.0/16.0,  4.0/16.0, 14.0/16.0,  6.0/16.0,
+     3.0/16.0, 11.0/16.0,  1.0/16.0,  9.0/16.0,
+    15.0/16.0,  7.0/16.0, 13.0/16.0,  5.0/16.0
+);
+
+float GetBayer4() {
+    int x = int(mod(gl_FragCoord.x, 4.0));
+    int y = int(mod(gl_FragCoord.y, 4.0));
+    return bayer4[y * 4 + x];
+}
 
 void main() {
+    // Authentic retro hardware alpha stippling / mesh transparency
+    if (uUseDithering == 1 && uAlpha < 0.98) {
+        float dither = GetBayer4();
+        if (dither > uAlpha) {
+            discard;
+        }
+    }
+
     vec3 baseColor = (uUseColorOverride == 1) ? uColorOverride : VertexColor;
     
     vec3 finalColor = baseColor;
@@ -37,10 +60,15 @@ void main() {
         finalColor = ambient + diffuse;
     }
     
-    // Distance Fog (retro arcade / N64 depth fade)
+    // Distance Fog (retro arcade / Ex-Zodiac dithered depth fade)
     if (uUseFog == 1) {
         float distanceToCam = length(uCameraPos - FragPos);
         float fogFactor = clamp((distanceToCam - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
+        if (uUseDithering == 1) {
+            float dither = (GetBayer4() - 0.5) * 0.22;
+            fogFactor = clamp(fogFactor + dither, 0.0, 1.0);
+            fogFactor = floor(fogFactor * 10.0 + 0.5) / 10.0;
+        }
         finalColor = mix(finalColor, uFogColor, fogFactor);
     }
     
