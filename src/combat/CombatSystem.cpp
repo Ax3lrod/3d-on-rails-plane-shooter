@@ -18,15 +18,18 @@ ProjectileManager::ProjectileManager()
 
 void ProjectileManager::SpawnLaser(const glm::vec3& origin, const glm::vec3& target, bool isPlayer, float speed) {
     glm::vec3 dir = glm::normalize(target - origin);
-    glm::vec3 vel = dir * speed;
     glm::vec3 col = isPlayer ? glm::vec3(0.2f, 1.0f, 0.4f) : glm::vec3(1.0f, 0.25f, 0.15f);
+    SpawnLaserWithDir(origin, dir, isPlayer, speed, col, isPlayer ? 0.7f : 0.85f);
+}
 
+void ProjectileManager::SpawnLaserWithDir(const glm::vec3& origin, const glm::vec3& dir, bool isPlayer, float speed,
+                                         const glm::vec3& color, float radius) {
     projectiles.push_back({
         origin,
-        vel,
-        col,
-        isPlayer ? 0.7f : 0.85f,
-        isPlayer ? 1.8f : 2.5f,
+        dir * speed,
+        color,
+        radius,
+        isPlayer ? 1.8f : 3.0f,
         isPlayer,
         true
     });

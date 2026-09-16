@@ -21,7 +21,11 @@ public:
                 float shield, float maxShield,
                 float boost, float maxBoost, bool isOverheated,
                 bool isDeflecting, int score, int rings,
-                int bombCount, float chargeProgress, bool isGameOver) const;
+                int bombCount, float chargeProgress,
+                bool bossActive, bool bossWarning, float bossHealthRatio,
+                bool bossLeftTurretDown, bool bossRightTurretDown,
+                bool bossShieldDown, bool bossCoreExposed,
+                bool isVictory, bool isGameOver) const;
 };
 
 #endif

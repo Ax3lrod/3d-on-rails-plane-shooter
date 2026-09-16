@@ -12,10 +12,12 @@
 #include "CombatSystem.h"
 #include "WorldEnvironment.h"
 #include "EnemyManager.h"
+#include "BossDreadnought.h"
 #include "HUD.h"
 
 enum class GameState {
     Playing,
+    Victory,
     GameOver
 };
 
@@ -53,8 +55,11 @@ private:
     std::unique_ptr<TargetingReticle> reticle;
     std::unique_ptr<WorldEnvironment> environment;
     std::unique_ptr<EnemyManager> enemies;
+    std::unique_ptr<BossDreadnought> boss;
     std::unique_ptr<HUD> hud;
 
+    bool bossSpawned;
+    float victoryTimer;
     float lastFrameTime;
 };
 

@@ -44,6 +44,7 @@ set(SOURCES
     src/renderer/EBO.cpp
     src/entities/PlayerStarfighter.cpp
     src/entities/EnemyManager.cpp
+    src/entities/BossDreadnought.cpp
     src/combat/CombatSystem.cpp
     src/world/WorldEnvironment.cpp
     src/ui/HUD.cpp

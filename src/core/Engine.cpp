@@ -10,6 +10,8 @@ Engine::Engine(int width, int height, const std::string& title)
       windowHeight(height),
       windowTitle(title),
       state(GameState::Playing),
+      bossSpawned(false),
+      victoryTimer(0.0f),
       lastFrameTime(0.0f) {}
 
 Engine::~Engine() {
@@ -21,6 +23,7 @@ Engine::~Engine() {
     reticle.reset();
     environment.reset();
     enemies.reset();
+    boss.reset();
     hud.reset();
     shader.Delete();
 
@@ -87,6 +90,7 @@ bool Engine::Init() {
     reticle = std::make_unique<TargetingReticle>();
     environment = std::make_unique<WorldEnvironment>();
     enemies = std::make_unique<EnemyManager>();
+    boss = std::make_unique<BossDreadnought>();
     hud = std::make_unique<HUD>();
 
     std::cout << "========================================================\n"
@@ -113,11 +117,16 @@ void Engine::RestartGame() {
     particles->Clear();
     environment->Clear();
     enemies->Clear();
+    if (boss) {
+        boss->Reset();
+    }
+    bossSpawned = false;
+    victoryTimer = 0.0f;
     state = GameState::Playing;
 }
 
 void Engine::ProcessInput(float) {
-    if (state == GameState::GameOver) {
+    if (state == GameState::GameOver || state == GameState::Victory) {
         if (Input::IsKeyPressed(GLFW_KEY_R) || Input::IsKeyPressed(GLFW_KEY_SPACE)) {
             RestartGame();
         }
@@ -177,9 +186,19 @@ void Engine::ProcessInput(float) {
 void Engine::HandleCollisions() {
     if (state != GameState::Playing) return;
 
-    // 1. Player Regular Lasers vs Enemies
+    // 1. Player Regular Lasers vs Enemies & Boss
     for (auto& p : projectiles->projectiles) {
         if (!p.active || !p.isPlayer) continue;
+
+        // Check vs Boss
+        if (boss && boss->IsActive()) {
+            int scoreGained = 0;
+            if (boss->CheckLaserHit(p.position, p.radius, 25.0f, *particles, camera, scoreGained)) {
+                p.active = false;
+                player->score += scoreGained;
+                continue;
+            }
+        }
 
         for (auto& e : enemies->enemies) {
             if (!e.active) continue;
@@ -201,9 +220,22 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 2. Charged Plasma Shots vs Enemies
+    // 2. Charged Plasma Shots vs Enemies & Boss
     for (auto& cs : ordnance->chargedShots) {
         if (!cs.active) continue;
+
+        // Check vs Boss
+        if (boss && boss->IsActive()) {
+            int scoreGained = 0;
+            if (boss->CheckLaserHit(cs.position, cs.radius, 110.0f, *particles, camera, scoreGained)) {
+                cs.active = false;
+                player->score += scoreGained;
+                ordnance->TriggerShockwave(cs.position, cs.aoeRadius, 110.0f);
+                particles->SpawnExplosion(cs.position, 40, glm::vec3(0.2f, 1.0f, 0.8f));
+                camera.TriggerShake(0.85f, 0.4f);
+                continue;
+            }
+        }
 
         for (auto& e : enemies->enemies) {
             if (!e.active) continue;
@@ -220,10 +252,21 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 3. Smart Bombs vs Enemies (Direct contact detonates immediately)
+    // 3. Smart Bombs vs Enemies & Boss (Direct contact detonates immediately)
     for (size_t i = 0; i < ordnance->smartBombs.size(); ++i) {
         auto& b = ordnance->smartBombs[i];
         if (!b.active) continue;
+
+        // Check vs Boss
+        if (boss && boss->IsActive()) {
+            int scoreGained = 0;
+            if (boss->CheckLaserHit(b.position, b.radius, 160.0f, *particles, camera, scoreGained)) {
+                ordnance->DetonateBomb(i);
+                player->score += scoreGained;
+                camera.TriggerShake(1.3f, 0.6f);
+                break;
+            }
+        }
 
         for (auto& e : enemies->enemies) {
             if (!e.active) continue;
@@ -237,7 +280,7 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 4. Expanding Shockwaves vs Everything (Bullet Wipe + Enemy Wipe)
+    // 4. Expanding Shockwaves vs Everything (Bullet Wipe + Enemy Wipe + Boss Damage)
     for (const auto& sw : ordnance->shockwaves) {
         if (!sw.active) continue;
 
@@ -250,6 +293,13 @@ void Engine::HandleCollisions() {
                 p.active = false;
                 particles->SpawnExplosion(p.position, 6, glm::vec3(0.3f, 0.85f, 1.0f));
             }
+        }
+
+        // Damage Boss weakpoints in shockwave
+        if (boss && boss->IsActive()) {
+            int scoreGained = 0;
+            boss->ApplyShockwaveDamage(sw.position, sw.currentRadius, sw.damage * 0.7f, *particles, camera, scoreGained);
+            player->score += scoreGained;
         }
 
         // Damage enemies caught in shockwave
@@ -440,15 +490,31 @@ void Engine::Update(float dt) {
     if (state == GameState::Playing) {
         player->Update(dt);
 
-        // Lock-on enemy targeting during charge shot
+        // Spawn Boss when corridor threshold is reached
+        if (!bossSpawned && player->transform.position.z <= -950.0f) {
+            bossSpawned = true;
+            boss->Spawn(player->transform.position.z);
+        }
+
+        // Lock-on targeting during charge shot (prioritize boss weakpoints)
         if (player->isCharging) {
             particles->SpawnChargeInwardSparks(player->GetNosePos(), player->GetChargeProgress());
-            int lockIdx = enemies->FindLockTarget(player->transform.position, player->GetFarTargetPos());
-            if (lockIdx >= 0) {
+            glm::vec3 bossLockPos(0.0f);
+            int bossTarget = (boss && boss->IsActive())
+                             ? boss->FindLockTarget(player->transform.position, player->GetFarTargetPos(), bossLockPos)
+                             : -1;
+
+            if (bossTarget >= 0) {
                 player->hasLockOn = true;
-                player->lockTargetPos = enemies->enemies[lockIdx].transform.position;
+                player->lockTargetPos = bossLockPos;
             } else {
-                player->hasLockOn = false;
+                int lockIdx = enemies->FindLockTarget(player->transform.position, player->GetFarTargetPos());
+                if (lockIdx >= 0) {
+                    player->hasLockOn = true;
+                    player->lockTargetPos = enemies->enemies[lockIdx].transform.position;
+                } else {
+                    player->hasLockOn = false;
+                }
             }
         } else {
             player->hasLockOn = false;
@@ -477,7 +543,22 @@ void Engine::Update(float dt) {
         ordnance->Update(dt);
         particles->Update(dt);
         environment->Update(player->transform.position.z, dt);
+
+        if (boss && boss->IsActive()) {
+            enemies->spawnTimer = 0.0f; // Pause new drone waves during boss fight
+        }
         enemies->Update(player->transform.position.z, player->transform.position, *projectiles, dt);
+
+        if (boss) {
+            boss->Update(dt, player->transform.position.z, player->transform.position, *projectiles, *particles, camera);
+
+            if (boss->IsDefeated()) {
+                victoryTimer += dt;
+                if (victoryTimer >= 1.5f) {
+                    state = GameState::Victory;
+                }
+            }
+        }
 
         HandleCollisions();
     }
@@ -510,23 +591,38 @@ void Engine::Render() {
     // 3. Draw 3D world entities
     environment->Draw(shader);
     enemies->Draw(shader);
+    if (boss) {
+        boss->Draw(shader);
+    }
     projectiles->Draw(shader);
     ordnance->Draw(shader);
     particles->Draw(shader);
 
-    if (state == GameState::Playing) {
+    if (state == GameState::Playing || state == GameState::Victory) {
         player->Draw(shader);
-        reticle->Draw(shader, player->GetNearTargetPos(), player->GetFarTargetPos(),
-                      player->hasLockOn, player->lockTargetPos, player->lockRotation);
+        if (state == GameState::Playing) {
+            reticle->Draw(shader, player->GetNearTargetPos(), player->GetFarTargetPos(),
+                          player->hasLockOn, player->lockTargetPos, player->lockRotation);
+        }
     }
 
     // 4. Draw Cockpit HUD
+    bool bActive = boss && boss->IsActive();
+    bool bWarn = boss && boss->IsWarning();
+    float bHealthRatio = boss ? boss->GetHealthRatio() : 0.0f;
+    bool bLDown = boss ? boss->leftTurret.destroyed : false;
+    bool bRDown = boss ? boss->rightTurret.destroyed : false;
+    bool bSDown = boss ? boss->shieldGen.destroyed : false;
+    bool bCoreExp = boss ? (boss->state == BossState::Phase2_ExposedCore) : false;
+
     hud->Render(shader, windowWidth, windowHeight,
                 player->shield, player->maxShield,
                 player->boostMeter, player->maxBoost, player->isOverheated,
                 player->IsDeflecting(), player->score, player->ringsCollected,
                 player->bombCount, player->GetChargeProgress(),
-                state == GameState::GameOver);
+                bActive, bWarn, bHealthRatio,
+                bLDown, bRDown, bSDown, bCoreExp,
+                state == GameState::Victory, state == GameState::GameOver);
 
     glfwSwapBuffers(window);
 }

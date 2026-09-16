@@ -52,3 +52,10 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 8.3**: Integrate seamless chunk streaming in `WorldEnvironment` for canyon sections, arches, rings, and monoliths.
 - [x] **Task 8.4**: Add collision interactions for hazard pillars (damage from player blaster, charged homing blast, smart bomb shockwave, and ship impact).
 - [x] **Task 8.5**: Tune atmospheric canyon lighting and horizon fog palette for dramatic scale and speed.
+
+## Phase 9: End-of-Stage Boss Encounter (Colossal Dreadnought)
+- [x] **Task 9.1**: Build procedural 3D Colossal Dreadnought Boss mesh (armored warship hull, port/starboard turret batteries, shield generator dome, and glowing reactor core).
+- [x] **Task 9.2**: Implement `BossDreadnought` class with multi-phase state machine (Phase 1: Turrets & Shields; Phase 2: Exposed Overheating Core; Phase 3: Death Spiral).
+- [x] **Task 9.3**: Implement Boss bullet hell attacks (alternating heavy plasma bursts, 3-way spread barrages, and desperation fire).
+- [x] **Task 9.4**: Integrate weakpoint lock-on targeting with player Charged Shots and Smart Bomb shockwave damage.
+- [x] **Task 9.5**: Update HUD with Boss health bar, subsystem status readouts, Warning banner, and Mission Complete victory state.

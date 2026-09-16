@@ -564,3 +564,110 @@ Mesh Mesh::CreatePillar(float radius, float height, const glm::vec3& color) {
 
     return Mesh(verts, inds);
 }
+
+Mesh Mesh::CreateBossHull(const glm::vec3& mainCol, const glm::vec3& accentCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // Colossal Dreadnought Hull (Facing +Z toward player)
+    // 1. Central Armored Wedge Bow & Fuselage
+    glm::vec3 noseTop(0.0f, 1.0f, 6.5f);
+    glm::vec3 noseBottom(0.0f, -1.2f, 6.5f);
+    glm::vec3 noseLeft(-3.2f, 0.0f, 3.5f);
+    glm::vec3 noseRight(3.2f, 0.0f, 3.5f);
+
+    AddTriangle(verts, inds, noseTop, noseRight, noseLeft, mainCol);
+    AddTriangle(verts, inds, noseBottom, noseLeft, noseRight, mainCol * 0.75f);
+    AddTriangle(verts, inds, noseTop, noseLeft, noseBottom, mainCol * 0.85f);
+    AddTriangle(verts, inds, noseTop, noseBottom, noseRight, mainCol * 0.85f);
+
+    // 2. Main Superstructure Body
+    glm::vec3 bodyTopLeft(-4.0f, 2.2f, -1.0f);
+    glm::vec3 bodyTopRight(4.0f, 2.2f, -1.0f);
+    glm::vec3 bodyBotLeft(-4.0f, -2.0f, -1.0f);
+    glm::vec3 bodyBotRight(4.0f, -2.0f, -1.0f);
+
+    AddQuad(verts, inds, noseLeft, noseRight, bodyTopRight, bodyTopLeft, mainCol * 0.95f);
+    AddQuad(verts, inds, noseLeft, bodyBotLeft, bodyBotRight, noseRight, mainCol * 0.7f);
+    AddQuad(verts, inds, noseLeft, bodyTopLeft, bodyBotLeft, noseLeft, mainCol * 0.8f);
+    AddQuad(verts, inds, noseRight, bodyBotRight, bodyTopRight, noseRight, mainCol * 0.85f);
+
+    // 3. Command Bridge Tower on Spine
+    AddQuad(verts, inds,
+            {-1.8f, 2.2f, 1.2f}, { 1.8f, 2.2f, 1.2f},
+            { 1.2f, 4.2f, -0.5f}, {-1.2f, 4.2f, -0.5f}, accentCol);
+    AddQuad(verts, inds,
+            { 1.8f, 2.2f, 1.2f}, { 1.8f, 2.2f, -3.0f},
+            { 1.2f, 4.2f, -3.0f}, { 1.2f, 4.2f, -0.5f}, accentCol * 0.85f);
+    AddQuad(verts, inds,
+            {-1.8f, 2.2f, -3.0f}, {-1.8f, 2.2f, 1.2f},
+            {-1.2f, 4.2f, -0.5f}, {-1.2f, 4.2f, -3.0f}, accentCol * 0.85f);
+
+    // 4. Heavy Outrigger Wings / Turret Sponsons (Left & Right)
+    // Left Wing
+    glm::vec3 lWingRootFwd(-4.0f, 0.5f, 2.0f);
+    glm::vec3 lWingRootAft(-4.0f, 0.5f, -4.5f);
+    glm::vec3 lWingTipFwd(-11.5f, -0.4f, 0.5f);
+    glm::vec3 lWingTipAft(-11.5f, -0.4f, -4.0f);
+
+    AddQuad(verts, inds, lWingRootFwd, lWingTipFwd, lWingTipAft, lWingRootAft, accentCol * 0.9f);
+    AddQuad(verts, inds, lWingRootFwd, lWingRootAft, lWingTipAft, lWingTipFwd, mainCol * 0.65f); // underside
+
+    // Right Wing
+    glm::vec3 rWingRootFwd(4.0f, 0.5f, 2.0f);
+    glm::vec3 rWingRootAft(4.0f, 0.5f, -4.5f);
+    glm::vec3 rWingTipFwd(11.5f, -0.4f, 0.5f);
+    glm::vec3 rWingTipAft(11.5f, -0.4f, -4.0f);
+
+    AddQuad(verts, inds, rWingRootFwd, rWingRootAft, rWingTipAft, rWingTipFwd, accentCol * 0.9f);
+    AddQuad(verts, inds, rWingRootFwd, rWingTipFwd, rWingTipAft, rWingRootAft, mainCol * 0.65f);
+
+    // 5. Quad Engine Thruster Exhausts on Stern
+    glm::vec3 thrusterGlow(0.2f, 0.85f, 1.0f);
+    AddQuad(verts, inds, {-3.2f, -1.2f, -5.0f}, {-1.2f, -1.2f, -5.0f}, {-1.2f, 0.8f, -5.0f}, {-3.2f, 0.8f, -5.0f}, thrusterGlow);
+    AddQuad(verts, inds, { 1.2f, -1.2f, -5.0f}, { 3.2f, -1.2f, -5.0f}, { 3.2f, 0.8f, -5.0f}, { 1.2f, 0.8f, -5.0f}, thrusterGlow);
+    AddQuad(verts, inds, {-9.5f, -0.8f, -4.2f}, {-8.0f, -0.8f, -4.2f}, {-8.0f, 0.4f, -4.2f}, {-9.5f, 0.4f, -4.2f}, thrusterGlow);
+    AddQuad(verts, inds, { 8.0f, -0.8f, -4.2f}, { 9.5f, -0.8f, -4.2f}, { 9.5f, 0.4f, -4.2f}, { 8.0f, 0.4f, -4.2f}, thrusterGlow);
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateBossTurret(const glm::vec3& turretColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // Armored Swivel Base Dome
+    float baseSize = 1.4f;
+    AddQuad(verts, inds,
+            {-baseSize, 0.0f, -baseSize}, {baseSize, 0.0f, -baseSize},
+            {baseSize, 0.0f, baseSize}, {-baseSize, 0.0f, baseSize}, turretColor * 0.8f);
+    AddQuad(verts, inds,
+            {-baseSize * 0.8f, 0.7f, -baseSize * 0.8f}, {baseSize * 0.8f, 0.7f, -baseSize * 0.8f},
+            {baseSize * 0.8f, 0.7f, baseSize * 0.8f}, {-baseSize * 0.8f, 0.7f, baseSize * 0.8f}, turretColor * 1.15f);
+
+    // Twin Heavy Plasma Barrels
+    float barrelLen = 3.2f;
+    float bRadius = 0.22f;
+
+    // Left barrel
+    glm::vec3 lb(-0.45f, 0.45f, 0.0f);
+    AddQuad(verts, inds,
+            lb + glm::vec3(-bRadius, -bRadius, 0.0f),
+            lb + glm::vec3( bRadius, -bRadius, 0.0f),
+            lb + glm::vec3( bRadius,  bRadius, barrelLen),
+            lb + glm::vec3(-bRadius,  bRadius, barrelLen), glm::vec3(0.2f, 0.2f, 0.25f));
+
+    // Right barrel
+    glm::vec3 rb(0.45f, 0.45f, 0.0f);
+    AddQuad(verts, inds,
+            rb + glm::vec3(-bRadius, -bRadius, 0.0f),
+            rb + glm::vec3( bRadius, -bRadius, 0.0f),
+            rb + glm::vec3( bRadius,  bRadius, barrelLen),
+            rb + glm::vec3(-bRadius,  bRadius, barrelLen), glm::vec3(0.2f, 0.2f, 0.25f));
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateBossCore(const glm::vec3& coreColor) {
+    return CreateSphere(1.8f, 10, 12, coreColor);
+}

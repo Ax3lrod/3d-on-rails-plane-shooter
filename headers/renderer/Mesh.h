@@ -52,6 +52,9 @@ public:
     static Mesh CreateCanyonSection(float length, float width, float wallHeight, const glm::vec3& floorCol, const glm::vec3& wallCol);
     static Mesh CreateRockArch(float spanWidth, float height, float thickness, const glm::vec3& color);
     static Mesh CreatePillar(float radius, float height, const glm::vec3& color);
+    static Mesh CreateBossHull(const glm::vec3& mainColor, const glm::vec3& accentColor);
+    static Mesh CreateBossTurret(const glm::vec3& turretColor);
+    static Mesh CreateBossCore(const glm::vec3& coreColor);
 };
 
 #endif

@@ -67,6 +67,8 @@ public:
     ProjectileManager();
 
     void SpawnLaser(const glm::vec3& origin, const glm::vec3& target, bool isPlayer, float speed = 220.0f);
+    void SpawnLaserWithDir(const glm::vec3& origin, const glm::vec3& dir, bool isPlayer, float speed = 80.0f,
+                           const glm::vec3& color = glm::vec3(1.0f, 0.25f, 0.15f), float radius = 0.85f);
     void Update(float dt);
     void Draw(const Shader& shader) const;
     void Clear();
