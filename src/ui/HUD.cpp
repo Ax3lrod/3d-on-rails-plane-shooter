@@ -282,6 +282,26 @@ void HUD::DrawSlantedGradientBar(const Shader& shader, float x, float y, float w
     DrawSlantedRectOutline(shader, x, y, w, h, slantOffset, borderThickness, borderColor, 1.0f);
 }
 
+void HUD::DrawSlantedCard(const Shader& shader, float x, float y, float w, float h,
+                         float slantOffset,
+                         const glm::vec3& colLeft, const glm::vec3& colRight,
+                         const glm::vec3& borderColor,
+                         float borderThickness,
+                         float alpha) const {
+    if (w <= 0.0f || h <= 0.0f) return;
+
+    const int numSlices = 24;
+    float sliceW = w / static_cast<float>(numSlices);
+    for (int i = 0; i < numSlices; ++i) {
+        float tMid = (static_cast<float>(i) + 0.5f) / static_cast<float>(numSlices);
+        glm::vec3 col = glm::mix(colLeft, colRight, tMid);
+        float sx = x + (static_cast<float>(i) * sliceW);
+        DrawSlantedRect(shader, sx, y, sliceW + 0.65f, h, slantOffset, col, alpha);
+    }
+
+    DrawSlantedRectOutline(shader, x, y, w, h, slantOffset, borderThickness, borderColor, 1.0f);
+}
+
 void HUD::DrawRadialGradientDiamond(const Shader& shader, float cx, float cy, float radius,
                                    const glm::vec3& innerColor, const glm::vec3& outerColor,
                                    const glm::vec3& borderColor, float alpha, bool filled) const {
@@ -864,51 +884,79 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
     }
 
     // =========================================================================
-    // 6. VICTORY SCREEN (MISSION COMPLETE)
+    // 6. VICTORY SCREEN (MISSION COMPLETE / LEVEL FINISH - Ex-Zodiac Arcade Style)
     // =========================================================================
     if (isVictory) {
-        float vicW = 580.0f;
-        float vicH = 150.0f;
+        float vicW = 660.0f;
+        float vicH = 180.0f;
+        float slant = 26.0f;
         float vx = (vw - vicW) * 0.5f;
         float vy = (vh - vicH) * 0.5f;
 
-        DrawRect(shader, vx, vy, vicW, vicH, glm::vec3(0.04f, 0.14f, 0.26f), 0.92f);
-        DrawRectOutline(shader, vx, vy, vicW, vicH, 3.0f, glm::vec3(0.2f, 0.85f, 1.0f), 0.95f);
-        DrawRect(shader, vx, vy - 6.0f, vicW, 4.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
-        DrawRect(shader, vx, vy + vicH + 2.0f, vicW, 4.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
+        // Slanted card with emerald teal to royal indigo gradient and thick white border
+        DrawSlantedCard(shader, vx, vy, vicW, vicH, slant,
+                        glm::vec3(0.06f, 0.32f, 0.38f),   // Left: Vibrant teal emerald
+                        glm::vec3(0.18f, 0.10f, 0.46f),   // Right: Royal indigo
+                        glm::vec3(1.0f, 1.0f, 1.0f),      // Border: Solid white
+                        3.5f, 0.95f);
 
-        DrawText(shader, "MISSION COMPLETE", vx + 110.0f, vy + 24.0f, 2.8f, glm::vec3(0.3f, 1.0f, 0.8f), 1.0f);
-        DrawText(shader, "SECTOR CANYON CLEARED // THREAT ELIMINATED", vx + 70.0f, vy + 68.0f, 1.5f, glm::vec3(0.85f, 0.95f, 1.0f), 0.95f);
+        // Header with stars
+        std::string vicTitle = "★ MISSION COMPLETE ★";
+        float titleW = vicTitle.length() * 6.0f * 2.6f;
+        DrawText(shader, vicTitle, (vw - titleW) * 0.5f + slant * 0.5f, vy + 22.0f, 2.6f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
 
+        // Stage cleared subtitle
+        std::string subTitle = "PLANETARY CANYON CORRIDOR CLEARED // THREAT ELIMINATED";
+        float subW = subTitle.length() * 6.0f * 1.4f;
+        DrawText(shader, subTitle, (vw - subW) * 0.5f + slant * 0.5f, vy + 68.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.95f);
+
+        // Score readout with gold/cyan accent
         char finalScoreBuf[32];
         std::snprintf(finalScoreBuf, sizeof(finalScoreBuf), "FINAL SCORE: %06d", score);
-        DrawText(shader, finalScoreBuf, vx + 160.0f, vy + 94.0f, 1.8f, glm::vec3(1.0f, 0.9f, 0.25f), 0.95f);
+        float scoreW = std::string(finalScoreBuf).length() * 6.0f * 2.0f;
+        DrawText(shader, finalScoreBuf, (vw - scoreW) * 0.5f + slant * 0.5f, vy + 98.0f, 2.0f, glm::vec3(0.25f, 0.95f, 1.0f), 1.0f);
 
-        DrawText(shader, "PRESS [R] OR [SPACE] TO PLAY AGAIN", vx + 105.0f, vy + 122.0f, 1.4f, glm::vec3(0.6f, 0.85f, 1.0f), 0.9f);
+        // Prompt with gentle pulse
+        float pulse = std::sin(curTime * 4.0f) * 0.2f + 0.8f;
+        std::string promptStr = "PRESS [R] OR [SPACE] TO PLAY AGAIN";
+        float promptW = promptStr.length() * 6.0f * 1.4f;
+        DrawText(shader, promptStr, (vw - promptW) * 0.5f + slant * 0.5f, vy + 138.0f, 1.4f, glm::vec3(1.0f, 1.0f, 1.0f) * pulse, 0.95f);
     }
 
     // =========================================================================
-    // 7. GAME OVER SCREEN
+    // 7. GAME OVER SCREEN (Ex-Zodiac Arcade Style)
     // =========================================================================
     if (isGameOver) {
-        float goW = 540.0f;
-        float goH = 140.0f;
+        float goW = 620.0f;
+        float goH = 175.0f;
+        float slant = 26.0f;
         float gx = (vw - goW) * 0.5f;
         float gy = (vh - goH) * 0.5f;
 
-        DrawRect(shader, gx, gy, goW, goH, glm::vec3(0.25f, 0.05f, 0.05f), 0.92f);
-        DrawRectOutline(shader, gx, gy, goW, goH, 3.0f, glm::vec3(0.9f, 0.2f, 0.15f), 0.95f);
-        DrawRect(shader, gx, gy - 6.0f, goW, 4.0f, glm::vec3(0.8f, 0.1f, 0.1f), 0.95f);
-        DrawRect(shader, gx, gy + goH + 2.0f, goW, 4.0f, glm::vec3(0.8f, 0.1f, 0.1f), 0.95f);
+        // Slanted card with deep crimson to dark violet gradient and thick white border
+        DrawSlantedCard(shader, gx, gy, goW, goH, slant,
+                        glm::vec3(0.48f, 0.08f, 0.16f),   // Left: Danger crimson
+                        glm::vec3(0.18f, 0.06f, 0.28f),   // Right: Dark violet
+                        glm::vec3(1.0f, 1.0f, 1.0f),      // Border: Solid white
+                        3.5f, 0.95f);
 
-        DrawText(shader, "STARFIGHTER DOWN", gx + 100.0f, gy + 24.0f, 2.8f, glm::vec3(1.0f, 0.2f, 0.2f), 1.0f);
-        DrawText(shader, "MISSION FAILED // HULL COMPROMISED", gx + 95.0f, gy + 68.0f, 1.5f, glm::vec3(1.0f, 0.7f, 0.7f), 0.95f);
+        std::string goTitle = "! STARFIGHTER DOWN !";
+        float titleW = goTitle.length() * 6.0f * 2.6f;
+        DrawText(shader, goTitle, (vw - titleW) * 0.5f + slant * 0.5f, gy + 22.0f, 2.6f, glm::vec3(1.0f, 0.3f, 0.3f), 1.0f);
+
+        std::string subTitle = "MISSION FAILED // ALL CRAFT DESTROYED";
+        float subW = subTitle.length() * 6.0f * 1.4f;
+        DrawText(shader, subTitle, (vw - subW) * 0.5f + slant * 0.5f, gy + 68.0f, 1.4f, glm::vec3(1.0f, 0.8f, 0.8f), 0.95f);
 
         char finalScoreBuf[32];
         std::snprintf(finalScoreBuf, sizeof(finalScoreBuf), "FINAL SCORE: %06d", score);
-        DrawText(shader, finalScoreBuf, gx + 145.0f, gy + 94.0f, 1.8f, glm::vec3(1.0f, 0.85f, 0.3f), 0.95f);
+        float scoreW = std::string(finalScoreBuf).length() * 6.0f * 2.0f;
+        DrawText(shader, finalScoreBuf, (vw - scoreW) * 0.5f + slant * 0.5f, gy + 98.0f, 2.0f, glm::vec3(1.0f, 0.85f, 0.25f), 1.0f);
 
-        DrawText(shader, "PRESS [R] OR [SPACE] TO RETRY", gx + 120.0f, gy + 118.0f, 1.4f, glm::vec3(0.85f, 0.85f, 0.9f), 0.9f);
+        float pulse = std::sin(curTime * 4.0f) * 0.2f + 0.8f;
+        std::string promptStr = "PRESS [R] OR [SPACE] TO RETRY SORTIE";
+        float promptW = promptStr.length() * 6.0f * 1.4f;
+        DrawText(shader, promptStr, (vw - promptW) * 0.5f + slant * 0.5f, gy + 136.0f, 1.4f, glm::vec3(1.0f, 1.0f, 1.0f) * pulse, 0.95f);
     }
 
     // 8. Vector Radio Comms Box (Bottom-Center, Image 2)
@@ -961,21 +1009,38 @@ void HUD::DrawWarpHUD(const Shader& shader, int screenWidth, int screenHeight,
     shader.SetInt("uUseFog", 0);
     shader.SetInt("uUseColorOverride", 1);
 
-    float boxW = 680.0f;
-    float boxH = 140.0f;
+    float boxW = 720.0f;
+    float boxH = 160.0f;
+    float slant = 26.0f;
     float bx = (vw - boxW) * 0.5f;
     float by = (vh - boxH) * 0.5f;
 
-    DrawRect(shader, bx, by, boxW, boxH, glm::vec3(0.02f, 0.05f, 0.12f), 0.92f);
-    DrawRectOutline(shader, bx, by, boxW, boxH, 3.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
+    DrawSlantedCard(shader, bx, by, boxW, boxH, slant,
+                    glm::vec3(0.20f, 0.08f, 0.45f),  // Cosmic indigo
+                    glm::vec3(0.48f, 0.10f, 0.42f),  // Radiant magenta
+                    glm::vec3(1.0f, 1.0f, 1.0f),     // Solid white border
+                    3.5f, 0.95f);
 
     if (hardRoute) {
-        DrawText(shader, "MISSION COMPLETE!", bx + 130.0f, by + 25.0f, 2.8f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
-        DrawText(shader, "ALL RADAR ARRAYS DESTROYED // HARD ROUTE UNLOCKED", bx + 65.0f, by + 72.0f, 1.5f, glm::vec3(0.3f, 0.95f, 1.0f), 0.95f);
-        DrawText(shader, "ENGAGING HYPERSPACE JUMP -> SECTOR 2: DEEP SPACE", bx + 60.0f, by + 98.0f, 1.5f, glm::vec3(1.0f, 0.6f, 1.0f), 0.95f);
+        std::string title = "★ HYPERSPACE JUMP ENGAGED ★";
+        float tw = title.length() * 6.0f * 2.6f;
+        DrawText(shader, title, (vw - tw) * 0.5f + slant * 0.5f, by + 22.0f, 2.6f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
+
+        std::string sub1 = "ALL 3 RADAR ARRAYS NEUTRALIZED // SECRET ROUTE UNLOCKED";
+        float sw1 = sub1.length() * 6.0f * 1.4f;
+        DrawText(shader, sub1, (vw - sw1) * 0.5f + slant * 0.5f, by + 68.0f, 1.4f, glm::vec3(0.3f, 0.95f, 1.0f), 0.95f);
+
+        std::string sub2 = "TRANSIT VECTOR: SECTOR 2 COSMIC DEBRIS FIELD";
+        float sw2 = sub2.length() * 6.0f * 1.5f;
+        DrawText(shader, sub2, (vw - sw2) * 0.5f + slant * 0.5f, by + 98.0f, 1.5f, glm::vec3(1.0f, 0.65f, 1.0f), 0.95f);
     } else {
-        DrawText(shader, "MISSION ACCOMPLISHED!", bx + 80.0f, by + 25.0f, 2.8f, glm::vec3(0.2f, 0.95f, 0.4f), 1.0f);
-        DrawText(shader, "COLOSSAL DREADNOUGHT NEUTRALIZED", bx + 155.0f, by + 72.0f, 1.5f, glm::vec3(0.85f, 0.9f, 1.0f), 0.95f);
+        std::string title = "★ MISSION ACCOMPLISHED ★";
+        float tw = title.length() * 6.0f * 2.6f;
+        DrawText(shader, title, (vw - tw) * 0.5f + slant * 0.5f, by + 22.0f, 2.6f, glm::vec3(0.25f, 0.95f, 0.5f), 1.0f);
+
+        std::string sub1 = "COLOSSAL DREADNOUGHT NEUTRALIZED";
+        float sw1 = sub1.length() * 6.0f * 1.5f;
+        DrawText(shader, sub1, (vw - sw1) * 0.5f + slant * 0.5f, by + 74.0f, 1.5f, glm::vec3(0.9f, 0.95f, 1.0f), 0.95f);
     }
 
     glDisable(GL_BLEND);
@@ -999,32 +1064,39 @@ void HUD::DrawTitleScreen(const Shader& shader, int screenWidth, int screenHeigh
     shader.SetInt("uUseFog", 0);
     shader.SetInt("uUseColorOverride", 1);
 
-    // 1. Title Banner Top Box
-    float tW = 720.0f;
-    float tH = 110.0f;
+    float slant = 26.0f;
+
+    // 1. Title Banner Top Box (Ex-Zodiac slanted card with royal purple gradient & thick white border)
+    float tW = 760.0f;
+    float tH = 105.0f;
     float tx = (vw - tW) * 0.5f;
-    float ty = 40.0f;
+    float ty = 34.0f;
 
-    DrawRect(shader, tx, ty, tW, tH, glm::vec3(0.03f, 0.06f, 0.12f), 0.88f);
-    DrawRectOutline(shader, tx, ty, tW, tH, 2.5f, glm::vec3(0.2f, 0.7f, 1.0f), 0.95f);
-    // Neon corners
-    DrawRect(shader, tx - 4.0f, ty - 4.0f, 16.0f, 4.0f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
-    DrawRect(shader, tx - 4.0f, ty - 4.0f, 4.0f, 16.0f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
-    DrawRect(shader, tx + tW - 12.0f, ty - 4.0f, 16.0f, 4.0f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
-    DrawRect(shader, tx + tW, ty - 4.0f, 4.0f, 16.0f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
+    DrawSlantedCard(shader, tx, ty, tW, tH, slant,
+                    glm::vec3(0.18f, 0.08f, 0.38f),  // Left: Royal indigo
+                    glm::vec3(0.38f, 0.12f, 0.55f),  // Right: Vibrant purple
+                    glm::vec3(1.0f, 1.0f, 1.0f),     // Solid white border
+                    3.5f, 0.95f);
 
-    float pulse = std::sin(time * 3.5f) * 0.15f + 0.85f;
-    DrawText(shader, "AEGIS STARFIGHTER", tx + 85.0f, ty + 22.0f, 3.4f, glm::vec3(0.2f, 0.85f, 1.0f) * pulse, 1.0f);
-    DrawText(shader, "ADVANCED 3D TACTICAL RAIL SHOOTER", tx + 155.0f, ty + 72.0f, 1.5f, glm::vec3(1.0f, 0.82f, 0.3f), 0.95f);
+    std::string titleStr = "AEGIS STARFIGHTER";
+    float titleW = titleStr.length() * 6.0f * 3.2f;
+    DrawText(shader, titleStr, (vw - titleW) * 0.5f + slant * 0.5f, ty + 20.0f, 3.2f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
+
+    std::string subStr = "◆ ADVANCED 3D TACTICAL RAIL SHOOTER ◆";
+    float subW = subStr.length() * 6.0f * 1.4f;
+    DrawText(shader, subStr, (vw - subW) * 0.5f + slant * 0.5f, ty + 68.0f, 1.4f, glm::vec3(1.0f, 0.88f, 0.3f), 0.95f);
 
     // 2. Menu Options Box (Bottom-Center)
-    float mW = 500.0f;
-    float mH = 190.0f;
+    float mW = 540.0f;
+    float mH = 205.0f;
     float mx = (vw - mW) * 0.5f;
-    float my = vh - mH - 70.0f;
+    float my = vh - mH - 72.0f;
 
-    DrawRect(shader, mx, my, mW, mH, glm::vec3(0.04f, 0.07f, 0.14f), 0.90f);
-    DrawRectOutline(shader, mx, my, mW, mH, 2.0f, glm::vec3(0.25f, 0.55f, 0.85f), 0.90f);
+    DrawSlantedCard(shader, mx, my, mW, mH, slant,
+                    glm::vec3(0.16f, 0.08f, 0.35f),  // Deep purple
+                    glm::vec3(0.28f, 0.10f, 0.48f),  // Indigo
+                    glm::vec3(1.0f, 1.0f, 1.0f),     // Solid white border
+                    3.0f, 0.95f);
 
     const char* menuItems[] = {
         "1. LAUNCH SORTIE      [ENTER]",
@@ -1034,22 +1106,29 @@ void HUD::DrawTitleScreen(const Shader& shader, int screenWidth, int screenHeigh
     };
 
     for (int i = 0; i < 4; ++i) {
-        float itemY = my + 24.0f + i * 40.0f;
+        float itemY = my + 24.0f + i * 42.0f;
         bool isSel = (i == selectedMenu);
         if (isSel) {
-            DrawRect(shader, mx + 16.0f, itemY - 6.0f, mW - 32.0f, 28.0f, glm::vec3(0.15f, 0.35f, 0.6f), 0.65f);
-            DrawRectOutline(shader, mx + 16.0f, itemY - 6.0f, mW - 32.0f, 28.0f, 1.5f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
-            DrawText(shader, ">", mx + 24.0f, itemY, 1.8f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
+            float pillW = mW - 44.0f;
+            DrawSlantedRect(shader, mx + 20.0f, itemY - 6.0f, pillW, 32.0f, 10.0f, glm::vec3(0.22f, 0.48f, 0.92f), 0.88f);
+            DrawSlantedRectOutline(shader, mx + 20.0f, itemY - 6.0f, pillW, 32.0f, 10.0f, 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
+            DrawDiamond(shader, mx + 38.0f, itemY + 10.0f, 6.5f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
         }
-        glm::vec3 itemCol = isSel ? glm::vec3(1.0f, 0.95f, 0.5f) : glm::vec3(0.75f, 0.85f, 0.95f);
-        DrawText(shader, menuItems[i], mx + 48.0f, itemY, 1.7f, itemCol, 0.95f);
+        glm::vec3 itemCol = isSel ? glm::vec3(1.0f, 1.0f, 1.0f) : glm::vec3(0.75f, 0.85f, 0.95f);
+        DrawText(shader, menuItems[i], mx + 54.0f, itemY, 1.7f, itemCol, 0.95f);
     }
 
     // 3. Bottom Squadron Status Bar
-    float barY = vh - 34.0f;
-    DrawRect(shader, 0.0f, barY, vw, 34.0f, glm::vec3(0.02f, 0.04f, 0.08f), 0.95f);
-    DrawText(shader, "SQUADRON: ECHO-1 [STRIKER] & ECHO-2 [AEGIS] ONLINE // HANGAR BAY CLEAR",
-             40.0f, barY + 8.0f, 1.4f, glm::vec3(0.3f, 0.85f, 0.5f), 0.95f);
+    float barW = 760.0f;
+    float barH = 34.0f;
+    float barX = (vw - barW) * 0.5f;
+    float barY = vh - 44.0f;
+    DrawSlantedCard(shader, barX, barY, barW, barH, 16.0f,
+                    glm::vec3(0.08f, 0.16f, 0.28f), glm::vec3(0.12f, 0.24f, 0.38f),
+                    glm::vec3(0.3f, 0.9f, 0.6f), 1.5f, 0.92f);
+    std::string footerStr = "SQUADRON: ECHO-1 [STRIKER] & ECHO-2 [AEGIS] ONLINE // READY FOR COMBAT";
+    float footW = footerStr.length() * 6.0f * 1.3f;
+    DrawText(shader, footerStr, (vw - footW) * 0.5f + 8.0f, barY + 9.0f, 1.3f, glm::vec3(0.4f, 1.0f, 0.7f), 0.95f);
 
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -1074,17 +1153,23 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     shader.SetInt("uUseFog", 0);
     shader.SetInt("uUseColorOverride", 1);
 
-    // Window frame
-    float boxW = 700.0f;
-    float boxH = 500.0f;
+    float boxW = 760.0f;
+    float boxH = 510.0f;
+    float slant = 26.0f;
     float bx = (vw - boxW) * 0.5f;
     float by = (vh - boxH) * 0.5f;
 
-    DrawRect(shader, bx, by, boxW, boxH, glm::vec3(0.03f, 0.06f, 0.12f), 0.94f);
-    DrawRectOutline(shader, bx, by, boxW, boxH, 2.5f, glm::vec3(0.25f, 0.6f, 0.9f), 0.95f);
+    // Slanted card with royal purple gradient and thick solid white border
+    DrawSlantedCard(shader, bx, by, boxW, boxH, slant,
+                    glm::vec3(0.18f, 0.08f, 0.38f),
+                    glm::vec3(0.32f, 0.10f, 0.52f),
+                    glm::vec3(1.0f, 1.0f, 1.0f),
+                    3.5f, 0.96f);
 
-    DrawText(shader, "FLIGHT CONFIGURATION & AUDIO", bx + 130.0f, by + 24.0f, 2.4f, glm::vec3(0.2f, 0.85f, 1.0f), 1.0f);
-    DrawRect(shader, bx + 24.0f, by + 60.0f, boxW - 48.0f, 2.0f, glm::vec3(0.2f, 0.5f, 0.75f), 0.7f);
+    std::string headerStr = "★ FLIGHT CONFIGURATION & AUDIO ★";
+    float headW = headerStr.length() * 6.0f * 2.3f;
+    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 22.0f, 2.3f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
+    DrawSlantedRect(shader, bx + 28.0f, by + 58.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
 
     struct SettingRow {
         std::string label;
@@ -1114,31 +1199,33 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     };
 
     for (int i = 0; i < 7; ++i) {
-        float rowY = by + 78.0f + i * 48.0f;
+        float rowY = by + 76.0f + i * 48.0f;
         bool isSel = (i == selectedIndex);
 
         if (isSel) {
-            DrawRect(shader, bx + 20.0f, rowY - 5.0f, boxW - 40.0f, 36.0f, glm::vec3(0.12f, 0.30f, 0.50f), 0.65f);
-            DrawRectOutline(shader, bx + 20.0f, rowY - 5.0f, boxW - 40.0f, 36.0f, 1.5f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
-            DrawText(shader, ">", bx + 28.0f, rowY + 4.0f, 1.8f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
+            float rowPillW = boxW - 54.0f;
+            DrawSlantedRect(shader, bx + 24.0f, rowY - 5.0f, rowPillW, 36.0f, 12.0f, glm::vec3(0.24f, 0.46f, 0.88f), 0.75f);
+            DrawSlantedRectOutline(shader, bx + 24.0f, rowY - 5.0f, rowPillW, 36.0f, 12.0f, 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
+            DrawDiamond(shader, bx + 38.0f, rowY + 12.0f, 6.0f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
         }
 
-        glm::vec3 lblCol = isSel ? glm::vec3(1.0f, 0.95f, 0.5f) : glm::vec3(0.8f, 0.9f, 1.0f);
-        DrawText(shader, rows[i].label, bx + 50.0f, rowY + 4.0f, 1.5f, lblCol, 0.95f);
+        glm::vec3 lblCol = isSel ? glm::vec3(1.0f, 1.0f, 1.0f) : glm::vec3(0.80f, 0.88f, 0.98f);
+        DrawText(shader, rows[i].label, bx + 52.0f, rowY + 4.0f, 1.5f, lblCol, 1.0f);
 
         if (rows[i].isBar) {
-            DrawSegmentedBar(shader, bx + 320.0f, rowY + 4.0f, 180.0f, 14.0f, 10, rows[i].ratio,
-                             glm::vec3(0.2f, 0.85f, 1.0f), glm::vec3(0.1f, 0.15f, 0.2f), glm::vec3(0.3f, 0.5f, 0.7f));
-            DrawText(shader, rows[i].value, bx + 520.0f, rowY + 4.0f, 1.5f, glm::vec3(1.0f, 0.85f, 0.3f), 0.95f);
+            DrawSlantedGradientBar(shader, bx + 325.0f, rowY + 5.0f, 180.0f, 16.0f, 14.0f, rows[i].ratio,
+                                   glm::vec3(0.18f, 0.12f, 0.65f), glm::vec3(0.25f, 0.55f, 0.95f), glm::vec3(0.65f, 0.90f, 1.0f),
+                                   glm::vec3(0.06f, 0.07f, 0.12f), glm::vec3(1.0f, 1.0f, 1.0f), 2.0f);
+            DrawText(shader, rows[i].value, bx + 525.0f, rowY + 4.0f, 1.5f, glm::vec3(1.0f, 0.88f, 0.3f), 1.0f);
         } else {
-            glm::vec3 valCol = isSel ? glm::vec3(0.3f, 0.95f, 0.5f) : glm::vec3(0.7f, 0.85f, 0.95f);
-            DrawText(shader, rows[i].value, bx + 320.0f, rowY + 4.0f, 1.5f, valCol, 0.95f);
+            glm::vec3 valCol = isSel ? glm::vec3(0.35f, 1.0f, 0.65f) : glm::vec3(0.75f, 0.88f, 0.95f);
+            DrawText(shader, rows[i].value, bx + 325.0f, rowY + 4.0f, 1.5f, valCol, 1.0f);
         }
     }
 
-    // Bottom guidance
-    DrawText(shader, "[UP/DOWN] SELECT  [LEFT/RIGHT] ADJUST  [ESC/ENTER] BACK",
-             bx + 65.0f, by + boxH - 28.0f, 1.5f, glm::vec3(0.6f, 0.8f, 1.0f), 0.90f);
+    std::string hintStr = "[UP/DOWN] SELECT  [LEFT/RIGHT] ADJUST  [ESC/ENTER] BACK";
+    float hintW = hintStr.length() * 6.0f * 1.4f;
+    DrawText(shader, hintStr, (vw - hintW) * 0.5f + slant * 0.5f, by + boxH - 28.0f, 1.4f, glm::vec3(0.85f, 0.92f, 1.0f), 0.90f);
 
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -1161,28 +1248,40 @@ void HUD::DrawLeaderboard(const Shader& shader, int screenWidth, int screenHeigh
     shader.SetInt("uUseFog", 0);
     shader.SetInt("uUseColorOverride", 1);
 
-    float boxW = 720.0f;
-    float boxH = 460.0f;
+    float boxW = 760.0f;
+    float boxH = 480.0f;
+    float slant = 26.0f;
     float bx = (vw - boxW) * 0.5f;
     float by = (vh - boxH) * 0.5f;
 
-    DrawRect(shader, bx, by, boxW, boxH, glm::vec3(0.03f, 0.06f, 0.12f), 0.94f);
-    DrawRectOutline(shader, bx, by, boxW, boxH, 2.5f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
+    // Slanted card with royal indigo -> purple gradient and 3.5px solid white border
+    DrawSlantedCard(shader, bx, by, boxW, boxH, slant,
+                    glm::vec3(0.18f, 0.08f, 0.38f),
+                    glm::vec3(0.32f, 0.10f, 0.52f),
+                    glm::vec3(1.0f, 1.0f, 1.0f),
+                    3.5f, 0.96f);
 
-    DrawText(shader, "HALL OF FAME - TOP ACE PILOTS", bx + 120.0f, by + 24.0f, 2.4f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
-    DrawRect(shader, bx + 24.0f, by + 60.0f, boxW - 48.0f, 2.0f, glm::vec3(0.3f, 0.5f, 0.75f), 0.7f);
+    std::string headerStr = "★ HALL OF FAME - TOP ACE PILOTS ★";
+    float headW = headerStr.length() * 6.0f * 2.3f;
+    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 22.0f, 2.3f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
+    DrawSlantedRect(shader, bx + 28.0f, by + 58.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
 
-    // Table Header
-    DrawText(shader, "RANK", bx + 50.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.8f, 1.0f), 0.9f);
-    DrawText(shader, "PILOT", bx + 140.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.8f, 1.0f), 0.9f);
-    DrawText(shader, "SCORE", bx + 280.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.8f, 1.0f), 0.9f);
-    DrawText(shader, "STAGE", bx + 420.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.8f, 1.0f), 0.9f);
-    DrawText(shader, "OUTCOME", bx + 530.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.8f, 1.0f), 0.9f);
-
-    DrawRect(shader, bx + 24.0f, by + 104.0f, boxW - 48.0f, 1.0f, glm::vec3(0.25f, 0.45f, 0.65f), 0.6f);
+    // Table Header Pill
+    DrawSlantedRect(shader, bx + 28.0f, by + 72.0f, boxW - 56.0f, 32.0f, 10.0f, glm::vec3(0.12f, 0.22f, 0.45f), 0.7f);
+    DrawText(shader, "RANK", bx + 55.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.85f, 1.0f), 1.0f);
+    DrawText(shader, "PILOT", bx + 145.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.85f, 1.0f), 1.0f);
+    DrawText(shader, "SCORE", bx + 295.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.85f, 1.0f), 1.0f);
+    DrawText(shader, "STAGE", bx + 435.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.85f, 1.0f), 1.0f);
+    DrawText(shader, "OUTCOME", bx + 545.0f, by + 80.0f, 1.6f, glm::vec3(0.5f, 0.85f, 1.0f), 1.0f);
 
     for (size_t i = 0; i < scores.size() && i < 5; ++i) {
-        float rowY = by + 124.0f + i * 50.0f;
+        float rowY = by + 120.0f + i * 52.0f;
+        bool isTop = (i == 0);
+        if (isTop) {
+            DrawSlantedRect(shader, bx + 28.0f, rowY - 5.0f, boxW - 56.0f, 38.0f, 12.0f, glm::vec3(0.40f, 0.32f, 0.10f), 0.5f);
+            DrawSlantedRectOutline(shader, bx + 28.0f, rowY - 5.0f, boxW - 56.0f, 38.0f, 12.0f, 1.5f, glm::vec3(1.0f, 0.85f, 0.2f), 0.9f);
+        }
+
         char rankBuf[8];
         std::snprintf(rankBuf, sizeof(rankBuf), "#%d", static_cast<int>(i + 1));
         char scoreBuf[16];
@@ -1190,17 +1289,18 @@ void HUD::DrawLeaderboard(const Shader& shader, int screenWidth, int screenHeigh
         std::string stageStr = (scores[i].stageReached >= 2) ? "SECTOR 2" : "SECTOR 1";
         std::string routeStr = scores[i].missionComplete ? "COMPLETE [ACE]" : "ACCOMPLISHED";
 
-        glm::vec3 rowCol = (i == 0) ? glm::vec3(1.0f, 0.85f, 0.2f) : glm::vec3(0.85f, 0.92f, 1.0f);
+        glm::vec3 rowCol = isTop ? glm::vec3(1.0f, 0.88f, 0.25f) : glm::vec3(0.85f, 0.92f, 1.0f);
 
-        DrawText(shader, rankBuf, bx + 50.0f, rowY, 1.6f, rowCol, 0.95f);
-        DrawText(shader, scores[i].name, bx + 140.0f, rowY, 1.6f, rowCol, 0.95f);
-        DrawText(shader, scoreBuf, bx + 280.0f, rowY, 1.6f, glm::vec3(0.2f, 0.85f, 1.0f), 0.95f);
-        DrawText(shader, stageStr, bx + 420.0f, rowY, 1.5f, glm::vec3(0.7f, 0.85f, 0.95f), 0.90f);
-        DrawText(shader, routeStr, bx + 530.0f, rowY, 1.4f, scores[i].missionComplete ? glm::vec3(1.0f, 0.85f, 0.2f) : glm::vec3(0.3f, 0.85f, 0.4f), 0.95f);
+        DrawText(shader, rankBuf, bx + 55.0f, rowY + 4.0f, 1.6f, rowCol, 0.95f);
+        DrawText(shader, scores[i].name, bx + 145.0f, rowY + 4.0f, 1.6f, rowCol, 0.95f);
+        DrawText(shader, scoreBuf, bx + 295.0f, rowY + 4.0f, 1.6f, glm::vec3(0.3f, 0.9f, 1.0f), 0.95f);
+        DrawText(shader, stageStr, bx + 435.0f, rowY + 4.0f, 1.5f, glm::vec3(0.7f, 0.85f, 0.95f), 0.90f);
+        DrawText(shader, routeStr, bx + 545.0f, rowY + 4.0f, 1.4f, scores[i].missionComplete ? glm::vec3(1.0f, 0.85f, 0.2f) : glm::vec3(0.3f, 0.85f, 0.4f), 0.95f);
     }
 
-    DrawText(shader, "PRESS [ESC] OR [SPACE] TO RETURN TO HANGAR",
-             bx + 140.0f, by + boxH - 34.0f, 1.5f, glm::vec3(0.7f, 0.85f, 1.0f), 0.90f);
+    std::string returnStr = "PRESS [ESC] OR [SPACE] TO RETURN TO HANGAR";
+    float retW = returnStr.length() * 6.0f * 1.4f;
+    DrawText(shader, returnStr, (vw - retW) * 0.5f + slant * 0.5f, by + boxH - 28.0f, 1.4f, glm::vec3(0.85f, 0.92f, 1.0f), 0.90f);
 
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
@@ -1222,30 +1322,42 @@ void HUD::DrawMissionBriefing(const Shader& shader, int screenWidth, int screenH
     shader.SetInt("uUseFog", 0);
     shader.SetInt("uUseColorOverride", 1);
 
-    float boxW = 740.0f;
-    float boxH = 430.0f;
+    float boxW = 760.0f;
+    float boxH = 460.0f;
+    float slant = 26.0f;
     float bx = (vw - boxW) * 0.5f;
     float by = (vh - boxH) * 0.5f;
 
-    DrawRect(shader, bx, by, boxW, boxH, glm::vec3(0.02f, 0.05f, 0.10f), 0.94f);
-    DrawRectOutline(shader, bx, by, boxW, boxH, 2.5f, glm::vec3(0.2f, 0.85f, 0.5f), 0.95f);
+    // Slanted card with teal emerald -> royal indigo gradient and 3.5px solid white border
+    DrawSlantedCard(shader, bx, by, boxW, boxH, slant,
+                    glm::vec3(0.06f, 0.22f, 0.28f),  // Deep teal
+                    glm::vec3(0.12f, 0.12f, 0.38f),  // Deep indigo
+                    glm::vec3(1.0f, 1.0f, 1.0f),     // Solid white border
+                    3.5f, 0.96f);
 
-    DrawText(shader, "TACTICAL SORTIE BRIEFING // OP CANYON STRIKE", bx + 70.0f, by + 24.0f, 2.2f, glm::vec3(0.2f, 0.95f, 0.5f), 1.0f);
-    DrawRect(shader, bx + 24.0f, by + 58.0f, boxW - 48.0f, 2.0f, glm::vec3(0.2f, 0.6f, 0.4f), 0.7f);
+    std::string headerStr = "★ TACTICAL SORTIE BRIEFING // OP CANYON STRIKE ★";
+    float headW = headerStr.length() * 6.0f * 2.2f;
+    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 24.0f, 2.2f, glm::vec3(0.3f, 1.0f, 0.6f), 1.0f);
+    DrawSlantedRect(shader, bx + 28.0f, by + 58.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
 
-    DrawText(shader, "TARGET ZONE: SECTOR 1 - CANYON TRENCH", bx + 40.0f, by + 85.0f, 1.7f, glm::vec3(1.0f, 0.85f, 0.25f), 0.95f);
-    DrawText(shader, "The hostile war fleet has deployed a Colossal Dreadnought flagship", bx + 40.0f, by + 115.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
-    DrawText(shader, "deep inside the planetary canyon corridor.", bx + 40.0f, by + 138.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
+    DrawDiamond(shader, bx + 45.0f, by + 92.0f, 6.0f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
+    DrawText(shader, "TARGET ZONE: SECTOR 1 - CANYON TRENCH", bx + 60.0f, by + 85.0f, 1.7f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
+    DrawText(shader, "The hostile war fleet has deployed a Colossal Dreadnought flagship", bx + 60.0f, by + 115.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
+    DrawText(shader, "deep inside the planetary canyon corridor.", bx + 60.0f, by + 138.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
 
-    DrawText(shader, "PRIMARY OBJECTIVE:", bx + 40.0f, by + 180.0f, 1.6f, glm::vec3(0.2f, 0.85f, 1.0f), 0.95f);
-    DrawText(shader, "- Infiltrate trench, eliminate drone squadrons, and destroy Dreadnought.", bx + 60.0f, by + 208.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
+    DrawDiamond(shader, bx + 45.0f, by + 187.0f, 6.0f, glm::vec3(0.3f, 0.9f, 1.0f), 1.0f);
+    DrawText(shader, "PRIMARY OBJECTIVE:", bx + 60.0f, by + 180.0f, 1.6f, glm::vec3(0.3f, 0.9f, 1.0f), 1.0f);
+    DrawText(shader, "- Infiltrate trench, eliminate drone squadrons, and destroy Dreadnought.", bx + 80.0f, by + 208.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
 
-    DrawText(shader, "SECRET DIRECTIVE [HARD ROUTE]:", bx + 40.0f, by + 248.0f, 1.6f, glm::vec3(1.0f, 0.4f, 0.2f), 0.95f);
-    DrawText(shader, "- Locate and destroy all 3 hidden Planetary Radar Relays inside archways.", bx + 60.0f, by + 276.0f, 1.4f, glm::vec3(1.0f, 0.8f, 0.7f), 0.90f);
-    DrawText(shader, "- Keep both Echo wingmen intact to unlock Hyperspace Warp to SECTOR 2!", bx + 60.0f, by + 298.0f, 1.4f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
+    DrawDiamond(shader, bx + 45.0f, by + 255.0f, 6.0f, glm::vec3(1.0f, 0.45f, 0.2f), 1.0f);
+    DrawText(shader, "SECRET DIRECTIVE [HARD ROUTE]:", bx + 60.0f, by + 248.0f, 1.6f, glm::vec3(1.0f, 0.45f, 0.2f), 1.0f);
+    DrawText(shader, "- Locate and destroy all 3 hidden Planetary Radar Relays inside archways.", bx + 80.0f, by + 276.0f, 1.4f, glm::vec3(1.0f, 0.85f, 0.75f), 0.90f);
+    DrawText(shader, "- Keep both Echo wingmen intact to unlock Hyperspace Warp to SECTOR 2!", bx + 80.0f, by + 300.0f, 1.4f, glm::vec3(1.0f, 0.88f, 0.25f), 0.95f);
 
     float pulse = std::sin(time * 4.0f) * 0.25f + 0.75f;
-    DrawText(shader, "PRESS [ENTER] OR [SPACE] TO LAUNCH SORTIE", bx + 130.0f, by + boxH - 40.0f, 1.8f, glm::vec3(0.2f, 0.95f, 0.5f) * pulse, 1.0f);
+    std::string launchStr = "PRESS [ENTER] OR [SPACE] TO LAUNCH SORTIE";
+    float launchW = launchStr.length() * 6.0f * 1.8f;
+    DrawText(shader, launchStr, (vw - launchW) * 0.5f + slant * 0.5f, by + boxH - 36.0f, 1.8f, glm::vec3(0.3f, 1.0f, 0.6f) * pulse, 1.0f);
 
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);

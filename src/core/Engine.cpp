@@ -919,6 +919,40 @@ void Engine::Update(float dt) {
         return;
     }
 
+    if (state == GameState::Victory) {
+        camera.StopCinematic();
+
+        // Graceful forward cruise into the horizon with wingmen in formation
+        player->currentSpeed = 42.0f;
+        player->transform.position.z -= player->currentSpeed * dt;
+        player->transform.position.x = glm::mix(player->transform.position.x, 0.0f, 1.0f - std::exp(-3.0f * dt));
+        player->transform.position.y = glm::mix(player->transform.position.y, 0.5f, 1.0f - std::exp(-3.0f * dt));
+        player->currentPitch = glm::mix(player->currentPitch, 0.0f, 1.0f - std::exp(-4.0f * dt));
+        player->currentBank = glm::mix(player->currentBank, 0.0f, 1.0f - std::exp(-4.0f * dt));
+        player->currentYaw = glm::mix(player->currentYaw, 0.0f, 1.0f - std::exp(-4.0f * dt));
+        player->transform.rotation.x = player->currentPitch;
+        player->transform.rotation.y = player->headingYaw + player->currentYaw;
+        player->transform.rotation.z = player->currentBank;
+
+        camera.Follow(player->transform.position, 0.0f, 0.0f, 0.0f, dt);
+        camera.Update(dt);
+
+        if (wingmen) {
+            int rescueBonus = 0;
+            wingmen->Update(dt, player->transform.position, player->headingYaw,
+                            player->currentSpeed, false,
+                            player->leftWingLost, player->rightWingLost,
+                            *projectiles, *particles, *enemies, audio.get(), rescueBonus);
+        }
+
+        if (environment) {
+            environment->Update(dt, player->transform.position.z);
+        }
+
+        particles->Update(dt);
+        return;
+    }
+
     if (state == GameState::Playing) {
         bool inCinematic = camera.IsInCinematic() && camera.cinematicMode == CinematicMode::BossIntro;
         player->Update(dt, !inCinematic);
@@ -941,6 +975,7 @@ void Engine::Update(float dt) {
             if (player->transform.position.z <= -920.0f) {
                 state = GameState::Victory;
                 hardRouteWon = true;
+                camera.StopCinematic();
                 if (audio) {
                     audio->StopBGM();
                     audio->Play(SoundID::VictoryFanfare, 1.0f);
@@ -1137,6 +1172,7 @@ void Engine::Update(float dt) {
                     } else {
                         state = GameState::Victory;
                         hardRouteWon = false;
+                        camera.StopCinematic();
                         if (!victoryFanfarePlayed && audio) {
                             audio->Play(SoundID::VictoryFanfare, 1.0f);
                             victoryFanfarePlayed = true;

@@ -123,14 +123,14 @@ void Camera::Follow(const glm::vec3& playerPos, float playerPitch, float playerY
     }
 
     if (cinematicMode == CinematicMode::BossDeathSlowMo) {
-        // Orbiting Kill-Cam around collapsing dreadnought
+        // Dramatic corridor victory tracking shot: stays inside the canyon corridor and smoothly tracks starfighter cruising past the explosion
         cinematicTimer += dt;
-        cinematicOrbitAngle += 42.0f * dt;
+        float progress = std::clamp(cinematicTimer / cinematicDuration, 0.0f, 1.0f);
 
-        float rad = glm::radians(cinematicOrbitAngle);
-        float radius = 55.0f;
-        position = cinematicFocusPos + glm::vec3(std::sin(rad) * radius, 16.0f + std::sin(rad * 0.5f) * 6.0f, std::cos(rad) * radius);
-        target = cinematicFocusPos;
+        // Position camera safely centered in canyon corridor behind starfighter, pulling back for cinematic vista
+        glm::vec3 desiredPos = playerPos + glm::vec3(0.0f, 2.8f, 12.0f + progress * 4.0f);
+        position = glm::mix(position, desiredPos, 1.0f - std::exp(-6.0f * dt));
+        target = glm::mix(target, playerPos + glm::vec3(0.0f, 0.5f, -22.0f), 1.0f - std::exp(-7.0f * dt));
         up = glm::vec3(0.0f, 1.0f, 0.0f);
 
         if (cinematicTimer >= cinematicDuration) {

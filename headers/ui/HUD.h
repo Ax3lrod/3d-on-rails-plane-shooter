@@ -51,6 +51,12 @@ public:
                                 const glm::vec3& emptyColor = glm::vec3(0.08f, 0.09f, 0.13f),
                                 const glm::vec3& borderColor = glm::vec3(1.0f, 1.0f, 1.0f),
                                 float borderThickness = 2.5f) const;
+    void DrawSlantedCard(const Shader& shader, float x, float y, float w, float h,
+                         float slantOffset,
+                         const glm::vec3& colLeft, const glm::vec3& colRight,
+                         const glm::vec3& borderColor = glm::vec3(1.0f, 1.0f, 1.0f),
+                         float borderThickness = 3.0f,
+                         float alpha = 0.95f) const;
     void DrawRadialGradientDiamond(const Shader& shader, float cx, float cy, float radius,
                                    const glm::vec3& innerColor, const glm::vec3& outerColor,
                                    const glm::vec3& borderColor = glm::vec3(0.08f, 0.06f, 0.16f),
