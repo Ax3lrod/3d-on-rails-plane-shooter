@@ -170,6 +170,7 @@ bool PlayerStarfighter::TriggerSomersault() {
 }
 
 bool PlayerStarfighter::TriggerUTurn() {
+    if (!isAllRangeMode) return false; // Only in open arenas
     if (isSomersaulting || isUTurning || isSpinning) return false;
     if (boostMeter < 12.0f || isOverheated) return false;
 
@@ -267,41 +268,51 @@ glm::vec3 PlayerStarfighter::GetRightWingTipWorldPos() const {
     return glm::vec3(model * glm::vec4(2.6f, -0.05f, 0.9f, 1.0f));
 }
 
-void PlayerStarfighter::HandleInput(float dt) {
+void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
     float inputX = 0.0f;
     float inputY = 0.0f;
+    bool wantsBoost = false;
+    bool justBoost = false;
+    bool wantsBrake = false;
+    bool justBrake = false;
 
-    if (Input::IsKeyDown(GLFW_KEY_A) || Input::IsKeyDown(GLFW_KEY_LEFT)) inputX -= 1.0f;
-    if (Input::IsKeyDown(GLFW_KEY_D) || Input::IsKeyDown(GLFW_KEY_RIGHT)) inputX += 1.0f;
-    if (Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP)) inputY += 1.0f;
-    if (Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN)) inputY -= 1.0f;
+    if (allowInput) {
+        if (Input::IsKeyDown(GLFW_KEY_A) || Input::IsKeyDown(GLFW_KEY_LEFT)) inputX -= 1.0f;
+        if (Input::IsKeyDown(GLFW_KEY_D) || Input::IsKeyDown(GLFW_KEY_RIGHT)) inputX += 1.0f;
+        if (Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP)) inputY += 1.0f;
+        if (Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN)) inputY -= 1.0f;
 
-    // Double tap barrel roll or dedicated buttons (Q/E or Z/C)
-    if (Input::IsDoubleTap(GLFW_KEY_A) || Input::IsDoubleTap(GLFW_KEY_LEFT) ||
-        Input::IsKeyPressed(GLFW_KEY_Q) || Input::IsKeyPressed(GLFW_KEY_Z)) {
-        TriggerSpin(-1.0f);
-    }
-    if (Input::IsDoubleTap(GLFW_KEY_D) || Input::IsDoubleTap(GLFW_KEY_RIGHT) ||
-        Input::IsKeyPressed(GLFW_KEY_E) || Input::IsKeyPressed(GLFW_KEY_C)) {
-        TriggerSpin(1.0f);
-    }
+        // Double tap barrel roll or dedicated buttons (Q/E or Z/C)
+        if (Input::IsDoubleTap(GLFW_KEY_A) || Input::IsDoubleTap(GLFW_KEY_LEFT) ||
+            Input::IsKeyPressed(GLFW_KEY_Q) || Input::IsKeyPressed(GLFW_KEY_Z)) {
+            TriggerSpin(-1.0f);
+        }
+        if (Input::IsDoubleTap(GLFW_KEY_D) || Input::IsDoubleTap(GLFW_KEY_RIGHT) ||
+            Input::IsKeyPressed(GLFW_KEY_E) || Input::IsKeyPressed(GLFW_KEY_C)) {
+            TriggerSpin(1.0f);
+        }
 
-    // Boost & Brake logic (Shift to Boost, Ctrl/Alt to Brake)
-    bool wantsBoost = Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyDown(GLFW_KEY_RIGHT_SHIFT);
-    bool justBoost = Input::IsKeyPressed(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyPressed(GLFW_KEY_RIGHT_SHIFT);
-    bool wantsBrake = Input::IsKeyDown(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyDown(GLFW_KEY_RIGHT_CONTROL) ||
-                      Input::IsKeyDown(GLFW_KEY_LEFT_ALT);
-    bool justBrake = Input::IsKeyPressed(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyPressed(GLFW_KEY_RIGHT_CONTROL) ||
-                     Input::IsKeyPressed(GLFW_KEY_LEFT_ALT);
+        // Boost & Brake logic (Shift to Boost, Ctrl/Alt to Brake)
+        wantsBoost = Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyDown(GLFW_KEY_RIGHT_SHIFT);
+        justBoost = Input::IsKeyPressed(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyPressed(GLFW_KEY_RIGHT_SHIFT);
+        wantsBrake = Input::IsKeyDown(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyDown(GLFW_KEY_RIGHT_CONTROL) ||
+                     Input::IsKeyDown(GLFW_KEY_LEFT_ALT);
+        justBrake = Input::IsKeyPressed(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyPressed(GLFW_KEY_RIGHT_CONTROL) ||
+                    Input::IsKeyPressed(GLFW_KEY_LEFT_ALT);
 
-    bool pressS = Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN);
-    bool justS = Input::IsKeyPressed(GLFW_KEY_S) || Input::IsKeyPressed(GLFW_KEY_DOWN);
+        bool pressS = Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN);
+        bool justS = Input::IsKeyPressed(GLFW_KEY_S) || Input::IsKeyPressed(GLFW_KEY_DOWN);
 
-    // Evasive Acrobatics (Star Fox 64 style: S + Boost = Somersault, S + Brake = U-Turn)
-    if ((pressS && justBoost) || (justS && wantsBoost)) {
-        TriggerSomersault();
-    } else if ((pressS && justBrake) || (justS && wantsBrake)) {
-        TriggerUTurn();
+        // Evasive Acrobatics (Star Fox 64 style: S + Boost = Somersault, S + Brake = U-Turn)
+        if ((pressS && justBoost) || (justS && wantsBoost)) {
+            TriggerSomersault();
+        } else if ((pressS && justBrake) || (justS && wantsBrake)) {
+            TriggerUTurn();
+        }
+    } else {
+        // Cruise smoothly towards corridor center when input is disabled (e.g. cinematic intro)
+        transform.position.x = glm::mix(transform.position.x, 0.0f, 1.0f - std::exp(-5.0f * dt));
+        transform.position.y = glm::mix(transform.position.y, 0.0f, 1.0f - std::exp(-5.0f * dt));
     }
 
     if (isOverheated) {
@@ -389,8 +400,8 @@ void PlayerStarfighter::HandleInput(float dt) {
     currentYaw = glm::mix(currentYaw, targetYaw, 1.0f - std::exp(-pitchSpeed * dt));
 }
 
-void PlayerStarfighter::Update(float dt) {
-    HandleInput(dt);
+void PlayerStarfighter::Update(float dt, bool allowInput) {
+    HandleInput(dt, allowInput);
 
     // Evasive Somersault Loop-de-loop
     if (isSomersaulting) {
@@ -401,7 +412,8 @@ void PlayerStarfighter::Update(float dt) {
             somersaultPitch = 0.0f;
         } else {
             somersaultPitch = t * 360.0f;
-            transform.position.y += std::sin(t * 3.14159f * 2.0f) * 14.0f * dt;
+            transform.position.y += std::sin(t * 3.14159f * 2.0f) * 6.0f * dt;
+            transform.position.y = std::clamp(transform.position.y, minY, maxY);
         }
     }
 

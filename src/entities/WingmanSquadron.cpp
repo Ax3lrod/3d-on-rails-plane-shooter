@@ -90,8 +90,7 @@ void WingmanSquadron::TriggerTransmission(WingmanID speaker, const std::string& 
         activeMessage = msg;
         hasActiveMessage = true;
         if (audio) {
-            audio->Play(SoundID::RadioStatic, 0.85f);
-            audio->Play(SoundID::RadioChatter, 0.95f, msg.voicePitch);
+            audio->Play(SoundID::RadioChatter, 0.35f, msg.voicePitch);
         }
     } else {
         messageQueue.push_back(msg);
@@ -103,17 +102,9 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
                             bool playerRightWingLost, ProjectileManager& projectiles,
                             ParticleSystem& particles, EnemyManager& enemies,
                             SoundManager* audio, int& outScoreGained) {
-    // 1. Update Radio Transmission Queue & Synthesized Speech Audio
+    // 1. Update Radio Transmission Queue (plays gentle chime once on pop)
     if (hasActiveMessage) {
         activeMessage.timer -= dt;
-        activeMessage.chatterTimer -= dt;
-
-        if (activeMessage.chatterTimer <= 0.0f && activeMessage.timer > 0.4f) {
-            if (audio) {
-                audio->Play(SoundID::RadioChatter, 0.85f, activeMessage.voicePitch);
-            }
-            activeMessage.chatterTimer = 0.42f + ((rand() % 15) * 0.01f);
-        }
 
         if (activeMessage.timer <= 0.0f) {
             hasActiveMessage = false;
@@ -122,8 +113,7 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
                 messageQueue.pop_front();
                 hasActiveMessage = true;
                 if (audio) {
-                    audio->Play(SoundID::RadioStatic, 0.85f);
-                    audio->Play(SoundID::RadioChatter, 0.95f, activeMessage.voicePitch);
+                    audio->Play(SoundID::RadioChatter, 0.35f, activeMessage.voicePitch);
                 }
             }
         }
@@ -132,8 +122,7 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
         messageQueue.pop_front();
         hasActiveMessage = true;
         if (audio) {
-            audio->Play(SoundID::RadioStatic, 0.85f);
-            audio->Play(SoundID::RadioChatter, 0.95f, activeMessage.voicePitch);
+            audio->Play(SoundID::RadioChatter, 0.35f, activeMessage.voicePitch);
         }
     }
 

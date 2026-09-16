@@ -117,8 +117,8 @@ public:
 
     PlayerStarfighter();
 
-    void Update(float dt);
-    void HandleInput(float dt);
+    void Update(float dt, bool allowInput = true);
+    void HandleInput(float dt, bool allowInput = true);
     void Draw(const Shader& shader) const;
 
     void TakeDamage(float amount);

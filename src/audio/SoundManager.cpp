@@ -714,86 +714,48 @@ void SoundManager::GenerateWingRepairSound() {
     }
 }
 
-// 18. Radio Static (Analog radio transceiver click and squelch burst)
+// 18. Radio Static (Gentle analog cockpit radio squelch click)
 void SoundManager::GenerateRadioStaticSound() {
-    float duration = 0.16f;
+    float duration = 0.07f;
     size_t count = static_cast<size_t>(SAMPLE_RATE * duration);
     std::vector<int16_t>& pcm = soundBank[static_cast<size_t>(SoundID::RadioStatic)].pcmData;
     pcm.resize(count);
 
-    float bandpass = 0.0f;
     float lowpass = 0.0f;
-
     for (size_t i = 0; i < count; ++i) {
         float t = static_cast<float>(i) / SAMPLE_RATE;
         float progress = t / duration;
 
         float rawNoise = (static_cast<float>(rand()) / RAND_MAX) * 2.0f - 1.0f;
+        lowpass += 0.22f * (rawNoise - lowpass); // Soft warm lowpass
 
-        // Two-pole band-pass filter around 2200Hz
-        lowpass += 0.42f * (rawNoise - lowpass);
-        bandpass += 0.28f * (lowpass - bandpass);
-        float filtered = lowpass - bandpass;
-
-        float click = 0.0f;
-        if (i < 80) click = (i % 2 == 0 ? 0.8f : -0.8f);
-        if (i > count - 80) click = (i % 2 == 0 ? 0.7f : -0.7f);
-
-        float env = 1.0f;
-        if (progress < 0.1f) env = progress / 0.1f;
-        else if (progress > 0.8f) env = (1.0f - progress) / 0.2f;
-
-        float combined = (filtered * 0.75f + click * 0.25f) * env;
-        combined = std::clamp(combined * 1.5f, -1.0f, 1.0f);
-
-        pcm[i] = ClampSample(combined * 22000.0f);
+        float env = std::sin(progress * PI);
+        pcm[i] = ClampSample(lowpass * env * 7500.0f);
     }
 }
 
-// 19. Radio Chatter (Synthesized 16-bit arcade vocal babble & formant syllables)
+// 19. Radio Chatter (Pleasant, subtle sci-fi incoming transmission chime)
 void SoundManager::GenerateRadioChatterSound() {
-    float duration = 0.26f;
+    float duration = 0.14f;
     size_t count = static_cast<size_t>(SAMPLE_RATE * duration);
     std::vector<int16_t>& pcm = soundBank[static_cast<size_t>(SoundID::RadioChatter)].pcmData;
     pcm.resize(count);
 
-    float phaseCarrier = 0.0f;
-    float phaseFormant = 0.0f;
-
+    float phase = 0.0f;
     for (size_t i = 0; i < count; ++i) {
         float t = static_cast<float>(i) / SAMPLE_RATE;
         float progress = t / duration;
 
-        // 3 rapid syllables per transmission chirp
-        float syllableCycle = progress * 3.0f;
-        int syllableIndex = static_cast<int>(syllableCycle);
-        float syllableFrac = syllableCycle - syllableIndex;
+        // Two-tone rising chime: 580Hz -> 880Hz
+        float freq = (progress < 0.5f) ? 580.0f : 880.0f;
+        phase += 2.0f * PI * freq / SAMPLE_RATE;
 
-        // Base vocal chord carrier frequency with syllable inflection
-        float baseFreq = 260.0f;
-        if (syllableIndex == 0) baseFreq = 280.0f + 60.0f * syllableFrac;
-        else if (syllableIndex == 1) baseFreq = 340.0f - 40.0f * syllableFrac;
-        else baseFreq = 300.0f + 80.0f * std::sin(syllableFrac * PI);
+        // Pure smooth sine wave with gentle overtone
+        float s1 = std::sin(phase);
+        float s2 = std::sin(phase * 2.0f) * 0.2f;
 
-        phaseCarrier += 2.0f * PI * baseFreq / SAMPLE_RATE;
-        float pulse = (std::sin(phaseCarrier) > 0.2f) ? 0.9f : -0.9f;
-
-        // Formant filter frequency (vowel resonance simulation: /ah/, /ee/, /oh/)
-        float formantFreq = 950.0f;
-        if (syllableIndex == 0) formantFreq = 850.0f + 500.0f * syllableFrac;
-        else if (syllableIndex == 1) formantFreq = 1600.0f - 400.0f * syllableFrac;
-        else formantFreq = 1100.0f + 300.0f * std::sin(syllableFrac * PI);
-
-        phaseFormant += 2.0f * PI * formantFreq / SAMPLE_RATE;
-        float formant = std::sin(phaseFormant);
-
-        float sylEnv = std::sin(syllableFrac * PI);
-        float masterEnv = (progress < 0.05f) ? (progress / 0.05f) : ((progress > 0.9f) ? (1.0f - progress) / 0.1f : 1.0f);
-
-        float noise = ((rand() % 100) / 100.0f - 0.5f) * 0.15f;
-        float voice = (pulse * 0.45f + formant * 0.45f + noise) * sylEnv * masterEnv;
-
-        pcm[i] = ClampSample(voice * 24000.0f);
+        float env = std::sin(progress * PI);
+        pcm[i] = ClampSample((s1 + s2) * env * 8500.0f);
     }
 }
 

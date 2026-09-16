@@ -169,10 +169,12 @@ void Engine::ProcessInput(float) {
         camera.ToggleViewMode();
     }
 
-    // Skip Boss Intro Cinematic
+    // Skip Boss Intro Cinematic or hold controls during sweep
     if (camera.IsInCinematic() && camera.cinematicMode == CinematicMode::BossIntro) {
         if (Input::IsKeyPressed(GLFW_KEY_SPACE) || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
             camera.StopCinematic();
+        } else {
+            return; // Don't fire or veer off course while camera pans the Dreadnought
         }
     }
 
@@ -769,7 +771,11 @@ void Engine::Update(float dt) {
     ProcessInput(dt);
 
     if (state == GameState::Playing) {
-        player->Update(dt);
+        bool inCinematic = camera.IsInCinematic() && camera.cinematicMode == CinematicMode::BossIntro;
+        player->Update(dt, !inCinematic);
+        if (inCinematic) {
+            player->invulnerableTimer = 0.5f; // Shield ship during cinematic camera sweep
+        }
 
         // Smoke & electrical spark trails from severed wing roots
         if (player->leftWingLost) {
@@ -792,7 +798,7 @@ void Engine::Update(float dt) {
             bossSpawned = true;
             boss->Spawn(player->transform.position.z);
             camera.StartBossIntro(boss->transform.position, player->transform.position);
-            player->SetAllRangeMode(true, boss->transform.position, 230.0f);
+            // Pure high-intensity corridor chase down the canyon trench
         }
 
         // Lock-on targeting during charge shot (prioritize boss weakpoints)
