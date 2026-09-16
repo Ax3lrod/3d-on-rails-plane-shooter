@@ -1,4 +1,5 @@
 #include "BossDreadnought.h"
+#include "SoundManager.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <cmath>
@@ -127,7 +128,8 @@ void BossDreadnought::UpdateSubsystemsWorldPos() {
 }
 
 void BossDreadnought::Update(float dt, float playerZ, const glm::vec3& playerPos,
-                            ProjectileManager& projectiles, ParticleSystem& particles, Camera& camera) {
+                            ProjectileManager& projectiles, ParticleSystem& particles, Camera& camera,
+                            SoundManager* audio) {
     if (state == BossState::Inactive || state == BossState::Defeated) return;
 
     stateTime += dt;
@@ -188,10 +190,13 @@ void BossDreadnought::Update(float dt, float playerZ, const glm::vec3& playerPos
             particles.SpawnExplosion(shieldGen.worldPos, 60, glm::vec3(0.2f, 0.9f, 1.0f));
             particles.SpawnExplosion(quantumCore.worldPos, 50, glm::vec3(1.0f, 0.5f, 0.1f));
             camera.TriggerShake(1.4f, 0.8f);
+            if (audio) {
+                audio->Play(SoundID::BombExplosion, 1.0f);
+            }
             return;
         }
 
-        FirePhase1Attacks(playerPos, projectiles, dt);
+        FirePhase1Attacks(playerPos, projectiles, dt, audio);
         return;
     }
 
@@ -220,10 +225,13 @@ void BossDreadnought::Update(float dt, float playerZ, const glm::vec3& playerPos
             deathTimer = 0.0f;
             nextExplosionTimer = 0.05f;
             camera.TriggerShake(1.6f, 1.2f);
+            if (audio) {
+                audio->Play(SoundID::BombExplosion, 1.0f);
+            }
             return;
         }
 
-        FirePhase2Attacks(playerPos, projectiles, dt);
+        FirePhase2Attacks(playerPos, projectiles, dt, audio);
         return;
     }
 
@@ -232,7 +240,7 @@ void BossDreadnought::Update(float dt, float playerZ, const glm::vec3& playerPos
     }
 }
 
-void BossDreadnought::FirePhase1Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt) {
+void BossDreadnought::FirePhase1Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt, SoundManager* audio) {
     // 1. Port Turret Heavy Dual Bursts
     if (!leftTurret.destroyed) {
         leftTurret.fireTimer -= dt;
@@ -242,6 +250,7 @@ void BossDreadnought::FirePhase1Attacks(const glm::vec3& playerPos, ProjectileMa
             glm::vec3 muzzleR = leftTurret.worldPos + glm::vec3(0.5f, 0.2f, 1.5f);
             projectiles.SpawnLaser(muzzleL, playerPos, false, 85.0f);
             projectiles.SpawnLaser(muzzleR, playerPos, false, 85.0f);
+            if (audio) audio->Play(SoundID::EnemyLaser, 0.5f);
         }
     }
 
@@ -254,6 +263,7 @@ void BossDreadnought::FirePhase1Attacks(const glm::vec3& playerPos, ProjectileMa
             glm::vec3 muzzleR = rightTurret.worldPos + glm::vec3(0.5f, 0.2f, 1.5f);
             projectiles.SpawnLaser(muzzleL, playerPos, false, 85.0f);
             projectiles.SpawnLaser(muzzleR, playerPos, false, 85.0f);
+            if (audio) audio->Play(SoundID::EnemyLaser, 0.5f);
         }
     }
 
@@ -287,11 +297,13 @@ void BossDreadnought::FirePhase1Attacks(const glm::vec3& playerPos, ProjectileMa
             );
             projectiles.SpawnLaserWithDir(shieldGen.worldPos, glm::normalize(dirRight), false, 72.0f,
                                          glm::vec3(0.2f, 0.85f, 1.0f), 0.95f);
+
+            if (audio) audio->Play(SoundID::ChargedShotFire, 0.6f);
         }
     }
 }
 
-void BossDreadnought::FirePhase2Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt) {
+void BossDreadnought::FirePhase2Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt, SoundManager* audio) {
     // Overdrive Core Bullet Hell
     attackTimer += dt;
     spiralAttackTimer += dt;
@@ -314,6 +326,7 @@ void BossDreadnought::FirePhase2Attacks(const glm::vec3& playerPos, ProjectileMa
             projectiles.SpawnLaserWithDir(quantumCore.worldPos, glm::normalize(dir), false, 78.0f,
                                          glm::vec3(1.0f, 0.35f, 0.1f), 0.9f);
         }
+        if (audio) audio->Play(SoundID::ChargedShotFire, 0.75f, 1.2f);
     }
 
     // Pattern 2: Rotating Spiral Barrage
@@ -327,6 +340,7 @@ void BossDreadnought::FirePhase2Attacks(const glm::vec3& playerPos, ProjectileMa
 
         projectiles.SpawnLaserWithDir(quantumCore.worldPos, spiralDir, false, 65.0f,
                                      glm::vec3(1.0f, 0.85f, 0.2f), 0.8f);
+        if (audio) audio->Play(SoundID::EnemyLaser, 0.30f, 1.3f);
     }
 }
 

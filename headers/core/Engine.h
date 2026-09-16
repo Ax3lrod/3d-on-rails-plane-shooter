@@ -14,6 +14,7 @@
 #include "EnemyManager.h"
 #include "BossDreadnought.h"
 #include "HUD.h"
+#include "SoundManager.h"
 
 enum class GameState {
     Playing,
@@ -57,9 +58,15 @@ private:
     std::unique_ptr<EnemyManager> enemies;
     std::unique_ptr<BossDreadnought> boss;
     std::unique_ptr<HUD> hud;
+    std::unique_ptr<SoundManager> audio;
 
     bool bossSpawned;
     float victoryTimer;
+    bool wasChargingAudio;
+    bool wasBoostingAudio;
+    bool wasBrakingAudio;
+    bool hadLockOnLastFrame;
+    bool victoryFanfarePlayed;
     float lastFrameTime;
 };
 

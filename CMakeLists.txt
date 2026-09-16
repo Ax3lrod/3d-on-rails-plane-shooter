@@ -48,6 +48,7 @@ set(SOURCES
     src/combat/CombatSystem.cpp
     src/world/WorldEnvironment.cpp
     src/ui/HUD.cpp
+    src/audio/SoundManager.cpp
 )
 add_executable(OpenGLProject ${SOURCES})
 
@@ -60,6 +61,7 @@ target_include_directories(OpenGLProject PUBLIC
     headers/world
     headers/combat
     headers/ui
+    headers/audio
 )
 
 # Link dependencies
@@ -67,7 +69,7 @@ target_link_libraries(OpenGLProject PRIVATE glfw glad glm::glm)
 
 # Windows needs extra libs
 if (WIN32)
-    target_link_libraries(OpenGLProject PRIVATE opengl32)
+    target_link_libraries(OpenGLProject PRIVATE opengl32 winmm)
 endif()
 
 # macOS framework linking

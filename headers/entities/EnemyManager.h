@@ -21,6 +21,8 @@ struct Enemy {
     bool active;
 };
 
+class SoundManager;
+
 class EnemyManager {
 public:
     std::vector<Enemy> enemies;
@@ -34,7 +36,7 @@ public:
 
     int FindLockTarget(const glm::vec3& playerPos, const glm::vec3& aimPos) const;
     void SpawnWave(float playerZ);
-    void Update(float playerZ, const glm::vec3& playerPos, ProjectileManager& projectiles, float dt);
+    void Update(float playerZ, const glm::vec3& playerPos, ProjectileManager& projectiles, float dt, SoundManager* audio = nullptr);
     void Draw(const Shader& shader) const;
     void Clear();
 };

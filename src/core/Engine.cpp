@@ -12,6 +12,11 @@ Engine::Engine(int width, int height, const std::string& title)
       state(GameState::Playing),
       bossSpawned(false),
       victoryTimer(0.0f),
+      wasChargingAudio(false),
+      wasBoostingAudio(false),
+      wasBrakingAudio(false),
+      hadLockOnLastFrame(false),
+      victoryFanfarePlayed(false),
       lastFrameTime(0.0f) {}
 
 Engine::~Engine() {
@@ -25,6 +30,7 @@ Engine::~Engine() {
     enemies.reset();
     boss.reset();
     hud.reset();
+    audio.reset();
     shader.Delete();
 
     if (window) {
@@ -92,6 +98,8 @@ bool Engine::Init() {
     enemies = std::make_unique<EnemyManager>();
     boss = std::make_unique<BossDreadnought>();
     hud = std::make_unique<HUD>();
+    audio = std::make_unique<SoundManager>();
+    audio->Init();
 
     std::cout << "========================================================\n"
               << " 3D Rail-Shooter Engine initialized successfully!\n"
@@ -120,8 +128,19 @@ void Engine::RestartGame() {
     if (boss) {
         boss->Reset();
     }
+    if (audio) {
+        audio->StopLoop(SoundID::BoostRoar);
+        audio->StopLoop(SoundID::BrakeHiss);
+        audio->StopLoop(SoundID::ChargeHum);
+        audio->StopLoop(SoundID::WarningSiren);
+    }
     bossSpawned = false;
     victoryTimer = 0.0f;
+    wasChargingAudio = false;
+    wasBoostingAudio = false;
+    wasBrakingAudio = false;
+    hadLockOnLastFrame = false;
+    victoryFanfarePlayed = false;
     state = GameState::Playing;
 }
 
@@ -148,6 +167,10 @@ void Engine::ProcessInput(float) {
 
             particles->SpawnExplosion(leftMuzzle, 3, glm::vec3(0.2f, 1.0f, 0.5f));
             particles->SpawnExplosion(rightMuzzle, 3, glm::vec3(0.2f, 1.0f, 0.5f));
+
+            if (audio) {
+                audio->Play(SoundID::LaserFire, 0.85f, 0.95f + ((rand() % 10) * 0.01f));
+            }
         }
     }
 
@@ -165,6 +188,12 @@ void Engine::ProcessInput(float) {
 
             particles->SpawnExplosion(nosePos, 18, glm::vec3(0.2f, 1.0f, 0.8f));
             camera.TriggerShake(0.45f, 0.22f);
+
+            if (audio) {
+                audio->Play(SoundID::ChargedShotFire, 1.0f);
+                audio->StopLoop(SoundID::ChargeHum);
+                wasChargingAudio = false;
+            }
         }
     }
 
@@ -174,11 +203,17 @@ void Engine::ProcessInput(float) {
             // Early manual detonation of in-flight bomb
             ordnance->DetonateBomb(0);
             camera.TriggerShake(1.2f, 0.6f);
+            if (audio) {
+                audio->Play(SoundID::BombExplosion, 1.0f);
+            }
         } else if (player->LaunchBomb()) {
             glm::vec3 nosePos = player->GetNosePos();
             ordnance->SpawnSmartBomb(nosePos, glm::vec3(0.0f, 0.0f, -1.0f));
             particles->SpawnExplosion(nosePos, 12, glm::vec3(1.0f, 0.85f, 0.2f));
             camera.TriggerShake(0.35f, 0.18f);
+            if (audio) {
+                audio->Play(SoundID::BombLaunch, 0.95f);
+            }
         }
     }
 }
@@ -214,6 +249,9 @@ void Engine::HandleCollisions() {
                     player->score += e.scoreValue;
                     particles->SpawnExplosion(e.transform.position, 28, glm::vec3(1.0f, 0.4f, 0.1f));
                     camera.TriggerShake(0.45f, 0.25f);
+                    if (audio) {
+                        audio->Play(SoundID::ExplosionSmall, 0.85f, 0.95f + ((rand() % 10) * 0.01f));
+                    }
                 }
                 break;
             }
@@ -233,6 +271,9 @@ void Engine::HandleCollisions() {
                 ordnance->TriggerShockwave(cs.position, cs.aoeRadius, 110.0f);
                 particles->SpawnExplosion(cs.position, 40, glm::vec3(0.2f, 1.0f, 0.8f));
                 camera.TriggerShake(0.85f, 0.4f);
+                if (audio) {
+                    audio->Play(SoundID::BombExplosion, 0.85f);
+                }
                 continue;
             }
         }
@@ -247,6 +288,9 @@ void Engine::HandleCollisions() {
                 ordnance->TriggerShockwave(cs.position, cs.aoeRadius, 90.0f);
                 particles->SpawnExplosion(cs.position, 40, glm::vec3(0.2f, 1.0f, 0.8f));
                 camera.TriggerShake(0.75f, 0.35f);
+                if (audio) {
+                    audio->Play(SoundID::BombExplosion, 0.85f);
+                }
                 break;
             }
         }
@@ -264,6 +308,9 @@ void Engine::HandleCollisions() {
                 ordnance->DetonateBomb(i);
                 player->score += scoreGained;
                 camera.TriggerShake(1.3f, 0.6f);
+                if (audio) {
+                    audio->Play(SoundID::BombExplosion, 1.0f);
+                }
                 break;
             }
         }
@@ -275,6 +322,9 @@ void Engine::HandleCollisions() {
             if (dist < (b.radius + e.radius)) {
                 ordnance->DetonateBomb(i);
                 camera.TriggerShake(1.2f, 0.6f);
+                if (audio) {
+                    audio->Play(SoundID::BombExplosion, 1.0f);
+                }
                 break;
             }
         }
@@ -315,6 +365,9 @@ void Engine::HandleCollisions() {
                     e.active = false;
                     player->score += e.scoreValue;
                     particles->SpawnExplosion(e.transform.position, 32, glm::vec3(1.0f, 0.45f, 0.1f));
+                    if (audio) {
+                        audio->Play(SoundID::ExplosionSmall, 0.8f, 0.95f + ((rand() % 10) * 0.01f));
+                    }
                 }
             }
         }
@@ -327,6 +380,9 @@ void Engine::HandleCollisions() {
             if (dist <= sw.currentRadius) {
                 a.destroyed = true;
                 particles->SpawnExplosion(a.position, 25, glm::vec3(0.6f, 0.5f, 0.4f));
+                if (audio) {
+                    audio->Play(SoundID::ExplosionLarge, 0.8f);
+                }
             }
         }
 
@@ -339,6 +395,9 @@ void Engine::HandleCollisions() {
                 pil.destroyed = true;
                 player->score += 150;
                 particles->SpawnExplosion(pil.position + glm::vec3(0.0f, 4.0f, 0.0f), 28, glm::vec3(0.58f, 0.42f, 0.32f));
+                if (audio) {
+                    audio->Play(SoundID::ExplosionLarge, 0.9f);
+                }
             }
         }
     }
@@ -363,6 +422,9 @@ void Engine::HandleCollisions() {
                     player->score += 150;
                     particles->SpawnExplosion(pil.position + glm::vec3(0.0f, 4.0f, 0.0f), 30, glm::vec3(0.62f, 0.44f, 0.32f));
                     camera.TriggerShake(0.4f, 0.2f);
+                    if (audio) {
+                        audio->Play(SoundID::ExplosionLarge, 0.9f);
+                    }
                 }
                 break;
             }
@@ -385,6 +447,9 @@ void Engine::HandleCollisions() {
                 ordnance->TriggerShockwave(cs.position, cs.aoeRadius, 90.0f);
                 particles->SpawnExplosion(pil.position + glm::vec3(0.0f, 4.0f, 0.0f), 36, glm::vec3(0.65f, 0.45f, 0.35f));
                 camera.TriggerShake(0.6f, 0.28f);
+                if (audio) {
+                    audio->Play(SoundID::BombExplosion, 0.85f);
+                }
                 break;
             }
         }
@@ -404,10 +469,16 @@ void Engine::HandleCollisions() {
                 // Deflection spin obliterates the pillar!
                 particles->SpawnExplosion(pil.position + glm::vec3(0.0f, 3.0f, 0.0f), 30, glm::vec3(0.2f, 0.9f, 1.0f));
                 camera.TriggerShake(0.35f, 0.2f);
+                if (audio) {
+                    audio->Play(SoundID::ExplosionLarge, 0.9f);
+                }
             } else {
                 player->TakeDamage(30.0f);
                 particles->SpawnExplosion(player->transform.position, 35, glm::vec3(0.7f, 0.45f, 0.3f));
                 camera.TriggerShake(1.0f, 0.5f);
+                if (audio) {
+                    audio->Play(SoundID::ExplosionLarge, 1.0f, 0.65f);
+                }
 
                 if (player->shield <= 0.0f) {
                     state = GameState::GameOver;
@@ -428,10 +499,16 @@ void Engine::HandleCollisions() {
                 // Deflect laser during barrel roll!
                 particles->SpawnExplosion(p.position, 14, glm::vec3(0.2f, 0.9f, 1.0f));
                 camera.TriggerShake(0.2f, 0.15f);
+                if (audio) {
+                    audio->Play(SoundID::LockOnPing, 0.85f, 1.6f);
+                }
             } else {
                 player->TakeDamage(15.0f);
                 particles->SpawnExplosion(p.position, 12, glm::vec3(1.0f, 0.2f, 0.2f));
                 camera.TriggerShake(0.6f, 0.35f);
+                if (audio) {
+                    audio->Play(SoundID::ExplosionSmall, 0.95f, 0.65f);
+                }
 
                 if (player->shield <= 0.0f) {
                     particles->SpawnExplosion(player->transform.position, 60, glm::vec3(1.0f, 0.5f, 0.1f));
@@ -460,6 +537,9 @@ void Engine::HandleCollisions() {
 
             particles->SpawnExplosion(r.position, 22,
                                       r.isGold ? glm::vec3(1.0f, 0.9f, 0.3f) : glm::vec3(0.3f, 0.9f, 1.0f));
+            if (audio) {
+                audio->Play(SoundID::RingCollect, 0.9f);
+            }
         }
     }
 
@@ -472,6 +552,9 @@ void Engine::HandleCollisions() {
             a.destroyed = true;
             particles->SpawnExplosion(a.position, 35, glm::vec3(0.7f, 0.6f, 0.5f));
             camera.TriggerShake(0.9f, 0.45f);
+            if (audio) {
+                audio->Play(SoundID::ExplosionLarge, 0.85f);
+            }
 
             if (!player->IsDeflecting()) {
                 player->TakeDamage(25.0f);
@@ -520,13 +603,56 @@ void Engine::Update(float dt) {
             player->hasLockOn = false;
         }
 
-        // Adjust camera FOV for boost warp
+        // Lock-on sound chime
+        if (player->hasLockOn && !hadLockOnLastFrame && audio) {
+            audio->Play(SoundID::LockOnPing, 0.95f);
+        }
+        hadLockOnLastFrame = player->hasLockOn;
+
+        // Tactical Barrel Roll whoosh sound
+        static bool wasSpinning = false;
+        if (player->isSpinning && !wasSpinning && audio) {
+            audio->Play(SoundID::BarrelRoll, 0.95f);
+        }
+        wasSpinning = player->isSpinning;
+
+        // Boost thruster audio loop
         if (player->isBoosting) {
             camera.SetTargetFOV(72.0f);
-        } else if (player->isBraking) {
+            if (!wasBoostingAudio && audio) {
+                audio->PlayLoop(SoundID::BoostRoar, 0.70f);
+                wasBoostingAudio = true;
+            }
+        } else if (wasBoostingAudio && audio) {
+            audio->StopLoop(SoundID::BoostRoar);
+            wasBoostingAudio = false;
+        }
+
+        // Airbrake audio loop
+        if (player->isBraking) {
             camera.SetTargetFOV(54.0f);
-        } else {
+            if (!wasBrakingAudio && audio) {
+                audio->PlayLoop(SoundID::BrakeHiss, 0.55f);
+                wasBrakingAudio = true;
+            }
+        } else if (wasBrakingAudio && audio) {
+            audio->StopLoop(SoundID::BrakeHiss);
+            wasBrakingAudio = false;
+        }
+
+        if (!player->isBoosting && !player->isBraking) {
             camera.SetTargetFOV(60.0f);
+        }
+
+        // Charge hum audio loop
+        if (player->isCharging) {
+            if (!wasChargingAudio && audio) {
+                audio->PlayLoop(SoundID::ChargeHum, 0.75f);
+                wasChargingAudio = true;
+            }
+        } else if (wasChargingAudio && audio) {
+            audio->StopLoop(SoundID::ChargeHum);
+            wasChargingAudio = false;
         }
 
         camera.Follow(player->transform.position, player->currentBank, dt);
@@ -547,15 +673,29 @@ void Engine::Update(float dt) {
         if (boss && boss->IsActive()) {
             enemies->spawnTimer = 0.0f; // Pause new drone waves during boss fight
         }
-        enemies->Update(player->transform.position.z, player->transform.position, *projectiles, dt);
+        enemies->Update(player->transform.position.z, player->transform.position, *projectiles, dt, audio.get());
 
         if (boss) {
-            boss->Update(dt, player->transform.position.z, player->transform.position, *projectiles, *particles, camera);
+            boss->Update(dt, player->transform.position.z, player->transform.position,
+                         *projectiles, *particles, camera, audio.get());
+
+            // Warning Siren Audio Loop
+            if (boss->IsWarning()) {
+                if (audio && !audio->IsLoopPlaying(SoundID::WarningSiren)) {
+                    audio->PlayLoop(SoundID::WarningSiren, 0.85f);
+                }
+            } else if (audio && audio->IsLoopPlaying(SoundID::WarningSiren)) {
+                audio->StopLoop(SoundID::WarningSiren);
+            }
 
             if (boss->IsDefeated()) {
                 victoryTimer += dt;
-                if (victoryTimer >= 1.5f) {
+                if (victoryTimer >= 1.2f) {
                     state = GameState::Victory;
+                    if (!victoryFanfarePlayed && audio) {
+                        audio->Play(SoundID::VictoryFanfare, 1.0f);
+                        victoryFanfarePlayed = true;
+                    }
                 }
             }
         }

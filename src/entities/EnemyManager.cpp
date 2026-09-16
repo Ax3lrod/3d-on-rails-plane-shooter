@@ -1,4 +1,5 @@
 #include "EnemyManager.h"
+#include "SoundManager.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -81,7 +82,7 @@ void EnemyManager::SpawnWave(float playerZ) {
     }
 }
 
-void EnemyManager::Update(float playerZ, const glm::vec3& playerPos, ProjectileManager& projectiles, float dt) {
+void EnemyManager::Update(float playerZ, const glm::vec3& playerPos, ProjectileManager& projectiles, float dt, SoundManager* audio) {
     spawnTimer += dt;
     if (spawnTimer >= spawnInterval) {
         spawnTimer = 0.0f;
@@ -123,6 +124,9 @@ void EnemyManager::Update(float playerZ, const glm::vec3& playerPos, ProjectileM
                 e.fireTimer = e.fireCooldown;
                 // Fire red plasma bolt at player
                 projectiles.SpawnLaser(e.transform.position, playerPos, false, 85.0f);
+                if (audio) {
+                    audio->Play(SoundID::EnemyLaser, 0.40f, 0.95f + ((rand() % 10) * 0.01f));
+                }
             }
         }
 

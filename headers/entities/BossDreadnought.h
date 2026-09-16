@@ -32,6 +32,8 @@ struct BossWeakpoint {
     float fireInterval;
 };
 
+class SoundManager;
+
 class BossDreadnought {
 public:
     Transform transform;
@@ -68,7 +70,8 @@ public:
 
     void Spawn(float playerZ);
     void Update(float dt, float playerZ, const glm::vec3& playerPos,
-                ProjectileManager& projectiles, ParticleSystem& particles, Camera& camera);
+                ProjectileManager& projectiles, ParticleSystem& particles, Camera& camera,
+                SoundManager* audio = nullptr);
     void Draw(const Shader& shader) const;
     void Reset();
 
@@ -89,8 +92,8 @@ public:
 
 private:
     void UpdateSubsystemsWorldPos();
-    void FirePhase1Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt);
-    void FirePhase2Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt);
+    void FirePhase1Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt, SoundManager* audio = nullptr);
+    void FirePhase2Attacks(const glm::vec3& playerPos, ProjectileManager& projectiles, float dt, SoundManager* audio = nullptr);
     void UpdateDeathSpiral(float dt, ParticleSystem& particles, Camera& camera);
 };
 
