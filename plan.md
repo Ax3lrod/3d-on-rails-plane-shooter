@@ -74,3 +74,23 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 11.4**: Silver Repair Rings & Wing Restoration: Enhance silver rings to repair damaged/lost wings to 100%, extinguish smoke, and restore twin blasters.
 - [x] **Task 11.5**: Cockpit HUD Wing Status Silhouette & Audio Alerts: Render real-time `[L-WING]` and `[R-WING]` status indicators on HUD with damage/lost colors and warning banners.
 - [x] **Task 11.6**: Verification & Playtest Build: Compile, test, and verify debris tumbling, flight mechanics, collision shearing, and wing repair.
+
+## Phase 12: Cockpit 1st-Person Mode & Dynamic Cinematic Camera (Option B)
+- [x] **Task 12.1**: Implement First-Person Cockpit View mode toggle (`V` key) with interior canopy frame struts and glass reflections.
+- [x] **Task 12.2**: Implement Cinematic Camera Director: Boss Intro cinematic sweep and Slow-Mo Orbit Kill-Cam on Dreadnought destruction.
+- [x] **Task 12.3**: Update HUD for First-Person immersion (integrated artificial pitch horizon, canopy frame glare, and seamless reticle alignment).
+- [x] **Task 12.4**: Compile, test, and verify Phase 12.
+
+## Phase 13: All-Range Mode 360° Dogfight Arena & Acrobatics (Option C)
+- [x] **Task 13.1**: Implement All-Range 360° dogfight arena physics transition at the boss arena with boundary warnings ("TURN BACK").
+- [x] **Task 13.2**: Implement Evasive Acrobatics: Somersault Loop-de-loop (`S + Boost`) and U-Turn maneuver (`S + Brake`).
+- [x] **Task 13.3**: Implement 360° Tactical Radar Minimap on HUD displaying player heading, arena perimeter, boss blip, and enemy bogeys.
+- [x] **Task 13.4**: Compile, test, and verify Phase 13.
+
+## Phase 14: Wingmen AI Squadron & Radio Chatter System (Option D)
+- [x] **Task 14.1**: Implement `WingmanSquadron` with two wingmen (Echo-1 "Striker" and Echo-2 "Aegis"), formation flight AI, and dogfight targeting.
+- [x] **Task 14.2**: Implement Wingman Distress events (enemy bogeys tailing wingmen, rescue rewards, radio distress alerts).
+- [x] **Task 14.3**: Synthesize procedural 16-bit arcade radio static and speech babble in `SoundManager`.
+- [x] **Task 14.4**: Implement HUD Vector Comms Box with animated pilot portraits, voice waveform bars, and dynamic dialog subtitle feed.
+- [x] **Task 14.5**: Compile, test, and verify Phase 14.
+

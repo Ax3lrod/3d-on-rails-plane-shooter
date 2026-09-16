@@ -214,6 +214,231 @@ void HUD::DrawText(const Shader& shader, const std::string& text, float x, float
     }
 }
 
+void HUD::DrawCockpitCanopyOverlay(const Shader& shader, int screenWidth, int screenHeight,
+                                  float pitch, float roll) const {
+    float sw = static_cast<float>(screenWidth);
+    float sh = static_cast<float>(screenHeight);
+
+    // 1. Lower Dashboard Console Cowl (dark armored composite rim)
+    DrawRect(shader, 0.0f, sh - 48.0f, sw, 48.0f, glm::vec3(0.04f, 0.06f, 0.09f), 0.95f);
+    DrawRect(shader, 0.0f, sh - 52.0f, sw, 4.0f, glm::vec3(0.12f, 0.22f, 0.35f), 0.90f);
+    DrawRect(shader, sw * 0.5f - 180.0f, sh - 62.0f, 360.0f, 12.0f, glm::vec3(0.06f, 0.09f, 0.14f), 0.92f);
+    DrawRectOutline(shader, sw * 0.5f - 180.0f, sh - 62.0f, 360.0f, 12.0f, 1.5f, glm::vec3(0.2f, 0.55f, 0.85f), 0.85f);
+
+    // Center Cockpit Callout
+    DrawText(shader, "INTERCEPTOR COCKPIT // SYS ONLINE", sw * 0.5f - 130.0f, sh - 32.0f, 1.3f, glm::vec3(0.3f, 0.85f, 1.0f), 0.9f);
+
+    // 2. Left & Right Angled Canopy Struts (A-Pillars)
+    float strutW = 32.0f;
+    DrawRect(shader, 0.0f, 0.0f, strutW, sh, glm::vec3(0.05f, 0.07f, 0.11f), 0.88f);
+    DrawRect(shader, strutW, 0.0f, 3.0f, sh, glm::vec3(0.2f, 0.45f, 0.7f), 0.75f);
+
+    DrawRect(shader, sw - strutW, 0.0f, strutW, sh, glm::vec3(0.05f, 0.07f, 0.11f), 0.88f);
+    DrawRect(shader, sw - strutW - 3.0f, 0.0f, 3.0f, sh, glm::vec3(0.2f, 0.45f, 0.7f), 0.75f);
+
+    // Upper Canopy Brow Frame
+    DrawRect(shader, 0.0f, 0.0f, sw, 22.0f, glm::vec3(0.05f, 0.07f, 0.11f), 0.88f);
+    DrawRect(shader, 0.0f, 22.0f, sw, 2.5f, glm::vec3(0.2f, 0.45f, 0.7f), 0.75f);
+
+    // 3. Canopy Glass Reflection Glare Line (Subtle diagonal cyan shimmer)
+    float curTime = static_cast<float>(glfwGetTime());
+    float glareX = std::fmod(curTime * 90.0f, sw * 1.5f) - sw * 0.25f;
+    DrawRect(shader, glareX, 24.0f, 14.0f, sh - 76.0f, glm::vec3(0.3f, 0.85f, 1.0f), 0.08f);
+    DrawRect(shader, glareX + 22.0f, 24.0f, 6.0f, sh - 76.0f, glm::vec3(0.3f, 0.85f, 1.0f), 0.12f);
+
+    // 4. Center Pitch Horizon Ladder (HUD Flight Director)
+    float centerX = sw * 0.5f;
+    float centerY = sh * 0.5f;
+    float pitchOffsetY = -pitch * 3.2f; // Pitch shifts horizon vertically
+
+    // Central Boresight Cross
+    DrawRect(shader, centerX - 18.0f, centerY, 12.0f, 2.0f, glm::vec3(0.2f, 0.9f, 0.7f), 0.8f);
+    DrawRect(shader, centerX + 6.0f, centerY, 12.0f, 2.0f, glm::vec3(0.2f, 0.9f, 0.7f), 0.8f);
+    DrawRect(shader, centerX - 1.0f, centerY - 8.0f, 2.0f, 6.0f, glm::vec3(0.2f, 0.9f, 0.7f), 0.8f);
+
+    // Horizon Line
+    float horizY = centerY + pitchOffsetY;
+    if (horizY > 60.0f && horizY < sh - 80.0f) {
+        DrawRect(shader, centerX - 90.0f, horizY, 60.0f, 2.0f, glm::vec3(0.2f, 0.9f, 0.4f), 0.75f);
+        DrawRect(shader, centerX + 30.0f, horizY, 60.0f, 2.0f, glm::vec3(0.2f, 0.9f, 0.4f), 0.75f);
+        DrawText(shader, "HORIZON", centerX - 25.0f, horizY - 10.0f, 1.0f, glm::vec3(0.2f, 0.9f, 0.4f), 0.7f);
+    }
+
+    // +10 Deg Pitch Bar
+    float pitchUpY = centerY + pitchOffsetY - 45.0f;
+    if (pitchUpY > 60.0f && pitchUpY < sh - 80.0f) {
+        DrawRect(shader, centerX - 55.0f, pitchUpY, 35.0f, 1.5f, glm::vec3(0.2f, 0.8f, 1.0f), 0.65f);
+        DrawRect(shader, centerX + 20.0f, pitchUpY, 35.0f, 1.5f, glm::vec3(0.2f, 0.8f, 1.0f), 0.65f);
+        DrawText(shader, "+10", centerX + 60.0f, pitchUpY - 4.0f, 0.9f, glm::vec3(0.2f, 0.8f, 1.0f), 0.65f);
+    }
+
+    // -10 Deg Pitch Bar
+    float pitchDnY = centerY + pitchOffsetY + 45.0f;
+    if (pitchDnY > 60.0f && pitchDnY < sh - 80.0f) {
+        DrawRect(shader, centerX - 55.0f, pitchDnY, 35.0f, 1.5f, glm::vec3(1.0f, 0.65f, 0.2f), 0.65f);
+        DrawRect(shader, centerX + 20.0f, pitchDnY, 35.0f, 1.5f, glm::vec3(1.0f, 0.65f, 0.2f), 0.65f);
+        DrawText(shader, "-10", centerX + 60.0f, pitchDnY - 4.0f, 0.9f, glm::vec3(1.0f, 0.65f, 0.2f), 0.65f);
+    }
+}
+
+void HUD::DrawRadarMinimap(const Shader& shader, float rx, float ry, float radius,
+                          const glm::vec3& playerPos, float playerYaw,
+                          const glm::vec3& bossPos, bool bossActive,
+                          const std::vector<glm::vec3>& enemyPositions) const {
+    float curTime = static_cast<float>(glfwGetTime());
+
+    // 1. Radar Backplate
+    DrawRect(shader, rx - radius - 6.0f, ry - radius - 6.0f, radius * 2.0f + 12.0f, radius * 2.0f + 12.0f,
+             glm::vec3(0.03f, 0.06f, 0.10f), 0.82f);
+    DrawRectOutline(shader, rx - radius - 6.0f, ry - radius - 6.0f, radius * 2.0f + 12.0f, radius * 2.0f + 12.0f,
+                    1.5f, glm::vec3(0.2f, 0.45f, 0.70f), 0.75f);
+
+    // Range rings
+    DrawRectOutline(shader, rx - radius * 0.5f, ry - radius * 0.5f, radius, radius, 1.0f,
+                    glm::vec3(0.12f, 0.28f, 0.42f), 0.6f);
+    DrawRectOutline(shader, rx - radius, ry - radius, radius * 2.0f, radius * 2.0f, 1.5f,
+                    glm::vec3(0.2f, 0.55f, 0.85f), 0.85f);
+
+    // Crosshairs
+    DrawRect(shader, rx - radius, ry, radius * 2.0f, 1.0f, glm::vec3(0.15f, 0.35f, 0.5f), 0.5f);
+    DrawRect(shader, rx, ry - radius, 1.0f, radius * 2.0f, glm::vec3(0.15f, 0.35f, 0.5f), 0.5f);
+
+    // Labels
+    DrawText(shader, "N", rx - 3.0f, ry - radius - 4.0f, 0.9f, glm::vec3(0.3f, 0.8f, 1.0f), 0.8f);
+    DrawText(shader, "RADAR 360", rx - radius + 4.0f, ry + radius - 10.0f, 0.9f, glm::vec3(0.3f, 0.8f, 1.0f), 0.8f);
+
+    // 2. Rotating Sweep Line
+    float sweepAngle = curTime * 140.0f;
+    float sweepRad = glm::radians(sweepAngle);
+    float sweepX = rx + std::sin(sweepRad) * (radius - 2.0f);
+    float sweepY = ry - std::cos(sweepRad) * (radius - 2.0f);
+    DrawRect(shader, (rx + sweepX) * 0.5f - 1.0f, (ry + sweepY) * 0.5f - 1.0f, 3.0f, 3.0f, glm::vec3(0.2f, 1.0f, 0.7f), 0.7f);
+
+    // Range scale: 220.0f world units maps to radar radius
+    float worldRange = 220.0f;
+    float scale = radius / worldRange;
+
+    // 3. Enemy Drone Blips
+    for (const auto& ep : enemyPositions) {
+        float dx = ep.x - playerPos.x;
+        float dz = ep.z - playerPos.z;
+
+        float mapX = rx + dx * scale;
+        float mapY = ry + dz * scale;
+
+        if (glm::distance(glm::vec2(mapX, mapY), glm::vec2(rx, ry)) <= radius) {
+            DrawRect(shader, mapX - 2.0f, mapY - 2.0f, 4.0f, 4.0f, glm::vec3(1.0f, 0.2f, 0.2f), 0.95f);
+        }
+    }
+
+    // 4. Dreadnought Boss Blip
+    if (bossActive) {
+        float dx = bossPos.x - playerPos.x;
+        float dz = bossPos.z - playerPos.z;
+
+        float mapX = rx + dx * scale;
+        float mapY = ry + dz * scale;
+
+        float dist = glm::distance(glm::vec2(mapX, mapY), glm::vec2(rx, ry));
+        if (dist > radius - 6.0f) {
+            glm::vec2 dir = glm::normalize(glm::vec2(mapX - rx, mapY - ry));
+            mapX = rx + dir.x * (radius - 6.0f);
+            mapY = ry + dir.y * (radius - 6.0f);
+        }
+
+        float flash = (std::sin(curTime * 12.0f) > 0.0f) ? 1.0f : 0.4f;
+        DrawRect(shader, mapX - 4.0f, mapY - 4.0f, 8.0f, 8.0f, glm::vec3(1.0f, 0.1f, 0.1f), flash);
+        DrawRectOutline(shader, mapX - 4.0f, mapY - 4.0f, 8.0f, 8.0f, 1.5f, glm::vec3(1.0f, 0.85f, 0.2f), 0.9f);
+        DrawText(shader, "BOSS", mapX - 10.0f, mapY - 12.0f, 0.9f, glm::vec3(1.0f, 0.3f, 0.3f), 0.9f);
+    }
+
+    // 5. Player Interceptor Blip in Center
+    DrawRect(shader, rx - 3.0f, ry - 3.0f, 6.0f, 6.0f, glm::vec3(0.2f, 0.95f, 0.35f), 1.0f);
+    float headRad = glm::radians(playerYaw);
+    float hx = rx - std::sin(headRad) * 10.0f;
+    float hy = ry - std::cos(headRad) * 10.0f;
+    DrawRect(shader, hx - 1.5f, hy - 1.5f, 3.0f, 3.0f, glm::vec3(0.4f, 1.0f, 0.8f), 1.0f);
+}
+
+void HUD::DrawCommsBox(const Shader& shader, int screenWidth, int screenHeight,
+                      bool hasMessage, int speakerId,
+                      const std::string& callsign,
+                      const std::string& line1, const std::string& line2,
+                      const glm::vec3& themeColor, float /*timer*/) const {
+    if (!hasMessage) return;
+
+    float curTime = static_cast<float>(glfwGetTime());
+
+    float boxW = 460.0f;
+    float boxH = 90.0f;
+    float boxX = 28.0f;
+    float boxY = static_cast<float>(screenHeight) - boxH - 24.0f;
+
+    // 1. Semi-transparent dark tactical backdrop
+    DrawRect(shader, boxX, boxY, boxW, boxH, glm::vec3(0.04f, 0.07f, 0.12f), 0.88f);
+    DrawRectOutline(shader, boxX, boxY, boxW, boxH, 1.5f, themeColor, 0.90f);
+
+    // Cyberpunk corner ticks
+    DrawRect(shader, boxX, boxY, 12.0f, 3.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX, boxY, 3.0f, 12.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX + boxW - 12.0f, boxY, 12.0f, 3.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX + boxW - 3.0f, boxY, 3.0f, 12.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX, boxY + boxH - 3.0f, 12.0f, 3.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX, boxY + boxH - 12.0f, 3.0f, 12.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX + boxW - 12.0f, boxY + boxH - 3.0f, 12.0f, 3.0f, themeColor, 1.0f);
+    DrawRect(shader, boxX + boxW - 3.0f, boxY + boxH - 12.0f, 3.0f, 12.0f, themeColor, 1.0f);
+
+    // 2. Vector Pilot Portrait Frame (Left side: 66 x 66)
+    float portX = boxX + 12.0f;
+    float portY = boxY + 12.0f;
+    float portSize = 66.0f;
+
+    DrawRect(shader, portX, portY, portSize, portSize, glm::vec3(0.02f, 0.04f, 0.08f), 0.95f);
+    DrawRectOutline(shader, portX, portY, portSize, portSize, 1.0f, themeColor, 0.75f);
+
+    float cx = portX + portSize * 0.5f;
+    float cy = portY + portSize * 0.5f;
+
+    if (speakerId == 0) {
+        // Echo-1: Striker (Avian / Raptor Helmet Visor)
+        DrawRect(shader, cx - 18.0f, cy - 20.0f, 36.0f, 14.0f, glm::vec3(0.2f, 0.22f, 0.26f), 0.9f);
+        DrawRect(shader, cx - 14.0f, cy - 23.0f, 28.0f, 3.5f, themeColor, 0.95f); // Crest
+        DrawRect(shader, cx - 16.0f, cy - 7.0f, 32.0f, 9.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f); // Amber visor
+        DrawRect(shader, cx - 5.0f, cy + 3.0f, 10.0f, 7.0f, themeColor, 0.9f); // Beak vent
+        DrawRect(shader, cx - 21.0f, cy - 5.0f, 5.0f, 14.0f, glm::vec3(0.5f, 0.55f, 0.6f), 0.9f); // Mic
+        DrawRect(shader, cx - 19.0f, cy + 7.0f, 14.0f, 2.0f, glm::vec3(0.5f, 0.55f, 0.6f), 0.9f);
+    } else {
+        // Echo-2: Aegis (Feline / Lynx Helmet Visor)
+        DrawRect(shader, cx - 18.0f, cy - 18.0f, 36.0f, 13.0f, glm::vec3(0.18f, 0.24f, 0.28f), 0.9f);
+        DrawRect(shader, cx - 19.0f, cy - 24.0f, 7.0f, 7.0f, themeColor, 0.95f); // Left ear
+        DrawRect(shader, cx + 12.0f, cy - 24.0f, 7.0f, 7.0f, themeColor, 0.95f); // Right ear
+        DrawRect(shader, cx - 17.0f, cy - 6.0f, 34.0f, 8.0f, glm::vec3(0.2f, 0.95f, 0.9f), 0.95f); // Cyan visor
+        DrawRect(shader, cx - 9.0f, cy + 3.0f, 18.0f, 5.0f, glm::vec3(0.25f, 0.3f, 0.35f), 0.9f);
+        DrawRect(shader, cx + 17.0f, cy - 7.0f, 4.0f, 13.0f, glm::vec3(0.5f, 0.6f, 0.65f), 0.9f);
+    }
+
+    // Animated Speech Equalizer / Waveform Bars
+    float barStartX = portX + 9.0f;
+    float barY = portY + portSize - 10.0f;
+    for (int b = 0; b < 7; ++b) {
+        float wave = std::abs(std::sin(curTime * 20.0f + b * 1.3f));
+        float barH = 3.0f + wave * 9.0f;
+        DrawRect(shader, barStartX + b * 7.0f, barY - barH, 4.0f, barH, themeColor, 0.9f);
+    }
+
+    // 3. Header Text: Callsign & Blinking Transmission Tag
+    float textX = portX + portSize + 14.0f;
+    DrawText(shader, callsign, textX, boxY + 14.0f, 1.4f, themeColor, 1.0f);
+
+    float blink = (std::sin(curTime * 8.0f) > 0.0f) ? 1.0f : 0.25f;
+    DrawRect(shader, boxX + boxW - 85.0f, boxY + 16.0f, 6.0f, 6.0f, glm::vec3(0.2f, 1.0f, 0.4f), blink);
+    DrawText(shader, "COMMS", boxX + boxW - 74.0f, boxY + 15.0f, 1.1f, glm::vec3(0.6f, 0.9f, 0.7f), 0.9f);
+
+    // 4. Subtitle Feed Lines
+    DrawText(shader, line1, textX, boxY + 38.0f, 1.3f, glm::vec3(0.95f, 0.98f, 1.0f), 0.95f);
+    DrawText(shader, line2, textX, boxY + 58.0f, 1.2f, glm::vec3(0.75f, 0.85f, 0.95f), 0.90f);
+}
+
 void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
                  float shield, float maxShield,
                  float boost, float maxBoost, bool isOverheated,
@@ -225,7 +450,17 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
                  bool isVictory, bool isGameOver,
                  float leftWingHealth, bool leftWingLost,
                  float rightWingHealth, bool rightWingLost,
-                 float wingAlertTimer, const std::string& wingAlertMsg) const {
+                 float wingAlertTimer, const std::string& wingAlertMsg,
+                 bool isFirstPerson, float playerPitch, float playerRoll,
+                 const glm::vec3& playerPos, float playerYaw,
+                 const glm::vec3& bossPos,
+                 const std::vector<glm::vec3>& enemyPositions,
+                 bool hasComms, int commsSpeaker,
+                 const std::string& commsCallsign,
+                 const std::string& commsLine1,
+                 const std::string& commsLine2,
+                 const glm::vec3& commsColor,
+                 float commsTimer) const {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -242,6 +477,11 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
     shader.SetInt("uUseColorOverride", 1);
 
     float curTime = static_cast<float>(glfwGetTime());
+
+    // 0. Draw First-Person Cockpit Canopy Overlay
+    if (isFirstPerson && !isVictory && !isGameOver) {
+        DrawCockpitCanopyOverlay(shader, screenWidth, screenHeight, playerPitch, playerRoll);
+    }
 
     // =========================================================================
     // 1. TOP-LEFT CLUSTER: PILOT FLIGHT SYSTEMS
@@ -521,6 +761,20 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
         DrawText(shader, finalScoreBuf, gx + 145.0f, gy + 94.0f, 1.8f, glm::vec3(1.0f, 0.85f, 0.3f), 0.95f);
 
         DrawText(shader, "PRESS [R] OR [SPACE] TO RETRY", gx + 120.0f, gy + 118.0f, 1.4f, glm::vec3(0.85f, 0.85f, 0.9f), 0.9f);
+    }
+
+    // 7. Tactical 360-Degree Minimap (Bottom-Right)
+    if (!isVictory && !isGameOver) {
+        float rRadius = 65.0f;
+        float rx = static_cast<float>(screenWidth) - rRadius - 28.0f;
+        float ry = static_cast<float>(screenHeight) - rRadius - 28.0f;
+        DrawRadarMinimap(shader, rx, ry, rRadius, playerPos, playerYaw, bossPos, bossActive, enemyPositions);
+    }
+
+    // 8. Vector Radio Comms Box (Bottom-Left)
+    if (!isVictory && !isGameOver) {
+        DrawCommsBox(shader, screenWidth, screenHeight, hasComms, commsSpeaker,
+                     commsCallsign, commsLine1, commsLine2, commsColor, commsTimer);
     }
 
     glDisable(GL_BLEND);

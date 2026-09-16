@@ -56,6 +56,24 @@ public:
     float spinDirection;
     float spinRoll;
 
+    // All-Range Mode 360 Dogfight Flight
+    bool isAllRangeMode;
+    glm::vec3 arenaCenter;
+    float arenaRadius;
+    bool isOutOfBounds;
+    float outOfBoundsTimer;
+    float headingYaw;
+
+    // Evasive Acrobatics (Somersault & U-Turn)
+    bool isSomersaulting;
+    float somersaultTimer;
+    float somersaultDuration;
+    float somersaultPitch;
+    bool isUTurning;
+    float uTurnTimer;
+    float uTurnDuration;
+    float uTurnStartYaw;
+
     // Boost meter & heat
     float boostMeter;
     float maxBoost;
@@ -125,12 +143,18 @@ public:
     bool HasLeftWing() const { return !leftWingLost; }
     bool HasRightWing() const { return !rightWingLost; }
 
+    void SetAllRangeMode(bool enable, const glm::vec3& center = glm::vec3(0.0f, 0.0f, -1000.0f), float radius = 240.0f);
+    bool TriggerSomersault();
+    bool TriggerUTurn();
+    bool IsAcrobatic() const { return isSpinning || isSomersaulting || isUTurning; }
+    glm::vec3 GetForwardVector() const;
+
     glm::vec3 GetLeftMuzzlePos() const;
     glm::vec3 GetRightMuzzlePos() const;
     glm::vec3 GetNosePos() const;
     glm::vec3 GetNearTargetPos() const;
     glm::vec3 GetFarTargetPos() const;
-    bool IsDeflecting() const { return isSpinning; }
+    bool IsDeflecting() const { return isSpinning || isSomersaulting || isUTurning; }
 };
 
 #endif

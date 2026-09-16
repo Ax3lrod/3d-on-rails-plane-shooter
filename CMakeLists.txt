@@ -49,6 +49,7 @@ set(SOURCES
     src/world/WorldEnvironment.cpp
     src/ui/HUD.cpp
     src/audio/SoundManager.cpp
+    src/entities/WingmanSquadron.cpp
 )
 add_executable(OpenGLProject ${SOURCES})
 

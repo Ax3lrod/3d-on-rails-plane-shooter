@@ -67,7 +67,21 @@ PlayerStarfighter::PlayerStarfighter()
       leftWingLost(false),
       rightWingLost(false),
       wingAlertTimer(0.0f),
-      wingAlertMessage("") {}
+      wingAlertMessage(""),
+      isAllRangeMode(false),
+      arenaCenter(0.0f, 0.0f, -1000.0f),
+      arenaRadius(240.0f),
+      isOutOfBounds(false),
+      outOfBoundsTimer(0.0f),
+      headingYaw(0.0f),
+      isSomersaulting(false),
+      somersaultTimer(0.0f),
+      somersaultDuration(0.85f),
+      somersaultPitch(0.0f),
+      isUTurning(false),
+      uTurnTimer(0.0f),
+      uTurnDuration(0.95f),
+      uTurnStartYaw(0.0f) {}
 
 void PlayerStarfighter::TriggerSpin(float direction) {
     if (!isSpinning) {
@@ -123,6 +137,53 @@ bool PlayerStarfighter::LaunchBomb() {
         return true;
     }
     return false;
+}
+
+void PlayerStarfighter::SetAllRangeMode(bool enable, const glm::vec3& center, float radius) {
+    isAllRangeMode = enable;
+    arenaCenter = center;
+    arenaRadius = radius;
+    if (enable) {
+        minX = -radius * 1.1f;
+        maxX = radius * 1.1f;
+        minY = -25.0f;
+        maxY = 45.0f;
+    } else {
+        minX = -13.5f;
+        maxX = 13.5f;
+        minY = -6.5f;
+        maxY = 6.8f;
+        headingYaw = 0.0f;
+    }
+}
+
+bool PlayerStarfighter::TriggerSomersault() {
+    if (isSomersaulting || isUTurning || isSpinning) return false;
+    if (boostMeter < 15.0f || isOverheated) return false;
+
+    isSomersaulting = true;
+    somersaultTimer = 0.0f;
+    somersaultDuration = 0.95f;
+    somersaultPitch = 0.0f;
+    boostMeter = std::max(0.0f, boostMeter - 22.0f);
+    return true;
+}
+
+bool PlayerStarfighter::TriggerUTurn() {
+    if (isSomersaulting || isUTurning || isSpinning) return false;
+    if (boostMeter < 12.0f || isOverheated) return false;
+
+    isUTurning = true;
+    uTurnTimer = 0.0f;
+    uTurnDuration = 1.05f;
+    uTurnStartYaw = headingYaw;
+    somersaultPitch = 0.0f;
+    boostMeter = std::max(0.0f, boostMeter - 18.0f);
+    return true;
+}
+
+glm::vec3 PlayerStarfighter::GetForwardVector() const {
+    return transform.GetForward();
 }
 
 bool PlayerStarfighter::DamageLeftWing(float amount) {
@@ -227,8 +288,21 @@ void PlayerStarfighter::HandleInput(float dt) {
 
     // Boost & Brake logic (Shift to Boost, Ctrl/Alt to Brake)
     bool wantsBoost = Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyDown(GLFW_KEY_RIGHT_SHIFT);
+    bool justBoost = Input::IsKeyPressed(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyPressed(GLFW_KEY_RIGHT_SHIFT);
     bool wantsBrake = Input::IsKeyDown(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyDown(GLFW_KEY_RIGHT_CONTROL) ||
                       Input::IsKeyDown(GLFW_KEY_LEFT_ALT);
+    bool justBrake = Input::IsKeyPressed(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyPressed(GLFW_KEY_RIGHT_CONTROL) ||
+                     Input::IsKeyPressed(GLFW_KEY_LEFT_ALT);
+
+    bool pressS = Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN);
+    bool justS = Input::IsKeyPressed(GLFW_KEY_S) || Input::IsKeyPressed(GLFW_KEY_DOWN);
+
+    // Evasive Acrobatics (Star Fox 64 style: S + Boost = Somersault, S + Brake = U-Turn)
+    if ((pressS && justBoost) || (justS && wantsBoost)) {
+        TriggerSomersault();
+    } else if ((pressS && justBrake) || (justS && wantsBrake)) {
+        TriggerUTurn();
+    }
 
     if (isOverheated) {
         overheatTimer -= dt;
@@ -268,20 +342,31 @@ void PlayerStarfighter::HandleInput(float dt) {
 
     currentSpeed = glm::mix(currentSpeed, targetSpeed, 1.0f - std::exp(-8.0f * dt));
 
-    // Move in local corridor (X, Y)
-    transform.position.x += inputX * moveSpeedX * dt;
-    transform.position.y += inputY * moveSpeedY * dt;
+    if (isAllRangeMode) {
+        // Free 360-degree heading yaw steering
+        headingYaw -= inputX * 75.0f * dt;
+        if (headingYaw > 180.0f) headingYaw -= 360.0f;
+        if (headingYaw < -180.0f) headingYaw += 360.0f;
 
-    // Asymmetric aerodynamic drag / drift when wings are lost
-    if (leftWingLost && !rightWingLost) {
-        transform.position.x -= 3.2f * dt; // Drifts left
-    } else if (rightWingLost && !leftWingLost) {
-        transform.position.x += 3.2f * dt; // Drifts right
+        // Pitch / Altitude
+        transform.position.y += inputY * moveSpeedY * dt;
+        transform.position.y = std::clamp(transform.position.y, minY, maxY);
+    } else {
+        // Corridor rail movement (X, Y)
+        transform.position.x += inputX * moveSpeedX * dt;
+        transform.position.y += inputY * moveSpeedY * dt;
+
+        // Asymmetric aerodynamic drag / drift when wings are lost
+        if (leftWingLost && !rightWingLost) {
+            transform.position.x -= 3.2f * dt; // Drifts left
+        } else if (rightWingLost && !leftWingLost) {
+            transform.position.x += 3.2f * dt; // Drifts right
+        }
+
+        // Clamp inside corridor bounds
+        transform.position.x = std::clamp(transform.position.x, minX, maxX);
+        transform.position.y = std::clamp(transform.position.y, minY, maxY);
     }
-
-    // Clamp inside corridor bounds
-    transform.position.x = std::clamp(transform.position.x, minX, maxX);
-    transform.position.y = std::clamp(transform.position.y, minY, maxY);
 
     // Dynamic rotation coupling (banking when turning)
     float targetBank = -inputX * maxBankAngle;
@@ -307,8 +392,64 @@ void PlayerStarfighter::HandleInput(float dt) {
 void PlayerStarfighter::Update(float dt) {
     HandleInput(dt);
 
-    // Forward motion along Z axis (into the screen, -Z)
-    transform.position.z -= currentSpeed * dt;
+    // Evasive Somersault Loop-de-loop
+    if (isSomersaulting) {
+        somersaultTimer += dt;
+        float t = somersaultTimer / somersaultDuration;
+        if (t >= 1.0f) {
+            isSomersaulting = false;
+            somersaultPitch = 0.0f;
+        } else {
+            somersaultPitch = t * 360.0f;
+            transform.position.y += std::sin(t * 3.14159f * 2.0f) * 14.0f * dt;
+        }
+    }
+
+    // Evasive U-Turn Maneuver
+    if (isUTurning) {
+        uTurnTimer += dt;
+        float t = uTurnTimer / uTurnDuration;
+        if (t >= 1.0f) {
+            isUTurning = false;
+            headingYaw = uTurnStartYaw + 180.0f;
+            if (headingYaw > 180.0f) headingYaw -= 360.0f;
+            if (headingYaw < -180.0f) headingYaw += 360.0f;
+            somersaultPitch = 0.0f;
+        } else {
+            somersaultPitch = std::sin(t * 3.14159f) * 85.0f;
+            float smoothT = t * t * (3.0f - 2.0f * t);
+            headingYaw = uTurnStartYaw + smoothT * 180.0f;
+        }
+    }
+
+    // Forward motion: 360-degree vector in All-Range mode, -Z in Rail mode
+    if (isAllRangeMode) {
+        glm::vec3 fwd = transform.GetForward();
+        transform.position += fwd * (currentSpeed * dt);
+
+        // Arena boundary check
+        float dx = transform.position.x - arenaCenter.x;
+        float dz = transform.position.z - arenaCenter.z;
+        float distFromCenter = std::sqrt(dx * dx + dz * dz);
+
+        if (distFromCenter > arenaRadius * 0.85f) {
+            isOutOfBounds = true;
+            wingAlertTimer = 0.5f;
+            wingAlertMessage = "WARNING: COMBAT ZONE PERIMETER";
+        } else {
+            isOutOfBounds = false;
+        }
+
+        if (distFromCenter > arenaRadius) {
+            if (!isUTurning) {
+                TriggerUTurn();
+                wingAlertTimer = 2.0f;
+                wingAlertMessage = "U-TURN: RETURNING TO ARENA";
+            }
+        }
+    } else {
+        transform.position.z -= currentSpeed * dt;
+    }
 
     // Handle tactical barrel roll spin
     if (isSpinning) {
@@ -320,10 +461,12 @@ void PlayerStarfighter::Update(float dt) {
         } else {
             // Full 360 degree spin
             spinRoll = spinDirection * 360.0f * progress;
-            // Lateral evasive dash (slightly reduced agility if wing missing)
+            // Lateral evasive dash
             float dashSpeed = (leftWingLost || rightWingLost) ? 14.0f : 22.0f;
-            transform.position.x += spinDirection * dashSpeed * dt;
-            transform.position.x = std::clamp(transform.position.x, minX, maxX);
+            if (!isAllRangeMode) {
+                transform.position.x += spinDirection * dashSpeed * dt;
+                transform.position.x = std::clamp(transform.position.x, minX, maxX);
+            }
         }
     }
 
@@ -341,9 +484,9 @@ void PlayerStarfighter::Update(float dt) {
         if (lockRotation > 360.0f) lockRotation -= 360.0f;
     }
 
-    // Apply rotation to transform:
-    transform.rotation.x = currentPitch;
-    transform.rotation.y = currentYaw;
+    // Apply combined rotations to transform:
+    transform.rotation.x = currentPitch + somersaultPitch;
+    transform.rotation.y = headingYaw + currentYaw;
     transform.rotation.z = currentBank + spinRoll;
 
     // Update timers
@@ -450,9 +593,10 @@ glm::vec3 PlayerStarfighter::GetNosePos() const {
 }
 
 glm::vec3 PlayerStarfighter::GetNearTargetPos() const {
-    return transform.position + glm::vec3(0.0f, 0.0f, -20.0f);
+    return transform.position + GetForwardVector() * 20.0f;
 }
 
 glm::vec3 PlayerStarfighter::GetFarTargetPos() const {
-    return transform.position + glm::vec3(0.0f, 0.0f, -60.0f);
+    return transform.position + GetForwardVector() * 60.0f;
 }
+

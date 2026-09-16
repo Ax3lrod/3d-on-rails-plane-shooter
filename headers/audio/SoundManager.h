@@ -30,7 +30,9 @@ enum class SoundID {
     WarningSiren,
     VictoryFanfare,
     WingSnap,
-    WingRepair
+    WingRepair,
+    RadioStatic,
+    RadioChatter
 };
 
 struct SoundSample {
@@ -82,6 +84,8 @@ private:
     void GenerateVictoryFanfareSound();
     void GenerateWingSnapSound();
     void GenerateWingRepairSound();
+    void GenerateRadioStaticSound();
+    void GenerateRadioChatterSound();
 
     void AudioThreadFunc();
 

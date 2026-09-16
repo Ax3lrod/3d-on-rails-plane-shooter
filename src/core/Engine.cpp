@@ -17,6 +17,7 @@ Engine::Engine(int width, int height, const std::string& title)
       wasBrakingAudio(false),
       hadLockOnLastFrame(false),
       victoryFanfarePlayed(false),
+      bossDeathCamTriggered(false),
       lastFrameTime(0.0f) {}
 
 Engine::~Engine() {
@@ -31,6 +32,7 @@ Engine::~Engine() {
     boss.reset();
     hud.reset();
     audio.reset();
+    wingmen.reset();
     shader.Delete();
 
     if (window) {
@@ -100,6 +102,7 @@ bool Engine::Init() {
     hud = std::make_unique<HUD>();
     audio = std::make_unique<SoundManager>();
     audio->Init();
+    wingmen = std::make_unique<WingmanSquadron>();
 
     std::cout << "========================================================\n"
               << " 3D Rail-Shooter Engine initialized successfully!\n"
@@ -112,6 +115,9 @@ bool Engine::Init() {
               << "   - [Space] or [J] (Tap): Fire Dual Plasma Lasers\n"
               << "   - [Space] or [J] (Hold & Release): Charged Lock-on Plasma Shot!\n"
               << "   - [B] or [K]: Launch / Detonate Screen-Clearing Smart Bomb!\n"
+              << "   - [S + Shift]: Evasive Somersault Loop-de-loop!\n"
+              << "   - [S + Ctrl]: Evasive U-Turn 180 Flip!\n"
+              << "   - [V]: Toggle Cockpit First-Person / Chase Camera\n"
               << "   - [R]: Restart\n"
               << "========================================================" << std::endl;
 
@@ -125,6 +131,9 @@ void Engine::RestartGame() {
     particles->Clear();
     environment->Clear();
     enemies->Clear();
+    if (wingmen) {
+        wingmen->Reset();
+    }
     if (boss) {
         boss->Reset();
     }
@@ -141,6 +150,9 @@ void Engine::RestartGame() {
     wasBrakingAudio = false;
     hadLockOnLastFrame = false;
     victoryFanfarePlayed = false;
+    bossDeathCamTriggered = false;
+    camera.StopCinematic();
+    camera.SetViewMode(CameraViewMode::ThirdPerson);
     state = GameState::Playing;
 }
 
@@ -150,6 +162,18 @@ void Engine::ProcessInput(float) {
             RestartGame();
         }
         return;
+    }
+
+    // Toggle Cockpit First-Person / Third-Person Chase Cam
+    if (Input::IsKeyPressed(GLFW_KEY_V)) {
+        camera.ToggleViewMode();
+    }
+
+    // Skip Boss Intro Cinematic
+    if (camera.IsInCinematic() && camera.cinematicMode == CinematicMode::BossIntro) {
+        if (Input::IsKeyPressed(GLFW_KEY_SPACE) || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
+            camera.StopCinematic();
+        }
     }
 
     // 1. Fire regular lasers on initial press
@@ -198,7 +222,7 @@ void Engine::ProcessInput(float) {
     if (Input::IsKeyReleased(GLFW_KEY_SPACE) || Input::IsKeyReleased(GLFW_KEY_J)) {
         if (player->ReleaseChargedShot()) {
             glm::vec3 nosePos = player->GetNosePos();
-            ordnance->SpawnChargedShot(nosePos, glm::vec3(0.0f, 0.0f, -1.0f),
+            ordnance->SpawnChargedShot(nosePos, player->GetForwardVector(),
                                        player->hasLockOn, player->lockTargetPos);
 
             particles->SpawnExplosion(nosePos, 18, glm::vec3(0.2f, 1.0f, 0.8f));
@@ -223,7 +247,7 @@ void Engine::ProcessInput(float) {
             }
         } else if (player->LaunchBomb()) {
             glm::vec3 nosePos = player->GetNosePos();
-            ordnance->SpawnSmartBomb(nosePos, glm::vec3(0.0f, 0.0f, -1.0f));
+            ordnance->SpawnSmartBomb(nosePos, player->GetForwardVector());
             particles->SpawnExplosion(nosePos, 12, glm::vec3(1.0f, 0.85f, 0.2f));
             camera.TriggerShake(0.35f, 0.18f);
             if (audio) {
@@ -767,6 +791,8 @@ void Engine::Update(float dt) {
         if (!bossSpawned && player->transform.position.z <= -950.0f) {
             bossSpawned = true;
             boss->Spawn(player->transform.position.z);
+            camera.StartBossIntro(boss->transform.position, player->transform.position);
+            player->SetAllRangeMode(true, boss->transform.position, 230.0f);
         }
 
         // Lock-on targeting during charge shot (prioritize boss weakpoints)
@@ -806,11 +832,11 @@ void Engine::Update(float dt) {
         }
         wasSpinning = player->isSpinning;
 
-        // Boost thruster audio loop
+        // Dynamic Camera FOV Zoom & Thruster Audio Loops
         if (player->isBoosting) {
-            camera.SetTargetFOV(72.0f);
+            camera.SetTargetFOV(70.0f);
             if (!wasBoostingAudio && audio) {
-                audio->PlayLoop(SoundID::BoostRoar, 0.70f);
+                audio->PlayLoop(SoundID::BoostRoar, 0.85f);
                 wasBoostingAudio = true;
             }
         } else if (wasBoostingAudio && audio) {
@@ -818,11 +844,10 @@ void Engine::Update(float dt) {
             wasBoostingAudio = false;
         }
 
-        // Airbrake audio loop
         if (player->isBraking) {
-            camera.SetTargetFOV(54.0f);
+            camera.SetTargetFOV(52.0f);
             if (!wasBrakingAudio && audio) {
-                audio->PlayLoop(SoundID::BrakeHiss, 0.55f);
+                audio->PlayLoop(SoundID::BrakeHiss, 0.80f);
                 wasBrakingAudio = true;
             }
         } else if (wasBrakingAudio && audio) {
@@ -845,10 +870,10 @@ void Engine::Update(float dt) {
             wasChargingAudio = false;
         }
 
-        camera.Follow(player->transform.position, player->currentBank, dt);
+        camera.Follow(player->transform.position, player->transform.rotation.x, player->transform.rotation.y, player->transform.rotation.z, dt);
 
         // Emit engine thruster exhaust sparks
-        glm::vec3 shipVel(0.0f, 0.0f, -player->currentSpeed);
+        glm::vec3 shipVel = -player->GetForwardVector() * player->currentSpeed;
         glm::mat4 pModel = player->transform.GetModelMatrix();
         glm::vec3 leftExhaust = glm::vec3(pModel * glm::vec4(-0.28f, 0.0f, 1.45f, 1.0f));
         glm::vec3 rightExhaust = glm::vec3(pModel * glm::vec4(0.28f, 0.0f, 1.45f, 1.0f));
@@ -865,6 +890,15 @@ void Engine::Update(float dt) {
         }
         enemies->Update(player->transform.position.z, player->transform.position, *projectiles, dt, audio.get());
 
+        if (wingmen) {
+            int rescueBonus = 0;
+            wingmen->Update(dt, player->transform.position, player->headingYaw,
+                            player->currentSpeed, player->isAllRangeMode,
+                            player->leftWingLost, player->rightWingLost,
+                            *projectiles, *particles, *enemies, audio.get(), rescueBonus);
+            player->score += rescueBonus;
+        }
+
         if (boss) {
             boss->Update(dt, player->transform.position.z, player->transform.position,
                          *projectiles, *particles, camera, audio.get());
@@ -879,8 +913,12 @@ void Engine::Update(float dt) {
             }
 
             if (boss->IsDefeated()) {
+                if (!bossDeathCamTriggered) {
+                    bossDeathCamTriggered = true;
+                    camera.StartBossDeathSlowMo(boss->transform.position);
+                }
                 victoryTimer += dt;
-                if (victoryTimer >= 1.2f) {
+                if (victoryTimer >= 3.4f) {
                     state = GameState::Victory;
                     if (!victoryFanfarePlayed && audio) {
                         audio->Play(SoundID::VictoryFanfare, 1.0f);
@@ -934,6 +972,9 @@ void Engine::Render() {
 
     if (state == GameState::Playing || state == GameState::Victory) {
         player->Draw(shader);
+        if (wingmen) {
+            wingmen->Draw(shader);
+        }
         if (state == GameState::Playing) {
             reticle->Draw(shader, player->GetNearTargetPos(), player->GetFarTargetPos(),
                           player->hasLockOn, player->lockTargetPos, player->lockRotation);
@@ -949,6 +990,21 @@ void Engine::Render() {
     bool bSDown = boss ? boss->shieldGen.destroyed : false;
     bool bCoreExp = boss ? (boss->state == BossState::Phase2_ExposedCore) : false;
 
+    std::vector<glm::vec3> enemyPositions;
+    for (const auto& e : enemies->enemies) {
+        if (e.active) {
+            enemyPositions.push_back(e.transform.position);
+        }
+    }
+
+    bool hasComms = wingmen ? wingmen->hasActiveMessage : false;
+    int commsSpeaker = (wingmen && hasComms) ? static_cast<int>(wingmen->activeMessage.speaker) : 0;
+    std::string commsCallsign = (wingmen && hasComms) ? wingmen->activeMessage.callsign : "";
+    std::string commsLine1 = (wingmen && hasComms) ? wingmen->activeMessage.line1 : "";
+    std::string commsLine2 = (wingmen && hasComms) ? wingmen->activeMessage.line2 : "";
+    glm::vec3 commsColor = (wingmen && hasComms) ? wingmen->activeMessage.color : glm::vec3(1.0f);
+    float commsTimer = (wingmen && hasComms) ? wingmen->activeMessage.timer : 0.0f;
+
     hud->Render(shader, windowWidth, windowHeight,
                 player->shield, player->maxShield,
                 player->boostMeter, player->maxBoost, player->isOverheated,
@@ -959,7 +1015,12 @@ void Engine::Render() {
                 state == GameState::Victory, state == GameState::GameOver,
                 player->leftWingHealth, player->leftWingLost,
                 player->rightWingHealth, player->rightWingLost,
-                player->wingAlertTimer, player->wingAlertMessage);
+                player->wingAlertTimer, player->wingAlertMessage,
+                camera.IsFirstPerson(), player->currentPitch, player->currentBank,
+                player->transform.position, player->headingYaw,
+                boss ? boss->transform.position : glm::vec3(0.0f),
+                enemyPositions,
+                hasComms, commsSpeaker, commsCallsign, commsLine1, commsLine2, commsColor, commsTimer);
 
     glfwSwapBuffers(window);
 }
