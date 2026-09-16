@@ -18,6 +18,8 @@ public:
     void Delete();
 
     void SetMat4(const std::string& name, const glm::mat4& mat) const;
+    void SetVec2(const std::string& name, const glm::vec2& vec) const;
+    void SetVec2(const std::string& name, float x, float y) const;
     void SetVec3(const std::string& name, const glm::vec3& vec) const;
     void SetVec3(const std::string& name, float x, float y, float z) const;
     void SetVec4(const std::string& name, const glm::vec4& vec) const;

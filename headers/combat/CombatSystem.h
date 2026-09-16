@@ -107,6 +107,7 @@ public:
     void SpawnExplosion(const glm::vec3& pos, int count, const glm::vec3& primaryColor);
     void SpawnThrusterSparks(const glm::vec3& pos, const glm::vec3& shipVel);
     void SpawnChargeInwardSparks(const glm::vec3& centerPos, float chargeProgress);
+    void SpawnSurfacePlume(const glm::vec3& shipPos, float altitude, const glm::vec3& shipVel, float bankAngle);
     void Update(float dt);
     void Draw(const Shader& shader) const;
     void Clear();

@@ -50,6 +50,7 @@ set(SOURCES
     src/ui/HUD.cpp
     src/audio/SoundManager.cpp
     src/entities/WingmanSquadron.cpp
+    src/renderer/PostProcessor.cpp
 )
 add_executable(OpenGLProject ${SOURCES})
 

@@ -52,12 +52,19 @@ public:
     static Mesh CreateSphere(float radius, int rings, int sectors, const glm::vec3& color);
     static Mesh CreateShockwave(float radius, float thickness, int segments, const glm::vec3& color);
     static Mesh CreateLockOnDiamond(float size, const glm::vec3& color);
-    static Mesh CreateCanyonSection(float length, float width, float wallHeight, const glm::vec3& floorCol, const glm::vec3& wallCol);
+    static Mesh CreateCanyonSection(float length, float width, float wallHeight,
+                                   const glm::vec3& floorColA, const glm::vec3& floorColB,
+                                   const glm::vec3& wallCol);
+    static Mesh CreateArcadeHorizon(float radius, float height,
+                                   const glm::vec3& skyTopCol, const glm::vec3& horizonCol,
+                                   const glm::vec3& mountainCol);
     static Mesh CreateRockArch(float spanWidth, float height, float thickness, const glm::vec3& color);
     static Mesh CreatePillar(float radius, float height, const glm::vec3& color);
     static Mesh CreateBossHull(const glm::vec3& mainColor, const glm::vec3& accentColor);
     static Mesh CreateBossTurret(const glm::vec3& turretColor);
     static Mesh CreateBossCore(const glm::vec3& coreColor);
+    static Mesh CreateRadarRelay(float size, const glm::vec3& baseColor, const glm::vec3& dishColor, const glm::vec3& beaconColor);
+    static Mesh CreateSpaceDebris(float length, float width, const glm::vec3& color);
 };
 
 #endif

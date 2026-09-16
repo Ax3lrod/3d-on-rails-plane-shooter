@@ -43,6 +43,11 @@ public:
     float rollTiltDamping;
     float currentRollTilt;
 
+    // Ex-Zodiac decoupled frustum tracking parameters
+    float lateralTrackingRatio;
+    float verticalTrackingRatio;
+    float maxRollTiltDeg;
+
     // Screen shake
     float shakeTimer;
     float shakeDuration;
@@ -63,7 +68,8 @@ public:
     bool IsInCinematic() const { return cinematicMode != CinematicMode::None; }
     bool IsFirstPerson() const { return viewMode == CameraViewMode::CockpitFirstPerson && cinematicMode == CinematicMode::None; }
 
-    void Follow(const glm::vec3& playerPos, float playerPitch, float playerYaw, float playerRoll, float dt);
+    void Follow(const glm::vec3& playerPos, float playerPitch, float playerYaw, float playerRoll,
+                float dt, bool isAllRange = false, bool isBoost = false, bool isBrake = false);
     void Update(float dt);
 
     glm::mat4 GetViewMatrix() const;

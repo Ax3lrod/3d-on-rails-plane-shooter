@@ -98,6 +98,12 @@ void OrdnanceManager::SpawnChargedShot(const glm::vec3& origin, const glm::vec3&
                                        bool hasLock, const glm::vec3& lockTarget) {
     float speed = 160.0f;
     glm::vec3 dir = glm::normalize(forwardDir);
+    if (hasLock) {
+        glm::vec3 toTarget = lockTarget - origin;
+        if (glm::length(toTarget) > 1.0f) {
+            dir = glm::normalize(toTarget);
+        }
+    }
 
     chargedShots.push_back({
         origin,
@@ -332,6 +338,58 @@ void ParticleSystem::SpawnChargeInwardSparks(const glm::vec3& centerPos, float c
     }
 }
 
+void ParticleSystem::SpawnSurfacePlume(const glm::vec3& shipPos, float altitude, const glm::vec3& shipVel, float bankAngle) {
+    if (altitude > 3.6f || altitude < 0.1f) return;
+
+    // Intensity increases significantly as the starfighter skims lower
+    float intensity = std::clamp(1.0f - (altitude / 3.6f), 0.0f, 1.0f);
+    float surfaceY = shipPos.y - altitude + 0.05f;
+
+    // Spawn 2 to 4 spray particles per frame when skimming
+    int count = static_cast<int>(2 + intensity * 3);
+    for (int i = 0; i < count; ++i) {
+        float side = (i % 2 == 0) ? -1.0f : 1.0f;
+        // Bank bias: lower wing generates wider spray
+        float bankBias = (side < 0.0f) ? std::max(0.0f, -bankAngle * 0.02f) : std::max(0.0f, bankAngle * 0.02f);
+        float lateralOffset = side * (0.9f + ((float)rand() / RAND_MAX) * 1.8f + bankBias);
+
+        glm::vec3 spawnPos(
+            shipPos.x + lateralOffset + RandomBipolar() * 0.25f,
+            surfaceY,
+            shipPos.z + 0.3f + RandomBipolar() * 0.6f
+        );
+
+        // Rooster-tail upward spray velocity + lateral flare
+        float sprayVy = 3.4f + intensity * 5.5f + ((float)rand() / RAND_MAX) * 2.5f;
+        float sprayVx = side * (2.8f + intensity * 4.2f) + (shipVel.x * 0.35f);
+        float sprayVz = 20.0f + ((float)rand() / RAND_MAX) * 16.0f; // slips backwards in world space
+
+        // Crisp retro arcade palette: bright white crest, vibrant cyan spray
+        glm::vec3 col;
+        float cRand = (float)rand() / RAND_MAX;
+        if (cRand > 0.55f) {
+            col = glm::vec3(0.95f, 0.98f, 1.0f); // Bright pure white spray crest
+        } else if (cRand > 0.2f) {
+            col = glm::vec3(0.35f, 0.85f, 1.0f); // Vivid cyan foam
+        } else {
+            col = glm::vec3(0.6f, 0.92f, 1.0f);  // Light sky blue mist
+        }
+
+        float lifetime = 0.22f + intensity * 0.16f + ((float)rand() / RAND_MAX) * 0.12f;
+        float size = 0.24f + intensity * 0.28f + ((float)rand() / RAND_MAX) * 0.15f;
+
+        particles.push_back({
+            spawnPos,
+            glm::vec3(sprayVx, sprayVy, sprayVz),
+            col,
+            lifetime,
+            lifetime,
+            size,
+            true
+        });
+    }
+}
+
 void ParticleSystem::Update(float dt) {
     for (auto& p : particles) {
         if (!p.active) continue;
@@ -351,6 +409,7 @@ void ParticleSystem::Update(float dt) {
 
 void ParticleSystem::Draw(const Shader& shader) const {
     shader.SetInt("uUseLighting", 0);
+    shader.SetInt("uUseColorOverride", 1);
 
     for (const auto& p : particles) {
         if (!p.active) continue;
@@ -363,9 +422,12 @@ void ParticleSystem::Draw(const Shader& shader) const {
         model = glm::scale(model, glm::vec3(currentScale));
 
         shader.SetMat4("uModel", model);
+        shader.SetVec3("uColorOverride", p.color);
         shader.SetFloat("uAlpha", lifeFraction);
         particleMesh.Draw(shader);
     }
+
+    shader.SetInt("uUseColorOverride", 0);
 }
 
 void ParticleSystem::Clear() {

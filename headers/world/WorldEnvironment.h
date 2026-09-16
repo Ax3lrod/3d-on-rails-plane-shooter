@@ -40,13 +40,38 @@ struct HazardPillar {
     bool destroyed;
 };
 
+enum class SectorStage {
+    Sector1_Canyon,
+    Sector2_DeepSpace
+};
+
+struct SecretRelay {
+    glm::vec3 position;
+    float radius;
+    float health;
+    float maxHealth;
+    bool destroyed;
+    float pulseTimer;
+};
+
+struct SpaceDebris {
+    glm::vec3 position;
+    glm::vec3 rotation;
+    glm::vec3 rotSpeed;
+    float radius;
+};
+
 class WorldEnvironment {
 public:
+    SectorStage currentSector;
+
     std::vector<RingGate> rings;
     std::vector<AsteroidObstacle> asteroids;
     std::vector<CanyonSlice> canyonSlices;
     std::vector<RockArchway> rockArches;
     std::vector<HazardPillar> pillars;
+    std::vector<SecretRelay> secretRelays;
+    std::vector<SpaceDebris> spaceDebris;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -54,11 +79,19 @@ public:
     Mesh canyonMesh;
     Mesh rockArchMesh;
     Mesh pillarMesh;
+    Mesh relayMesh;
+    Mesh debrisMesh;
+    Mesh horizonMesh;
 
     float nextSpawnZ;
     float despawnDistBehind;
+    float lastPlayerZ;
 
     WorldEnvironment();
+
+    void SetSector(SectorStage sector);
+    int GetDestroyedRelayCount() const;
+    int GetTotalRelayCount() const { return 3; }
 
     void Update(float playerZ, float dt);
     void Draw(const Shader& shader) const;

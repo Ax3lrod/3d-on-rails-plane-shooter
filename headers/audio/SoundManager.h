@@ -51,6 +51,14 @@ struct Voice {
     SoundID soundId;
 };
 
+enum class BGMTrack {
+    None = 0,
+    Title,
+    Stage1,
+    Boss,
+    Sector2
+};
+
 class SoundManager {
 public:
     SoundManager();
@@ -63,7 +71,17 @@ public:
     void PlayLoop(SoundID id, float volume = 1.0f, float pitch = 1.0f);
     void StopLoop(SoundID id);
     bool IsLoopPlaying(SoundID id) const;
+
+    void PlayBGM(BGMTrack track, float volume = 0.70f);
+    void StopBGM();
+    BGMTrack GetCurrentBGM() const { return currentBgm; }
+
     void SetMasterVolume(float vol);
+    void SetMusicVolume(float vol);
+    void SetSFXVolume(float vol);
+    float GetMasterVolume() const { return masterVolume.load(); }
+    float GetMusicVolume() const { return musicVolume.load(); }
+    float GetSFXVolume() const { return sfxVolume.load(); }
 
 private:
     void PrebakeSounds();
@@ -87,6 +105,11 @@ private:
     void GenerateRadioStaticSound();
     void GenerateRadioChatterSound();
 
+    void GenerateTitleBGM();
+    void GenerateStage1BGM();
+    void GenerateBossBGM();
+    void GenerateSector2BGM();
+
     void AudioThreadFunc();
 
     static const int SAMPLE_RATE = 44100;
@@ -95,11 +118,16 @@ private:
     static const int MAX_VOICES = 32;
 
     std::vector<SoundSample> soundBank;
+    std::vector<SoundSample> musicBank;
     Voice voices[MAX_VOICES];
+    Voice musicVoice;
+    BGMTrack currentBgm;
     mutable std::mutex voiceMutex;
 
     std::atomic<bool> isRunning;
     std::atomic<float> masterVolume;
+    std::atomic<float> musicVolume;
+    std::atomic<float> sfxVolume;
     std::thread audioThread;
 
 #ifdef _WIN32
@@ -111,3 +139,4 @@ private:
 };
 
 #endif
+

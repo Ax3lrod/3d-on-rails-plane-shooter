@@ -14,5 +14,8 @@ out/
 .vs/
 *.user
 *.suo
+# Runtime save files
+scores.dat
+*.dat
 CMakeUserPresets.json
 .DS_Store

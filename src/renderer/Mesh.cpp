@@ -422,18 +422,31 @@ Mesh Mesh::CreateCrosshair(float size, const glm::vec3& color) {
     std::vector<GLuint> inds;
 
     float s = size * 0.5f;
-    float t = size * 0.08f;
-    float gap = size * 0.2f;
+    float t = size * 0.065f;  // line thickness
+    float len = size * 0.32f; // corner bracket arm length
 
-    // 4 reticle brackets (Top, Bottom, Left, Right)
-    // Top bracket
-    AddQuad(verts, inds, {-t, gap, 0.0f}, {t, gap, 0.0f}, {t, s, 0.0f}, {-t, s, 0.0f}, color);
-    // Bottom bracket
-    AddQuad(verts, inds, {-t, -s, 0.0f}, {t, -s, 0.0f}, {t, -gap, 0.0f}, {-t, -gap, 0.0f}, color);
-    // Left bracket
-    AddQuad(verts, inds, {-s, -t, 0.0f}, {-gap, -t, 0.0f}, {-gap, t, 0.0f}, {-s, t, 0.0f}, color);
-    // Right bracket
-    AddQuad(verts, inds, {gap, -t, 0.0f}, {s, -t, 0.0f}, {s, t, 0.0f}, {gap, t, 0.0f}, color);
+    // Ex-Zodiac 4-Corner L-Brackets (Top-Left, Top-Right, Bottom-Left, Bottom-Right)
+    // 1. Top-Left Corner
+    AddQuad(verts, inds, {-s, s - t, 0.0f}, {-s + len, s - t, 0.0f}, {-s + len, s, 0.0f}, {-s, s, 0.0f}, color);
+    AddQuad(verts, inds, {-s, s - len, 0.0f}, {-s + t, s - len, 0.0f}, {-s + t, s, 0.0f}, {-s, s, 0.0f}, color);
+
+    // 2. Top-Right Corner
+    AddQuad(verts, inds, {s - len, s - t, 0.0f}, {s, s - t, 0.0f}, {s, s, 0.0f}, {s - len, s, 0.0f}, color);
+    AddQuad(verts, inds, {s - t, s - len, 0.0f}, {s, s - len, 0.0f}, {s, s, 0.0f}, {s - t, s, 0.0f}, color);
+
+    // 3. Bottom-Left Corner
+    AddQuad(verts, inds, {-s, -s, 0.0f}, {-s + len, -s, 0.0f}, {-s + len, -s + t, 0.0f}, {-s, -s + t, 0.0f}, color);
+    AddQuad(verts, inds, {-s, -s, 0.0f}, {-s + t, -s, 0.0f}, {-s + t, -s + len, 0.0f}, {-s, -s + len, 0.0f}, color);
+
+    // 4. Bottom-Right Corner
+    AddQuad(verts, inds, {s - len, -s, 0.0f}, {s, -s, 0.0f}, {s, -s + t, 0.0f}, {s - len, -s + t, 0.0f}, color);
+    AddQuad(verts, inds, {s - t, -s, 0.0f}, {s, -s, 0.0f}, {s, -s + len, 0.0f}, {s - t, -s + len, 0.0f}, color);
+
+    // Center Crosshair Micro-Tick
+    float ct = t * 0.75f;
+    float cl = size * 0.09f;
+    AddQuad(verts, inds, {-cl, -ct, 0.0f}, {cl, -ct, 0.0f}, {cl, ct, 0.0f}, {-cl, ct, 0.0f}, color);
+    AddQuad(verts, inds, {-ct, -cl, 0.0f}, {ct, -cl, 0.0f}, {ct, cl, 0.0f}, {-ct, cl, 0.0f}, color);
 
     return Mesh(verts, inds);
 }
@@ -545,7 +558,8 @@ Mesh Mesh::CreateLockOnDiamond(float size, const glm::vec3& color) {
 }
 
 Mesh Mesh::CreateCanyonSection(float length, float width, float wallHeight,
-                               const glm::vec3& floorCol, const glm::vec3& wallCol) {
+                               const glm::vec3& floorColA, const glm::vec3& floorColB,
+                               const glm::vec3& wallCol) {
     std::vector<Vertex> verts;
     std::vector<GLuint> inds;
 
@@ -553,9 +567,9 @@ Mesh Mesh::CreateCanyonSection(float length, float width, float wallHeight,
     float hl = length * 0.5f;
     float floorY = -7.5f;
 
-    // 1. Canyon Floor Grid (3 segments across width, 4 segments along length with low-poly variations)
-    const int xSegs = 4;
-    const int zSegs = 6;
+    // 1. Procedural 3D Checkered Surface (8 columns across width, 12 rows along length)
+    const int xSegs = 8;
+    const int zSegs = 12;
     float dx = width / xSegs;
     float dz = length / zSegs;
 
@@ -567,52 +581,145 @@ Mesh Mesh::CreateCanyonSection(float length, float width, float wallHeight,
             float x0 = -hw + ix * dx;
             float x1 = x0 + dx;
 
-            // Subtle elevation variation for natural canyon terrain
-            float y00 = floorY + std::sin(ix * 1.5f + iz * 2.1f) * 0.35f;
-            float y10 = floorY + std::sin((ix + 1) * 1.5f + iz * 2.1f) * 0.35f;
-            float y11 = floorY + std::sin((ix + 1) * 1.5f + (iz + 1) * 2.1f) * 0.35f;
-            float y01 = floorY + std::sin(ix * 1.5f + (iz + 1) * 2.1f) * 0.35f;
+            // Two-tone checkerboard tile selection (Space Harrier / Ex-Zodiac arcade grid)
+            bool isTileA = ((ix + iz) % 2 == 0);
+            glm::vec3 tileCol = isTileA ? floorColA : floorColB;
 
-            // Alternate color tone slightly for faceted terrain look
-            float shade = 0.92f + 0.16f * ((ix + iz) % 2);
+            // Subtle faceted water/canyon wave variations
+            float y00 = floorY + std::sin(ix * 1.2f + iz * 1.5f) * 0.15f;
+            float y10 = floorY + std::sin((ix + 1) * 1.2f + iz * 1.5f) * 0.15f;
+            float y11 = floorY + std::sin((ix + 1) * 1.2f + (iz + 1) * 1.5f) * 0.15f;
+            float y01 = floorY + std::sin(ix * 1.2f + (iz + 1) * 1.5f) * 0.15f;
+
             AddQuad(verts, inds,
                     {x0, y00, z0}, {x1, y10, z0}, {x1, y11, z1}, {x0, y01, z1},
-                    floorCol * shade);
+                    tileCol);
         }
     }
 
-    // 2. Left Cliff Wall (Rising from -hw to -hw - 9, up to floorY + wallHeight)
+    // 2. Left Cliff Wall (Faceted 3-Tier Low-Poly Canyon Face)
     for (int iz = 0; iz < zSegs; ++iz) {
         float z0 = -hl + iz * dz;
         float z1 = z0 + dz;
+        float shade = 0.90f + 0.18f * (iz % 2);
 
-        // Tier 1: Steep wall face
+        // Tier 1: Lower steep embankment
         glm::vec3 b0(-hw, floorY, z0);
         glm::vec3 b1(-hw, floorY, z1);
-        glm::vec3 m0(-hw - 4.0f, floorY + wallHeight * 0.55f, z0);
-        glm::vec3 m1(-hw - 4.0f, floorY + wallHeight * 0.55f, z1);
-        AddQuad(verts, inds, b0, m0, m1, b1, wallCol * 0.9f);
+        glm::vec3 m0(-hw - 3.5f, floorY + wallHeight * 0.45f, z0);
+        glm::vec3 m1(-hw - 3.5f, floorY + wallHeight * 0.45f, z1);
+        AddQuad(verts, inds, b0, m0, m1, b1, wallCol * 0.88f * shade);
 
-        // Tier 2: Upper ridge face
-        glm::vec3 t0(-hw - 8.0f, floorY + wallHeight, z0);
-        glm::vec3 t1(-hw - 8.0f, floorY + wallHeight, z1);
-        AddQuad(verts, inds, m0, t0, t1, m1, wallCol * 1.08f);
+        // Tier 2: Mid cliff face
+        glm::vec3 u0(-hw - 6.5f, floorY + wallHeight * 0.80f, z0);
+        glm::vec3 u1(-hw - 6.5f, floorY + wallHeight * 0.80f, z1);
+        AddQuad(verts, inds, m0, u0, u1, m1, wallCol * 1.05f * shade);
+
+        // Tier 3: Upper rim / plateau
+        glm::vec3 t0(-hw - 11.0f, floorY + wallHeight, z0);
+        glm::vec3 t1(-hw - 11.0f, floorY + wallHeight, z1);
+        AddQuad(verts, inds, u0, t0, t1, u1, wallCol * 1.18f * shade);
     }
 
-    // 3. Right Cliff Wall (Rising from hw to hw + 9, up to floorY + wallHeight)
+    // 3. Right Cliff Wall (Faceted 3-Tier Low-Poly Canyon Face)
     for (int iz = 0; iz < zSegs; ++iz) {
         float z0 = -hl + iz * dz;
         float z1 = z0 + dz;
+        float shade = 0.86f + 0.20f * ((iz + 1) % 2);
 
+        // Tier 1: Lower steep embankment
         glm::vec3 b0(hw, floorY, z0);
         glm::vec3 b1(hw, floorY, z1);
-        glm::vec3 m0(hw + 4.0f, floorY + wallHeight * 0.55f, z0);
-        glm::vec3 m1(hw + 4.0f, floorY + wallHeight * 0.55f, z1);
-        AddQuad(verts, inds, b0, b1, m1, m0, wallCol * 0.85f);
+        glm::vec3 m0(hw + 3.5f, floorY + wallHeight * 0.45f, z0);
+        glm::vec3 m1(hw + 3.5f, floorY + wallHeight * 0.45f, z1);
+        AddQuad(verts, inds, b0, b1, m1, m0, wallCol * 0.82f * shade);
 
-        glm::vec3 t0(hw + 8.0f, floorY + wallHeight, z0);
-        glm::vec3 t1(hw + 8.0f, floorY + wallHeight, z1);
-        AddQuad(verts, inds, m0, m1, t1, t0, wallCol * 1.02f);
+        // Tier 2: Mid cliff face
+        glm::vec3 u0(hw + 6.5f, floorY + wallHeight * 0.80f, z0);
+        glm::vec3 u1(hw + 6.5f, floorY + wallHeight * 0.80f, z1);
+        AddQuad(verts, inds, m0, m1, u1, u0, wallCol * 0.98f * shade);
+
+        // Tier 3: Upper rim / plateau
+        glm::vec3 t0(hw + 11.0f, floorY + wallHeight, z0);
+        glm::vec3 t1(hw + 11.0f, floorY + wallHeight, z1);
+        AddQuad(verts, inds, u0, u1, t1, t0, wallCol * 1.12f * shade);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateArcadeHorizon(float radius, float height,
+                               const glm::vec3& skyTopCol, const glm::vec3& horizonCol,
+                               const glm::vec3& mountainCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    const int hSegs = 28;
+    float startAngle = -glm::radians(85.0f);
+    float endAngle = glm::radians(85.0f);
+    float dAngle = (endAngle - startAngle) / hSegs;
+
+    // 1. Distant Sky Dome Bands (From Horizon to Zenith)
+    float yBot = -25.0f;
+    float yMid = 25.0f;
+    float yHigh = 75.0f;
+    float yTop = height;
+
+    glm::vec3 colBot = horizonCol;
+    glm::vec3 colMid = glm::mix(horizonCol, skyTopCol, 0.45f);
+    glm::vec3 colHigh = glm::mix(horizonCol, skyTopCol, 0.80f);
+    glm::vec3 colTop = skyTopCol;
+
+    for (int i = 0; i < hSegs; ++i) {
+        float a0 = startAngle + i * dAngle;
+        float a1 = a0 + dAngle;
+
+        float s0 = std::sin(a0), c0 = std::cos(a0);
+        float s1 = std::sin(a1), c1 = std::cos(a1);
+
+        glm::vec3 p0_bot(s0 * radius, yBot, -c0 * radius);
+        glm::vec3 p1_bot(s1 * radius, yBot, -c1 * radius);
+
+        glm::vec3 p0_mid(s0 * radius, yMid, -c0 * radius);
+        glm::vec3 p1_mid(s1 * radius, yMid, -c1 * radius);
+
+        glm::vec3 p0_high(s0 * radius, yHigh, -c0 * radius);
+        glm::vec3 p1_high(s1 * radius, yHigh, -c1 * radius);
+
+        glm::vec3 p0_top(s0 * radius, yTop, -c0 * radius);
+        glm::vec3 p1_top(s1 * radius, yTop, -c1 * radius);
+
+        // Lower Sky Band
+        AddQuad(verts, inds, p0_bot, p1_bot, p1_mid, p0_mid, colBot);
+        // Mid Sky Band
+        AddQuad(verts, inds, p0_mid, p1_mid, p1_high, p0_high, colMid);
+        // High Sky Band
+        AddQuad(verts, inds, p0_high, p1_high, p1_top, p0_top, colTop);
+    }
+
+    // 2. Low-Poly Sawtooth Mountain Peaks along Horizon
+    float mRadius = radius * 0.94f;
+    for (int i = 0; i < hSegs; ++i) {
+        float a0 = startAngle + i * dAngle;
+        float a1 = a0 + dAngle;
+        float aMid = (a0 + a1) * 0.5f;
+
+        float s0 = std::sin(a0), c0 = std::cos(a0);
+        float s1 = std::sin(a1), c1 = std::cos(a1);
+        float sm = std::sin(aMid), cm = std::cos(aMid);
+
+        float peakY = 8.0f + std::sin(i * 1.8f) * 14.0f + std::cos(i * 3.4f) * 9.0f;
+        float baseLeftY = -12.0f;
+        float baseRightY = -12.0f;
+
+        glm::vec3 b0(s0 * mRadius, baseLeftY, -c0 * mRadius);
+        glm::vec3 b1(s1 * mRadius, baseRightY, -c1 * mRadius);
+        glm::vec3 peak(sm * mRadius, peakY, -cm * mRadius);
+
+        glm::vec3 sunCol = mountainCol * 1.25f;
+        glm::vec3 shadeCol = mountainCol * 0.82f;
+
+        AddTriangle(verts, inds, b0, peak, b1, (i % 2 == 0) ? sunCol : shadeCol);
     }
 
     return Mesh(verts, inds);
@@ -784,4 +891,70 @@ Mesh Mesh::CreateBossTurret(const glm::vec3& turretColor) {
 
 Mesh Mesh::CreateBossCore(const glm::vec3& coreColor) {
     return CreateSphere(1.8f, 10, 12, coreColor);
+}
+
+Mesh Mesh::CreateRadarRelay(float size, const glm::vec3& baseColor, const glm::vec3& dishColor, const glm::vec3& beaconColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float s = size;
+    // 1. Heavy Tripod Base Pedestal
+    AddQuad(verts, inds,
+            {-s * 0.9f, 0.0f, -s * 0.9f}, {s * 0.9f, 0.0f, -s * 0.9f},
+            {s * 0.9f, 0.0f,  s * 0.9f}, {-s * 0.9f, 0.0f,  s * 0.9f}, baseColor * 0.7f);
+    AddQuad(verts, inds,
+            {-s * 0.5f, s * 0.5f, -s * 0.5f}, {s * 0.5f, s * 0.5f, -s * 0.5f},
+            {s * 0.5f, s * 0.5f,  s * 0.5f}, {-s * 0.5f, s * 0.5f,  s * 0.5f}, baseColor * 1.1f);
+
+    // 2. Main Central Mast / Spire
+    AddQuad(verts, inds,
+            {-s * 0.15f, s * 0.5f, -s * 0.15f}, {s * 0.15f, s * 0.5f, -s * 0.15f},
+            {s * 0.15f, s * 1.8f, -s * 0.15f}, {-s * 0.15f, s * 1.8f, -s * 0.15f}, baseColor * 0.9f);
+    AddQuad(verts, inds,
+            {-s * 0.15f, s * 0.5f,  s * 0.15f}, {s * 0.15f, s * 0.5f,  s * 0.15f},
+            {s * 0.15f, s * 1.8f,  s * 0.15f}, {-s * 0.15f, s * 1.8f,  s * 0.15f}, baseColor * 0.9f);
+
+    // 3. Parabolic Radar Dish (Hexagonal curved dish)
+    float dishY = s * 1.4f;
+    float dishR = s * 1.1f;
+    const int dishSegs = 8;
+    for (int i = 0; i < dishSegs; ++i) {
+        float a0 = (static_cast<float>(i) / dishSegs) * 6.2831853f;
+        float a1 = (static_cast<float>(i + 1) / dishSegs) * 6.2831853f;
+        glm::vec3 center(0.0f, dishY, 0.0f);
+        glm::vec3 p0(std::cos(a0) * dishR, dishY + std::sin(a0) * dishR * 0.8f, 0.5f * s);
+        glm::vec3 p1(std::cos(a1) * dishR, dishY + std::sin(a1) * dishR * 0.8f, 0.5f * s);
+        AddTriangle(verts, inds, center, p0, p1, dishColor * (0.85f + 0.3f * (i % 2)));
+    }
+
+    // 4. Glowing Transmitter Beacon at Dish Center
+    AddQuad(verts, inds,
+            {-s * 0.12f, dishY - s * 0.12f, 0.6f * s}, {s * 0.12f, dishY - s * 0.12f, 0.6f * s},
+            {s * 0.12f, dishY + s * 0.12f, 0.6f * s}, {-s * 0.12f, dishY + s * 0.12f, 0.6f * s}, beaconColor);
+    AddQuad(verts, inds,
+            {0.0f, dishY + s * 0.5f, 0.0f}, {0.0f, dishY + s * 0.9f, 0.0f},
+            {0.0f, dishY + s * 0.9f, 0.2f * s}, {0.0f, dishY + s * 0.5f, 0.2f * s}, beaconColor);
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateSpaceDebris(float length, float width, const glm::vec3& color) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hl = length * 0.5f;
+    float hw = width * 0.5f;
+
+    // Longitudinal truss beams
+    AddQuad(verts, inds, {-hw, -hw, -hl}, {hw, -hw, -hl}, {hw, -hw, hl}, {-hw, -hw, hl}, color * 0.8f);
+    AddQuad(verts, inds, {-hw,  hw, -hl}, {hw,  hw, -hl}, {hw,  hw, hl}, {-hw,  hw, hl}, color * 1.1f);
+    AddQuad(verts, inds, {-hw, -hw, -hl}, {-hw,  hw, -hl}, {-hw,  hw, hl}, {-hw, -hw, hl}, color * 0.9f);
+    AddQuad(verts, inds, { hw, -hw, -hl}, { hw,  hw, -hl}, { hw,  hw, hl}, { hw, -hw, hl}, color * 0.95f);
+
+    // Shattered solar panel wing fragment attached to one side
+    glm::vec3 panelColor(0.12f, 0.35f, 0.65f); // Iridescent solar cell blue
+    AddQuad(verts, inds, {hw, 0.0f, -hl * 0.6f}, {hw + width * 2.5f, 0.0f, -hl * 0.4f},
+            {hw + width * 2.8f, 0.0f, hl * 0.5f}, {hw, 0.0f, hl * 0.7f}, panelColor);
+
+    return Mesh(verts, inds);
 }

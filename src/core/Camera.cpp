@@ -19,11 +19,14 @@ Camera::Camera(float fovDeg, float aspect, float nearP, float farP)
       cinematicDuration(0.0f),
       cinematicFocusPos(0.0f),
       cinematicOrbitAngle(0.0f),
-      followOffset(0.0f, 3.2f, 9.5f),
+      followOffset(0.0f, 2.7f, 9.2f),
       cockpitOffset(0.0f, 0.35f, -0.2f),
-      followDamping(14.0f),
-      rollTiltDamping(10.0f),
+      followDamping(9.5f),
+      rollTiltDamping(7.5f),
       currentRollTilt(0.0f),
+      lateralTrackingRatio(0.45f),
+      verticalTrackingRatio(0.38f),
+      maxRollTiltDeg(11.5f),
       shakeTimer(0.0f),
       shakeDuration(0.0f),
       shakeIntensity(0.0f),
@@ -83,7 +86,8 @@ void Camera::StopCinematic() {
     SetTargetFOV(baseFov);
 }
 
-void Camera::Follow(const glm::vec3& playerPos, float playerPitch, float playerYaw, float playerRoll, float dt) {
+void Camera::Follow(const glm::vec3& playerPos, float playerPitch, float playerYaw, float playerRoll,
+                    float dt, bool isAllRange, bool isBoost, bool isBrake) {
     if (cinematicMode == CinematicMode::BossIntro) {
         // Dramatic Boss Intro Camera Sweep
         cinematicTimer += dt;
@@ -157,20 +161,39 @@ void Camera::Follow(const glm::vec3& playerPos, float playerPitch, float playerY
         glm::vec3 localUp = glm::vec3(playerRot * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f));
         up = localUp;
     } else {
-        // Third-Person Chase Cam (Rotates with 360-degree heading)
+        // Third-Person Chase Cam (Ex-Zodiac Decoupled Frustum & Camera Spring Lag)
+        float dynamicDist = followOffset.z;
+        if (isBoost) dynamicDist += 1.4f;
+        else if (isBrake) dynamicDist -= 1.4f;
+
+        glm::vec3 desiredPos;
+        glm::vec3 desiredTarget;
+
         glm::mat4 yawMat = glm::rotate(glm::mat4(1.0f), glm::radians(playerYaw), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::vec3 rotatedOffset = glm::vec3(yawMat * glm::vec4(followOffset, 1.0f));
-        glm::vec3 desiredPos = playerPos + rotatedOffset;
+
+        if (isAllRange) {
+            glm::vec3 back = glm::vec3(yawMat * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f));
+            desiredPos = playerPos + back * dynamicDist + glm::vec3(0.0f, followOffset.y, 0.0f);
+            desiredTarget = playerPos + glm::vec3(0.0f, 0.6f + playerPitch * 0.12f, 0.0f) - back * 18.0f;
+        } else {
+            // Rail Corridor mode:
+            // Camera tracks ~45% of lateral displacement and ~38% of vertical displacement
+            float camX = playerPos.x * lateralTrackingRatio;
+            float camY = followOffset.y + (playerPos.y * verticalTrackingRatio);
+            desiredPos = glm::vec3(camX, camY, playerPos.z + dynamicDist);
+
+            // Camera looks ahead toward targeting reticle with pitch horizon look-ahead
+            float lookX = playerPos.x * 0.72f;
+            float lookY = playerPos.y * 0.62f + 0.35f + (playerPitch * 0.14f);
+            desiredTarget = glm::vec3(lookX, lookY, playerPos.z - 30.0f);
+        }
 
         float t = 1.0f - std::exp(-followDamping * dt);
         position = glm::mix(position, desiredPos, t);
-
-        glm::vec3 forwardDir = glm::vec3(yawMat * glm::vec4(0.0f, 0.5f, -15.0f, 1.0f));
-        glm::vec3 desiredTarget = playerPos + forwardDir;
         target = glm::mix(target, desiredTarget, t);
 
-        // Dynamic camera banking (subtle tilt with player banking, clamped to max 4 degrees)
-        float targetTiltDeg = std::clamp(-playerRoll * 0.06f, -4.0f, 4.0f);
+        // Dynamic camera banking: Ex-Zodiac 11.5 degree max roll with spring lag
+        float targetTiltDeg = std::clamp(-playerRoll * 0.18f, -maxRollTiltDeg, maxRollTiltDeg);
         float targetTiltRad = glm::radians(targetTiltDeg);
         float rollT = 1.0f - std::exp(-rollTiltDamping * dt);
         currentRollTilt = glm::mix(currentRollTilt, targetTiltRad, rollT);

@@ -94,3 +94,52 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 14.4**: Implement HUD Vector Comms Box with animated pilot portraits, voice waveform bars, and dynamic dialog subtitle feed.
 - [x] **Task 14.5**: Compile, test, and verify Phase 14.
 
+## Phase 15: Procedural Chiptune/FM Stage Soundtrack & Boss BGM (Option A)
+- [x] **Task 15.1**: Implement multi-channel software music sequencer in `SoundManager` with lead synth, bassline, arpeggio, and procedural percussion (kick, noise snare, hi-hat).
+- [x] **Task 15.2**: Compose and synthesize Canyon Stage 1 BGM (driving 16-bit heroic sci-fi melody in D minor, 132 BPM).
+- [x] **Task 15.3**: Compose and synthesize Dreadnought Boss Battle BGM (tense, rapid battle rhythm in F minor with escalating Phase 2 core intensity).
+- [x] **Task 15.4**: Implement dynamic music state transitions (Title, Stage 1, Boss Phase 1, Boss Phase 2, Victory Fanfare) with cross-fade volume control.
+- [x] **Task 15.5**: Compile, test, and verify Phase 15.
+
+## Phase 16: Post-Processing Pipeline: Bloom Glow, Retro CRT Scanlines & Hyperspace Warp (Option B)
+- [x] **Task 16.1**: Implement `PostProcessor` FBO pipeline (off-screen render target, HDR color texture, screen quad VAO).
+- [x] **Task 16.2**: Implement Glowing Bloom Pass (bright color extraction for lasers/thrusters/explosions, 2-pass blur, additive blend).
+- [x] **Task 16.3**: Implement Retro Arcade CRT shader (`F1` toggle) with scanlines, phosphor mask, barrel vignette curvature, and subtle chromatic aberration.
+- [x] **Task 16.4**: Implement Hyperspace Warp Tunnel effect on stage clear (radial star streaks, FOV warp stretch, chromatic tunnel vortex).
+- [x] **Task 16.5**: Compile, test, and verify Phase 16.
+
+## Phase 17: Branching Mission Routes & Secret Objectives (Option C)
+- [x] **Task 17.1**: Implement 3 Secret Planetary Radar Relays hidden inside rock archways along the canyon trench with destructible HP and HUD brackets.
+- [x] **Task 17.2**: Implement Dual Mission Outcomes: "Mission Accomplished" (Normal route) vs "Mission Complete" (Hard route: all 3 relays destroyed + both wingmen intact).
+- [x] **Task 17.3**: Implement Sector 2: Deep Space Debris Field (open starfield, dense asteroid cluster storm, swirling nebulae, elite stealth fighters).
+- [x] **Task 17.4**: Implement seamless warp jump transition between Canyon Sector 1 and Space Sector 2.
+- [x] **Task 17.5**: Compile, test, and verify Phase 17.
+
+## Phase 18: 3D Hangar Title Screen, Settings Menu & High-Score Hall of Fame (Option D)
+- [x] **Task 18.1**: Implement 3D Hangar Title Screen with rotating turntable starfighter pad, hangar neon lights, and pilot status readouts.
+- [x] **Task 18.2**: Implement Settings Menu (Master Volume, Music Volume, SFX Volume, Invert Y-Axis, CRT Filter toggle, View Mode default).
+- [x] **Task 18.3**: Implement Local High-Score Hall of Fame persistence (`scores.dat` binary save/load, pilot callsigns, stage medals).
+- [x] **Task 18.4**: Wire full game state machine: Title -> Briefing -> Playing -> Stage Clear / Warp -> Game Over / Victory -> Leaderboard.
+- [x] **Task 18.5**: Final end-to-end playtest, compilation, and verification.
+
+## Phase 19: Ex-Zodiac Camera & Flight Physics Overhaul
+- [x] **Task 19.1**: Implement Elastic Camera Spring Lag & Decoupled Frustum Traversal (camera tracks player with ~45% ratio, allowing the ship to swoop freely across screen corners).
+- [x] **Task 19.2**: Implement Dynamic Camera Roll Tilt & Pitch Horizon Anticipation (smooth 10°-12° roll tilt into banking turns and pitch look-ahead).
+- [x] **Task 19.3**: Polish Starfighter Flight Physics: snappy banking transitions, lateral inertia, and responsive centering spring.
+- [x] **Task 19.4**: Implement Low-Altitude Surface Spray / Ground Plume FX (vertical spray fan trailing beneath the starfighter when flying near the ground).
+- [x] **Task 19.5**: Compile, test, and verify flight controls and camera dynamics.
+
+## Phase 20: Ex-Zodiac HUD & UI Overhaul
+- [x] **Task 20.1**: Implement Slanted Parallelogram Gauges for Hull Shield and Boost Energy with color gradients (amber/green/cyan).
+- [x] **Task 20.2**: Implement Diamond Smart Bomb Stock Pips and Restyled Reticle Brackets matching Ex-Zodiac HUD.
+- [x] **Task 20.3**: Implement Hit Combo Chain Counter (`HIT x3`, `x5`, `COMBO!`) with multiplier score popups and reward chimes.
+- [x] **Task 20.4**: Restyle On-Screen Boss Health Bar and Wingman Comms Card with sleek arcade bezel frames.
+- [x] **Task 20.5**: Compile, test, and verify the HUD overhaul.
+
+## Phase 21: Checkered Low-Poly Terrain & Vibrant Sega/Arcade Visual Aesthetic
+- [x] **Task 21.1**: Procedural 3D Checkered Surface: Two-tone alternating checkerboard polygons on canyon floor, dunes, and water plane.
+- [x] **Task 21.2**: Sega 32-bit Arcade Sky Gradient & Horizon: Vibrant blue-to-violet atmosphere with crisp low-poly mountains on the horizon.
+- [x] **Task 21.3**: Compile, test, and verify the aesthetic upgrade.
+
+
+

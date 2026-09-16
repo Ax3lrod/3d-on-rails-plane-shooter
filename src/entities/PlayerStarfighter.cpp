@@ -29,9 +29,11 @@ PlayerStarfighter::PlayerStarfighter()
       minY(-6.5f), maxY(6.8f),
       moveSpeedX(23.0f),
       moveSpeedY(18.0f),
-      maxBankAngle(52.0f),
+      maxBankAngle(55.0f),
       maxPitchAngle(24.0f),
       maxYawAngle(18.0f),
+      lateralVelocityX(0.0f),
+      lateralVelocityY(0.0f),
       currentBank(0.0f),
       currentPitch(0.0f),
       currentYaw(0.0f),
@@ -46,6 +48,7 @@ PlayerStarfighter::PlayerStarfighter()
       isBraking(false),
       isOverheated(false),
       overheatTimer(0.0f),
+      invertPitch(false),
       shield(100.0f),
       maxShield(100.0f),
       invulnerableTimer(0.0f),
@@ -62,6 +65,8 @@ PlayerStarfighter::PlayerStarfighter()
       maxBombs(5),
       score(0),
       ringsCollected(0),
+      lives(3),
+      maxLives(5),
       leftWingHealth(100.0f),
       rightWingHealth(100.0f),
       leftWingLost(false),
@@ -76,8 +81,9 @@ PlayerStarfighter::PlayerStarfighter()
       headingYaw(0.0f),
       isSomersaulting(false),
       somersaultTimer(0.0f),
-      somersaultDuration(0.85f),
+      somersaultDuration(1.05f),
       somersaultPitch(0.0f),
+      somersaultStartY(0.0f),
       isUTurning(false),
       uTurnTimer(0.0f),
       uTurnDuration(0.95f),
@@ -159,13 +165,14 @@ void PlayerStarfighter::SetAllRangeMode(bool enable, const glm::vec3& center, fl
 
 bool PlayerStarfighter::TriggerSomersault() {
     if (isSomersaulting || isUTurning || isSpinning) return false;
-    if (boostMeter < 15.0f || isOverheated) return false;
 
     isSomersaulting = true;
     somersaultTimer = 0.0f;
-    somersaultDuration = 0.95f;
+    somersaultDuration = 1.05f;
     somersaultPitch = 0.0f;
-    boostMeter = std::max(0.0f, boostMeter - 22.0f);
+    somersaultStartY = transform.position.y;
+    boostMeter = std::max(0.0f, boostMeter - 15.0f);
+    invulnerableTimer = std::max(invulnerableTimer, 1.2f);
     return true;
 }
 
@@ -277,10 +284,11 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
     bool justBrake = false;
 
     if (allowInput) {
+        float pitchMult = invertPitch ? -1.0f : 1.0f;
         if (Input::IsKeyDown(GLFW_KEY_A) || Input::IsKeyDown(GLFW_KEY_LEFT)) inputX -= 1.0f;
         if (Input::IsKeyDown(GLFW_KEY_D) || Input::IsKeyDown(GLFW_KEY_RIGHT)) inputX += 1.0f;
-        if (Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP)) inputY += 1.0f;
-        if (Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN)) inputY -= 1.0f;
+        if (Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP)) inputY += pitchMult;
+        if (Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN)) inputY -= pitchMult;
 
         // Double tap barrel roll or dedicated buttons (Q/E or Z/C)
         if (Input::IsDoubleTap(GLFW_KEY_A) || Input::IsDoubleTap(GLFW_KEY_LEFT) ||
@@ -302,9 +310,14 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
 
         bool pressS = Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN);
         bool justS = Input::IsKeyPressed(GLFW_KEY_S) || Input::IsKeyPressed(GLFW_KEY_DOWN);
+        bool pressW = Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP);
+        bool justW = Input::IsKeyPressed(GLFW_KEY_W) || Input::IsKeyPressed(GLFW_KEY_UP);
 
-        // Evasive Acrobatics (Star Fox 64 style: S + Boost = Somersault, S + Brake = U-Turn)
-        if ((pressS && justBoost) || (justS && wantsBoost)) {
+        // Somersault: Dedicated key (X or F) OR Star Fox chords (S/Down + Boost, W/Up + Boost)
+        bool keySomersault = Input::IsKeyPressed(GLFW_KEY_X) || Input::IsKeyPressed(GLFW_KEY_F);
+        bool chordSomersault = ((pressS || pressW) && justBoost) || ((justS || justW) && wantsBoost);
+
+        if (keySomersault || chordSomersault) {
             TriggerSomersault();
         } else if ((pressS && justBrake) || (justS && wantsBrake)) {
             TriggerUTurn();
@@ -353,19 +366,29 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
 
     currentSpeed = glm::mix(currentSpeed, targetSpeed, 1.0f - std::exp(-8.0f * dt));
 
+    // Ex-Zodiac lateral velocity smoothing with aerodynamic inertia
+    float targetVelX = inputX * moveSpeedX;
+    float targetVelY = inputY * moveSpeedY;
+
+    // Responsive acceleration on input (20.0f), silky aerodynamic inertia on release (14.0f)
+    float accelRateX = (std::abs(inputX) > 0.01f) ? 20.0f : 14.0f;
+    float accelRateY = (std::abs(inputY) > 0.01f) ? 20.0f : 14.0f;
+    lateralVelocityX = glm::mix(lateralVelocityX, targetVelX, 1.0f - std::exp(-accelRateX * dt));
+    lateralVelocityY = glm::mix(lateralVelocityY, targetVelY, 1.0f - std::exp(-accelRateY * dt));
+
     if (isAllRangeMode) {
         // Free 360-degree heading yaw steering
         headingYaw -= inputX * 75.0f * dt;
         if (headingYaw > 180.0f) headingYaw -= 360.0f;
         if (headingYaw < -180.0f) headingYaw += 360.0f;
 
-        // Pitch / Altitude
-        transform.position.y += inputY * moveSpeedY * dt;
+        // Pitch / Altitude with inertia
+        transform.position.y += lateralVelocityY * dt;
         transform.position.y = std::clamp(transform.position.y, minY, maxY);
     } else {
-        // Corridor rail movement (X, Y)
-        transform.position.x += inputX * moveSpeedX * dt;
-        transform.position.y += inputY * moveSpeedY * dt;
+        // Corridor rail movement with lateral velocity smoothing (X, Y)
+        transform.position.x += lateralVelocityX * dt;
+        transform.position.y += lateralVelocityY * dt;
 
         // Asymmetric aerodynamic drag / drift when wings are lost
         if (leftWingLost && !rightWingLost) {
@@ -379,7 +402,7 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
         transform.position.y = std::clamp(transform.position.y, minY, maxY);
     }
 
-    // Dynamic rotation coupling (banking when turning)
+    // Dynamic rotation coupling (Ex-Zodiac snappy bank entry & centering spring)
     float targetBank = -inputX * maxBankAngle;
     float targetPitch = inputY * maxPitchAngle;
     float targetYaw = -inputX * maxYawAngle;
@@ -393,27 +416,50 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
         targetPitch -= 4.0f; // Sinks slightly without wing surface
     }
 
-    float bankSpeed = 12.0f;
-    float pitchSpeed = 10.0f;
+    // Snappy roll-in when entering turns (17.5f), smooth centering spring when releasing (12.5f)
+    float bankSpeed = (std::abs(inputX) > 0.05f) ? 17.5f : 12.5f;
+    float pitchSpeed = (std::abs(inputY) > 0.05f) ? 14.0f : 10.5f;
     currentBank = glm::mix(currentBank, targetBank, 1.0f - std::exp(-bankSpeed * dt));
     currentPitch = glm::mix(currentPitch, targetPitch, 1.0f - std::exp(-pitchSpeed * dt));
-    currentYaw = glm::mix(currentYaw, targetYaw, 1.0f - std::exp(-pitchSpeed * dt));
+    currentYaw = glm::mix(currentYaw, targetYaw, 1.0f - std::exp(-bankSpeed * dt));
 }
 
 void PlayerStarfighter::Update(float dt, bool allowInput) {
-    HandleInput(dt, allowInput);
+    if (isSomersaulting || isUTurning) {
+        // While performing acrobatics, freeze steering inputs so they do not fight the loop maneuver
+        boostMeter = std::min(maxBoost, boostMeter + 22.0f * dt);
+        isBoosting = false;
+        lateralVelocityX = 0.0f;
+        lateralVelocityY = 0.0f;
+    } else {
+        HandleInput(dt, allowInput);
+    }
 
-    // Evasive Somersault Loop-de-loop
+    // Evasive Somersault Loop-de-loop (Star Fox 64 & Ex-Zodiac vertical loop)
     if (isSomersaulting) {
         somersaultTimer += dt;
-        float t = somersaultTimer / somersaultDuration;
+        float t = std::clamp(somersaultTimer / somersaultDuration, 0.0f, 1.0f);
         if (t >= 1.0f) {
             isSomersaulting = false;
             somersaultPitch = 0.0f;
+            currentPitch = 0.0f;
         } else {
+            // Full 360 degree pitch loop
             somersaultPitch = t * 360.0f;
-            transform.position.y += std::sin(t * 3.14159f * 2.0f) * 6.0f * dt;
-            transform.position.y = std::clamp(transform.position.y, minY, maxY);
+            currentPitch = 0.0f;
+
+            // Vertical climbing arc: climbs smoothly up to +8.5m above starting altitude at apex
+            float arc = std::sin(t * 3.14159265f);
+            transform.position.y = somersaultStartY + arc * 8.5f;
+
+            // Longitudinal braking at apex for dramatic Star Fox loop feel
+            float speedMod = 1.0f - arc * 0.55f;
+            if (!isAllRangeMode) {
+                transform.position.z -= (currentSpeed * speedMod) * dt;
+            } else {
+                glm::vec3 fwd = glm::vec3(-std::sin(glm::radians(headingYaw)), 0.0f, -std::cos(glm::radians(headingYaw)));
+                transform.position += fwd * (currentSpeed * speedMod * dt);
+            }
         }
     }
 
@@ -436,8 +482,10 @@ void PlayerStarfighter::Update(float dt, bool allowInput) {
 
     // Forward motion: 360-degree vector in All-Range mode, -Z in Rail mode
     if (isAllRangeMode) {
-        glm::vec3 fwd = transform.GetForward();
-        transform.position += fwd * (currentSpeed * dt);
+        if (!isSomersaulting) {
+            glm::vec3 fwd = transform.GetForward();
+            transform.position += fwd * (currentSpeed * dt);
+        }
 
         // Arena boundary check
         float dx = transform.position.x - arenaCenter.x;
@@ -460,7 +508,9 @@ void PlayerStarfighter::Update(float dt, bool allowInput) {
             }
         }
     } else {
-        transform.position.z -= currentSpeed * dt;
+        if (!isSomersaulting) {
+            transform.position.z -= currentSpeed * dt;
+        }
     }
 
     // Handle tactical barrel roll spin

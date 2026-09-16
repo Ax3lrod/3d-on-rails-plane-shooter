@@ -44,6 +44,10 @@ public:
     float maxPitchAngle;
     float maxYawAngle;
 
+    // Lateral velocity smoothing & aerodynamic inertia (Ex-Zodiac style)
+    float lateralVelocityX;
+    float lateralVelocityY;
+
     // Current smoothed angles
     float currentBank;
     float currentPitch;
@@ -69,6 +73,7 @@ public:
     float somersaultTimer;
     float somersaultDuration;
     float somersaultPitch;
+    float somersaultStartY;
     bool isUTurning;
     float uTurnTimer;
     float uTurnDuration;
@@ -81,6 +86,7 @@ public:
     bool isBraking;
     bool isOverheated;
     float overheatTimer;
+    bool invertPitch;
 
     // Combat & Shield
     float shield;
@@ -102,9 +108,11 @@ public:
     int bombCount;
     int maxBombs;
 
-    // Score and statistics
+    // Score, lives and statistics
     int score;
     int ringsCollected;
+    int lives;
+    int maxLives;
 
     // Wing Damage & Breakdown System
     float leftWingHealth;

@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <string>
 #include <memory>
+#include <vector>
 
 #include "shaderClass.h"
 #include "Camera.h"
@@ -16,11 +17,17 @@
 #include "HUD.h"
 #include "SoundManager.h"
 #include "WingmanSquadron.h"
+#include "PostProcessor.h"
 
 enum class GameState {
+    TitleHangar,
+    SettingsMenu,
+    MissionBriefing,
     Playing,
+    StageClearWarp,
     Victory,
-    GameOver
+    GameOver,
+    Leaderboard
 };
 
 class Engine {
@@ -37,6 +44,15 @@ private:
     void Render();
     void HandleCollisions();
     void RestartGame();
+
+    void LoadHighScores();
+    void SaveHighScores();
+    void CheckNewHighScore(int score, int stage, bool complete);
+
+    void StartMission();
+    void TriggerHyperspaceWarp();
+    void CompleteHyperspaceWarp();
+    void ReturnToTitle();
 
     static void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 
@@ -61,6 +77,28 @@ private:
     std::unique_ptr<HUD> hud;
     std::unique_ptr<SoundManager> audio;
     std::unique_ptr<WingmanSquadron> wingmen;
+    std::unique_ptr<PostProcessor> postProcessor;
+
+    // Hangar & Menu
+    std::unique_ptr<Mesh> hangarFloorMesh;
+    std::unique_ptr<Mesh> turntableMesh;
+    float hangarRotAngle;
+    int selectedTitleMenu;
+    int selectedSettingsIndex;
+    bool invertPitchY;
+    bool defaultCockpitMode;
+
+    // Route & Warp
+    float warpTransitionTimer;
+    bool hardRouteWon;
+    std::vector<HighScoreEntry> highScores;
+
+    // Ex-Zodiac Hit Combo Chain System
+    int comboHits;
+    float comboTimer;
+    float comboMaxDuration;
+    float comboAnimScale;
+    void RegisterHitCombo(const glm::vec3& hitPos, int baseScore);
 
     bool bossSpawned;
     float victoryTimer;
@@ -68,6 +106,7 @@ private:
     bool wasBoostingAudio;
     bool wasBrakingAudio;
     bool hadLockOnLastFrame;
+    bool wasSomersaultingAudio;
     bool victoryFanfarePlayed;
     bool bossDeathCamTriggered;
     float lastFrameTime;
