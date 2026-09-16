@@ -3,19 +3,28 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <string>
 #include "Mesh.h"
 #include "shaderClass.h"
 
 class HUD {
 public:
     Mesh quadMesh;
-    Mesh barBgMesh;
-    Mesh bombIconMesh;
 
     HUD();
 
-    void DrawBar(const Shader& shader, float x, float y, float w, float h, float fillRatio,
-                 const glm::vec3& fillColor, const glm::vec3& bgColor) const;
+    void DrawRect(const Shader& shader, float x, float y, float w, float h,
+                  const glm::vec3& color, float alpha = 1.0f) const;
+    void DrawRectOutline(const Shader& shader, float x, float y, float w, float h, float thickness,
+                         const glm::vec3& color, float alpha = 1.0f) const;
+    void DrawSegmentedBar(const Shader& shader, float x, float y, float w, float h,
+                          int totalSegments, float fillRatio,
+                          const glm::vec3& fillColor, const glm::vec3& emptyColor,
+                          const glm::vec3& borderColor) const;
+    void DrawChar(const Shader& shader, char c, float x, float y, float scale,
+                  const glm::vec3& color, float alpha = 1.0f) const;
+    void DrawText(const Shader& shader, const std::string& text, float x, float y, float scale,
+                  const glm::vec3& color, float alpha = 1.0f) const;
 
     void Render(const Shader& shader, int screenWidth, int screenHeight,
                 float shield, float maxShield,

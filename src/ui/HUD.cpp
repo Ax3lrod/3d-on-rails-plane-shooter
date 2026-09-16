@@ -3,17 +3,19 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <GLFW/glfw3.h>
 
-static Mesh CreateScreenQuad(const glm::vec3& color) {
+static Mesh CreateScreenQuad() {
     std::vector<Vertex> verts;
     std::vector<GLuint> inds;
     glm::vec3 n(0, 0, 1);
+    glm::vec3 c(1.0f);
 
-    verts.push_back({{0.0f, 0.0f, 0.0f}, n, color});
-    verts.push_back({{1.0f, 0.0f, 0.0f}, n, color});
-    verts.push_back({{1.0f, 1.0f, 0.0f}, n, color});
-    verts.push_back({{0.0f, 1.0f, 0.0f}, n, color});
+    verts.push_back({{0.0f, 0.0f, 0.0f}, n, c});
+    verts.push_back({{1.0f, 0.0f, 0.0f}, n, c});
+    verts.push_back({{1.0f, 1.0f, 0.0f}, n, c});
+    verts.push_back({{0.0f, 1.0f, 0.0f}, n, c});
 
     inds.push_back(0); inds.push_back(1); inds.push_back(2);
     inds.push_back(0); inds.push_back(2); inds.push_back(3);
@@ -21,29 +23,194 @@ static Mesh CreateScreenQuad(const glm::vec3& color) {
     return Mesh(verts, inds);
 }
 
-HUD::HUD()
-    : quadMesh(CreateScreenQuad(glm::vec3(1.0f))),
-      barBgMesh(CreateScreenQuad(glm::vec3(0.08f, 0.1f, 0.14f))),
-      bombIconMesh(CreateScreenQuad(glm::vec3(0.2f, 0.85f, 1.0f))) {}
+// 5x7 Font Lookup Table
+static const uint8_t* GetGlyph(char c) {
+    if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
 
-void HUD::DrawBar(const Shader& shader, float x, float y, float w, float h, float fillRatio,
-                  const glm::vec3& fillColor, const glm::vec3& bgColor) const {
-    // Background box
-    glm::mat4 modelBg = glm::mat4(1.0f);
-    modelBg = glm::translate(modelBg, glm::vec3(x - 2.0f, y - 2.0f, 0.0f));
-    modelBg = glm::scale(modelBg, glm::vec3(w + 4.0f, h + 4.0f, 1.0f));
-    shader.SetMat4("uModel", modelBg);
-    shader.SetVec3("uAmbientColor", bgColor);
-    barBgMesh.Draw(shader);
+    static const uint8_t GLYPH_BLANK[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    static const uint8_t GLYPH_0[7]     = {0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E};
+    static const uint8_t GLYPH_1[7]     = {0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E};
+    static const uint8_t GLYPH_2[7]     = {0x0E, 0x11, 0x01, 0x06, 0x08, 0x10, 0x1F};
+    static const uint8_t GLYPH_3[7]     = {0x1E, 0x01, 0x01, 0x0E, 0x01, 0x01, 0x1E};
+    static const uint8_t GLYPH_4[7]     = {0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02};
+    static const uint8_t GLYPH_5[7]     = {0x1F, 0x10, 0x1E, 0x01, 0x01, 0x11, 0x0E};
+    static const uint8_t GLYPH_6[7]     = {0x06, 0x08, 0x10, 0x1E, 0x11, 0x11, 0x0E};
+    static const uint8_t GLYPH_7[7]     = {0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08};
+    static const uint8_t GLYPH_8[7]     = {0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E};
+    static const uint8_t GLYPH_9[7]     = {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C};
 
-    // Foreground filled bar
-    if (fillRatio > 0.001f) {
-        glm::mat4 modelFill = glm::mat4(1.0f);
-        modelFill = glm::translate(modelFill, glm::vec3(x, y, 0.0f));
-        modelFill = glm::scale(modelFill, glm::vec3(w * fillRatio, h, 1.0f));
-        shader.SetMat4("uModel", modelFill);
-        shader.SetVec3("uAmbientColor", fillColor);
-        quadMesh.Draw(shader);
+    static const uint8_t GLYPH_A[7]     = {0x0E, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11};
+    static const uint8_t GLYPH_B[7]     = {0x1E, 0x11, 0x11, 0x1E, 0x11, 0x11, 0x1E};
+    static const uint8_t GLYPH_C[7]     = {0x0E, 0x11, 0x10, 0x10, 0x10, 0x11, 0x0E};
+    static const uint8_t GLYPH_D[7]     = {0x1C, 0x12, 0x11, 0x11, 0x11, 0x12, 0x1C};
+    static const uint8_t GLYPH_E[7]     = {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x1F};
+    static const uint8_t GLYPH_F[7]     = {0x1F, 0x10, 0x10, 0x1E, 0x10, 0x10, 0x10};
+    static const uint8_t GLYPH_G[7]     = {0x0E, 0x11, 0x10, 0x17, 0x11, 0x11, 0x0E};
+    static const uint8_t GLYPH_H[7]     = {0x11, 0x11, 0x11, 0x1F, 0x11, 0x11, 0x11};
+    static const uint8_t GLYPH_I[7]     = {0x0E, 0x04, 0x04, 0x04, 0x04, 0x04, 0x0E};
+    static const uint8_t GLYPH_J[7]     = {0x07, 0x02, 0x02, 0x02, 0x02, 0x12, 0x0C};
+    static const uint8_t GLYPH_K[7]     = {0x11, 0x12, 0x14, 0x18, 0x14, 0x12, 0x11};
+    static const uint8_t GLYPH_L[7]     = {0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x1F};
+    static const uint8_t GLYPH_M[7]     = {0x11, 0x1B, 0x15, 0x11, 0x11, 0x11, 0x11};
+    static const uint8_t GLYPH_N[7]     = {0x11, 0x19, 0x15, 0x13, 0x11, 0x11, 0x11};
+    static const uint8_t GLYPH_O[7]     = {0x0E, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E};
+    static const uint8_t GLYPH_P[7]     = {0x1E, 0x11, 0x11, 0x1E, 0x10, 0x10, 0x10};
+    static const uint8_t GLYPH_Q[7]     = {0x0E, 0x11, 0x11, 0x11, 0x15, 0x09, 0x16};
+    static const uint8_t GLYPH_R[7]     = {0x1E, 0x11, 0x11, 0x1E, 0x14, 0x12, 0x11};
+    static const uint8_t GLYPH_S[7]     = {0x0E, 0x11, 0x10, 0x0E, 0x01, 0x11, 0x0E};
+    static const uint8_t GLYPH_T[7]     = {0x1F, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04};
+    static const uint8_t GLYPH_U[7]     = {0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x0E};
+    static const uint8_t GLYPH_V[7]     = {0x11, 0x11, 0x11, 0x11, 0x11, 0x0A, 0x04};
+    static const uint8_t GLYPH_W[7]     = {0x11, 0x11, 0x11, 0x15, 0x15, 0x1B, 0x11};
+    static const uint8_t GLYPH_X[7]     = {0x11, 0x11, 0x0A, 0x04, 0x0A, 0x11, 0x11};
+    static const uint8_t GLYPH_Y[7]     = {0x11, 0x11, 0x0A, 0x04, 0x04, 0x04, 0x04};
+    static const uint8_t GLYPH_Z[7]     = {0x1F, 0x01, 0x02, 0x04, 0x08, 0x10, 0x1F};
+
+    static const uint8_t GLYPH_COLON[7] = {0x00, 0x0C, 0x0C, 0x00, 0x0C, 0x0C, 0x00};
+    static const uint8_t GLYPH_PCT[7]   = {0x19, 0x19, 0x02, 0x04, 0x08, 0x13, 0x13};
+    static const uint8_t GLYPH_SLASH[7] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x00, 0x00};
+    static const uint8_t GLYPH_MINUS[7] = {0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00};
+    static const uint8_t GLYPH_EXCL[7]  = {0x04, 0x04, 0x04, 0x04, 0x00, 0x04, 0x00};
+    static const uint8_t GLYPH_LBRK[7]  = {0x0E, 0x08, 0x08, 0x08, 0x08, 0x08, 0x0E};
+    static const uint8_t GLYPH_RBRK[7]  = {0x0E, 0x02, 0x02, 0x02, 0x02, 0x02, 0x0E};
+    static const uint8_t GLYPH_DOT[7]   = {0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C};
+
+    switch (c) {
+        case '0': return GLYPH_0;
+        case '1': return GLYPH_1;
+        case '2': return GLYPH_2;
+        case '3': return GLYPH_3;
+        case '4': return GLYPH_4;
+        case '5': return GLYPH_5;
+        case '6': return GLYPH_6;
+        case '7': return GLYPH_7;
+        case '8': return GLYPH_8;
+        case '9': return GLYPH_9;
+        case 'A': return GLYPH_A;
+        case 'B': return GLYPH_B;
+        case 'C': return GLYPH_C;
+        case 'D': return GLYPH_D;
+        case 'E': return GLYPH_E;
+        case 'F': return GLYPH_F;
+        case 'G': return GLYPH_G;
+        case 'H': return GLYPH_H;
+        case 'I': return GLYPH_I;
+        case 'J': return GLYPH_J;
+        case 'K': return GLYPH_K;
+        case 'L': return GLYPH_L;
+        case 'M': return GLYPH_M;
+        case 'N': return GLYPH_N;
+        case 'O': return GLYPH_O;
+        case 'P': return GLYPH_P;
+        case 'Q': return GLYPH_Q;
+        case 'R': return GLYPH_R;
+        case 'S': return GLYPH_S;
+        case 'T': return GLYPH_T;
+        case 'U': return GLYPH_U;
+        case 'V': return GLYPH_V;
+        case 'W': return GLYPH_W;
+        case 'X': return GLYPH_X;
+        case 'Y': return GLYPH_Y;
+        case 'Z': return GLYPH_Z;
+        case ':': return GLYPH_COLON;
+        case '%': return GLYPH_PCT;
+        case '/': return GLYPH_SLASH;
+        case '-': return GLYPH_MINUS;
+        case '!': return GLYPH_EXCL;
+        case '[': return GLYPH_LBRK;
+        case ']': return GLYPH_RBRK;
+        case '.': return GLYPH_DOT;
+        default:  return GLYPH_BLANK;
+    }
+}
+
+HUD::HUD() : quadMesh(CreateScreenQuad()) {}
+
+void HUD::DrawRect(const Shader& shader, float x, float y, float w, float h,
+                   const glm::vec3& color, float alpha) const {
+    if (w <= 0.0f || h <= 0.0f) return;
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(x, y, 0.0f));
+    model = glm::scale(model, glm::vec3(w, h, 1.0f));
+    shader.SetMat4("uModel", model);
+    shader.SetInt("uUseColorOverride", 1);
+    shader.SetVec3("uColorOverride", color);
+    shader.SetFloat("uAlpha", alpha);
+    quadMesh.Draw(shader);
+}
+
+void HUD::DrawRectOutline(const Shader& shader, float x, float y, float w, float h, float thickness,
+                          const glm::vec3& color, float alpha) const {
+    DrawRect(shader, x, y, w, thickness, color, alpha);
+    DrawRect(shader, x, y + h - thickness, w, thickness, color, alpha);
+    DrawRect(shader, x, y + thickness, thickness, h - 2.0f * thickness, color, alpha);
+    DrawRect(shader, x + w - thickness, y + thickness, thickness, h - 2.0f * thickness, color, alpha);
+}
+
+void HUD::DrawSegmentedBar(const Shader& shader, float x, float y, float w, float h,
+                          int totalSegments, float fillRatio,
+                          const glm::vec3& fillColor, const glm::vec3& emptyColor,
+                          const glm::vec3& borderColor) const {
+    // Backdrop & outline frame
+    DrawRect(shader, x - 2.0f, y - 2.0f, w + 4.0f, h + 4.0f, glm::vec3(0.04f, 0.06f, 0.10f), 0.9f);
+    DrawRectOutline(shader, x - 2.0f, y - 2.0f, w + 4.0f, h + 4.0f, 1.5f, borderColor, 0.85f);
+
+    float gap = 2.0f;
+    float segW = (w - (totalSegments - 1) * gap) / totalSegments;
+
+    for (int i = 0; i < totalSegments; ++i) {
+        float segX = x + i * (segW + gap);
+        float threshold = static_cast<float>(i + 1) / totalSegments;
+        bool isFilled = (fillRatio >= threshold - (1.0f / totalSegments) * 0.5f);
+
+        glm::vec3 col = isFilled ? fillColor : emptyColor;
+        float alpha = isFilled ? 0.95f : 0.40f;
+        DrawRect(shader, segX, y, segW, h, col, alpha);
+    }
+}
+
+void HUD::DrawChar(const Shader& shader, char c, float x, float y, float scale,
+                   const glm::vec3& color, float alpha) const {
+    const uint8_t* glyph = GetGlyph(c);
+
+    for (int row = 0; row < 7; ++row) {
+        uint8_t bits = glyph[row];
+        int runStart = -1;
+
+        for (int col = 0; col < 5; ++col) {
+            bool isPixel = (bits & (1 << (4 - col))) != 0;
+
+            if (isPixel) {
+                if (runStart < 0) runStart = col;
+            } else {
+                if (runStart >= 0) {
+                    float px = x + runStart * scale;
+                    float py = y + row * scale;
+                    float pw = (col - runStart) * scale;
+                    DrawRect(shader, px, py, pw, scale, color, alpha);
+                    runStart = -1;
+                }
+            }
+        }
+
+        if (runStart >= 0) {
+            float px = x + runStart * scale;
+            float py = y + row * scale;
+            float pw = (5 - runStart) * scale;
+            DrawRect(shader, px, py, pw, scale, color, alpha);
+        }
+    }
+}
+
+void HUD::DrawText(const Shader& shader, const std::string& text, float x, float y, float scale,
+                   const glm::vec3& color, float alpha) const {
+    float curX = x;
+    float charAdvance = 6.0f * scale;
+
+    for (char c : text) {
+        DrawChar(shader, c, curX, y, scale, color, alpha);
+        curX += charAdvance;
     }
 }
 
@@ -65,188 +232,249 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
                                  static_cast<float>(screenHeight), 0.0f, -1.0f, 1.0f);
     shader.SetMat4("uProjection", ortho);
     shader.SetMat4("uView", glm::mat4(1.0f));
+
+    // CRITICAL: Disable lighting and fog for 2D UI elements
     shader.SetInt("uUseLighting", 0);
-    shader.SetFloat("uAlpha", 0.9f);
+    shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseColorOverride", 1);
 
     float curTime = static_cast<float>(glfwGetTime());
 
-    // 1. Player Shield Bar (Top Left)
+    // =========================================================================
+    // 1. TOP-LEFT CLUSTER: PILOT FLIGHT SYSTEMS
+    // =========================================================================
+    float pX = 28.0f;
+    float pY = 24.0f;
+    float pW = 280.0f;
+    float pH = 110.0f;
+
+    // Tactical HUD Panel Backplate with cybernetic corner accents
+    DrawRect(shader, pX, pY, pW, pH, glm::vec3(0.05f, 0.08f, 0.14f), 0.75f);
+    DrawRectOutline(shader, pX, pY, pW, pH, 1.5f, glm::vec3(0.2f, 0.45f, 0.7f), 0.65f);
+    // Tech corner ticks
+    DrawRect(shader, pX, pY, 14.0f, 3.0f, glm::vec3(0.3f, 0.8f, 1.0f), 0.9f);
+    DrawRect(shader, pX, pY, 3.0f, 14.0f, glm::vec3(0.3f, 0.8f, 1.0f), 0.9f);
+    DrawRect(shader, pX + pW - 14.0f, pY, 14.0f, 3.0f, glm::vec3(0.3f, 0.8f, 1.0f), 0.9f);
+    DrawRect(shader, pX + pW - 3.0f, pY, 3.0f, 14.0f, glm::vec3(0.3f, 0.8f, 1.0f), 0.9f);
+
+    // --- Shield Meter ---
     float shieldRatio = std::clamp(shield / maxShield, 0.0f, 1.0f);
-    glm::vec3 shieldColor(0.2f, 0.9f, 0.3f);
-    if (shieldRatio < 0.3f) shieldColor = glm::vec3(1.0f, 0.2f, 0.2f);
-    else if (shieldRatio < 0.6f) shieldColor = glm::vec3(1.0f, 0.85f, 0.15f);
+    glm::vec3 shieldColor(0.2f, 0.95f, 0.35f);
+    std::string shieldStatus = "100%";
+    int shieldPct = static_cast<int>(shieldRatio * 100.0f + 0.5f);
+    char shieldBuf[16];
+    std::snprintf(shieldBuf, sizeof(shieldBuf), "%d%%", shieldPct);
+    shieldStatus = shieldBuf;
 
-    DrawBar(shader, 40.0f, 40.0f, 220.0f, 18.0f, shieldRatio,
-            shieldColor, glm::vec3(0.12f, 0.12f, 0.15f));
+    if (shieldRatio < 0.28f) {
+        shieldColor = (std::sin(curTime * 14.0f) > 0.0f) ? glm::vec3(1.0f, 0.15f, 0.15f) : glm::vec3(0.4f, 0.05f, 0.05f);
+        shieldStatus = "DANGER";
+    } else if (shieldRatio < 0.55f) {
+        shieldColor = glm::vec3(1.0f, 0.85f, 0.15f);
+    }
 
-    // 2. Boost / Thruster Meter (Below Shield)
+    DrawText(shader, "SHIELD", pX + 12.0f, pY + 12.0f, 1.6f, glm::vec3(0.8f, 0.95f, 1.0f), 0.95f);
+    DrawText(shader, shieldStatus, pX + pW - 75.0f, pY + 12.0f, 1.6f, shieldColor, 0.95f);
+
+    DrawSegmentedBar(shader, pX + 12.0f, pY + 28.0f, pW - 24.0f, 12.0f, 12, shieldRatio,
+                     shieldColor, glm::vec3(0.12f, 0.16f, 0.22f), glm::vec3(0.3f, 0.5f, 0.7f));
+
+    // --- Boost / Engine Meter ---
     float boostRatio = std::clamp(boost / maxBoost, 0.0f, 1.0f);
-    glm::vec3 boostColor = isOverheated ? glm::vec3(1.0f, 0.35f, 0.1f) : glm::vec3(0.2f, 0.8f, 1.0f);
+    glm::vec3 boostColor = glm::vec3(0.2f, 0.82f, 1.0f);
+    std::string boostStatus = "READY";
 
-    DrawBar(shader, 40.0f, 66.0f, 160.0f, 12.0f, boostRatio,
-            boostColor, glm::vec3(0.08f, 0.12f, 0.18f));
+    if (isOverheated) {
+        boostColor = (std::sin(curTime * 14.0f) > 0.0f) ? glm::vec3(1.0f, 0.3f, 0.1f) : glm::vec3(0.4f, 0.15f, 0.05f);
+        boostStatus = "OVERHEAT";
+    }
 
-    // 3. Charge Shot Meter (Appears when charging)
+    DrawText(shader, "BOOST", pX + 12.0f, pY + 50.0f, 1.5f, glm::vec3(0.7f, 0.9f, 1.0f), 0.95f);
+    DrawText(shader, boostStatus, pX + pW - 85.0f, pY + 50.0f, 1.5f, boostColor, 0.95f);
+
+    DrawSegmentedBar(shader, pX + 12.0f, pY + 64.0f, pW - 24.0f, 9.0f, 12, boostRatio,
+                     boostColor, glm::vec3(0.10f, 0.14f, 0.20f), glm::vec3(0.25f, 0.4f, 0.65f));
+
+    // --- Ordnance status / Smart Bomb count ---
+    DrawText(shader, "BOMBS:", pX + 12.0f, pY + 84.0f, 1.5f, glm::vec3(0.9f, 0.85f, 0.3f), 0.95f);
+    float bombStartX = pX + 75.0f;
+    for (int i = 0; i < 5; ++i) {
+        bool hasBomb = (i < bombCount);
+        glm::vec3 bCol = hasBomb ? glm::vec3(0.2f, 0.85f, 1.0f) : glm::vec3(0.15f, 0.18f, 0.25f);
+        float bAlpha = hasBomb ? 0.95f : 0.35f;
+
+        // Torpedo Icon
+        DrawRect(shader, bombStartX + i * 16.0f, pY + 84.0f, 11.0f, 11.0f, bCol, bAlpha);
+        DrawRectOutline(shader, bombStartX + i * 16.0f, pY + 84.0f, 11.0f, 11.0f, 1.0f, glm::vec3(1.0f), hasBomb ? 0.8f : 0.2f);
+    }
+
+    // --- Charge Shot Meter (Appears dynamically below panel) ---
     if (chargeProgress > 0.05f) {
-        glm::vec3 chargeColor = (chargeProgress >= 0.75f) ? glm::vec3(0.2f, 1.0f, 0.75f) : glm::vec3(0.3f, 0.8f, 0.4f);
-        DrawBar(shader, 40.0f, 84.0f, 160.0f, 8.0f, chargeProgress,
-                chargeColor, glm::vec3(0.08f, 0.12f, 0.15f));
+        float cY = pY + pH + 8.0f;
+        DrawRect(shader, pX, cY, pW, 28.0f, glm::vec3(0.05f, 0.10f, 0.16f), 0.85f);
+        DrawRectOutline(shader, pX, cY, pW, 28.0f, 1.2f, glm::vec3(0.2f, 0.75f, 0.9f), 0.8f);
+
+        bool isFull = (chargeProgress >= 0.75f);
+        glm::vec3 chargeCol = isFull ? glm::vec3(0.2f, 1.0f, 0.8f) : glm::vec3(0.3f, 0.8f, 0.4f);
+        std::string cLabel = isFull ? "LOCK-ON READY" : "CHARGING PLASMA";
+
+        DrawText(shader, cLabel, pX + 10.0f, cY + 5.0f, 1.3f, chargeCol, 0.95f);
+        DrawSegmentedBar(shader, pX + 10.0f, cY + 16.0f, pW - 20.0f, 6.0f, 10, chargeProgress,
+                         chargeCol, glm::vec3(0.1f, 0.15f, 0.2f), glm::vec3(0.2f, 0.6f, 0.8f));
     }
 
-    // 4. Smart Bomb Ammo Icons (Bottom Left)
-    float bombStartX = 40.0f;
-    float bombY = 100.0f;
-    for (int i = 0; i < bombCount; ++i) {
-        glm::mat4 modelBomb = glm::mat4(1.0f);
-        modelBomb = glm::translate(modelBomb, glm::vec3(bombStartX + i * 22.0f, bombY, 0.0f));
-        modelBomb = glm::scale(modelBomb, glm::vec3(14.0f, 14.0f, 1.0f));
-        shader.SetMat4("uModel", modelBomb);
-        shader.SetVec3("uAmbientColor", glm::vec3(1.0f, 0.85f, 0.2f));
-        bombIconMesh.Draw(shader);
-    }
-
-    // 5. Barrel Roll / Deflect Status Icon
+    // --- Barrel Roll Deflect Badge ---
     if (isDeflecting) {
-        glm::mat4 modelDeflect = glm::mat4(1.0f);
-        modelDeflect = glm::translate(modelDeflect, glm::vec3(40.0f, 122.0f, 0.0f));
-        modelDeflect = glm::scale(modelDeflect, glm::vec3(130.0f, 14.0f, 1.0f));
-        shader.SetMat4("uModel", modelDeflect);
-        shader.SetVec3("uAmbientColor", glm::vec3(0.2f, 1.0f, 0.8f));
-        quadMesh.Draw(shader);
+        float defY = (chargeProgress > 0.05f) ? (pY + pH + 42.0f) : (pY + pH + 8.0f);
+        DrawRect(shader, pX, defY, 190.0f, 24.0f, glm::vec3(0.08f, 0.35f, 0.25f), 0.85f);
+        DrawRectOutline(shader, pX, defY, 190.0f, 24.0f, 1.5f, glm::vec3(0.2f, 1.0f, 0.7f), 0.95f);
+        DrawText(shader, "[ DEFLECT ACTIVE ]", pX + 8.0f, defY + 7.0f, 1.4f, glm::vec3(0.3f, 1.0f, 0.8f), 1.0f);
     }
 
-    // 6. BOSS WARNING BANNER (Center Screen Flashing)
-    if (bossWarning) {
-        float warnW = 540.0f;
-        float warnH = 70.0f;
-        float wx = (screenWidth - warnW) * 0.5f;
-        float wy = screenHeight * 0.32f;
+    // =========================================================================
+    // 2. TOP-RIGHT CLUSTER: TACTICAL MISSION STATUS
+    // =========================================================================
+    float rW = 240.0f;
+    float rH = 82.0f;
+    float rX = screenWidth - rW - 28.0f;
+    float rY = 24.0f;
 
-        float flashAlpha = 0.55f + 0.35f * std::sin(curTime * 14.0f);
+    DrawRect(shader, rX, rY, rW, rH, glm::vec3(0.05f, 0.08f, 0.14f), 0.75f);
+    DrawRectOutline(shader, rX, rY, rW, rH, 1.5f, glm::vec3(0.2f, 0.45f, 0.7f), 0.65f);
+    DrawRect(shader, rX + rW - 14.0f, rY, 14.0f, 3.0f, glm::vec3(0.3f, 0.8f, 1.0f), 0.9f);
+    DrawRect(shader, rX + rW - 3.0f, rY, 3.0f, 14.0f, glm::vec3(0.3f, 0.8f, 1.0f), 0.9f);
+
+    // Score Readout
+    char scoreBuf[32];
+    std::snprintf(scoreBuf, sizeof(scoreBuf), "SCORE: %06d", score);
+    DrawText(shader, scoreBuf, rX + 14.0f, rY + 14.0f, 1.8f, glm::vec3(1.0f, 0.9f, 0.25f), 0.95f);
+
+    // Rings Readout
+    char ringBuf[32];
+    std::snprintf(ringBuf, sizeof(ringBuf), "RINGS: %02d", rings);
+    DrawText(shader, ringBuf, rX + 14.0f, rY + 38.0f, 1.6f, glm::vec3(0.3f, 0.85f, 1.0f), 0.95f);
+
+    // Stage Zone
+    DrawText(shader, "SECTOR: CANYON 01", rX + 14.0f, rY + 58.0f, 1.3f, glm::vec3(0.5f, 0.7f, 0.9f), 0.8f);
+
+    // =========================================================================
+    // 3. TOP-CENTER CLUSTER: BOSS DREADNOUGHT STATUS
+    // =========================================================================
+    if (bossActive) {
+        float bW = 460.0f;
+        float bH = 54.0f;
+        float bX = (screenWidth - bW) * 0.5f;
+        float bY = 20.0f;
+
+        // Boss plate
+        DrawRect(shader, bX, bY, bW, bH, glm::vec3(0.12f, 0.04f, 0.05f), 0.85f);
+        DrawRectOutline(shader, bX, bY, bW, bH, 1.5f, glm::vec3(0.85f, 0.2f, 0.15f), 0.9f);
+
+        // Header Title
+        std::string bossTitle = bossCoreExposed ? "GOLIATH // CORE OVERHEATED" : "GOLIATH // TITAN DREADNOUGHT";
+        glm::vec3 bTitleCol = bossCoreExposed ? glm::vec3(1.0f, 0.2f, 0.1f) : glm::vec3(1.0f, 0.8f, 0.2f);
+        DrawText(shader, bossTitle, bX + 16.0f, bY + 8.0f, 1.5f, bTitleCol, 0.95f);
+
+        // Boss Segmented Health Bar
+        glm::vec3 bossFillCol = bossCoreExposed ? glm::vec3(1.0f, 0.15f, 0.15f) : glm::vec3(0.95f, 0.55f, 0.15f);
+        DrawSegmentedBar(shader, bX + 16.0f, bY + 22.0f, bW - 32.0f, 12.0f, 20, bossHealthRatio,
+                         bossFillCol, glm::vec3(0.2f, 0.08f, 0.08f), glm::vec3(0.8f, 0.3f, 0.2f));
+
+        // Subsystem indicator badges
+        float pipW = 98.0f;
+        float pipGap = 8.0f;
+        float pipStartX = bX + 16.0f;
+        float pipY = bY + 38.0f;
+
+        // Pip 1: L-Turret
+        glm::vec3 lCol = bossLeftTurretDown ? glm::vec3(0.5f, 0.15f, 0.15f) : glm::vec3(0.2f, 0.9f, 0.4f);
+        DrawText(shader, bossLeftTurretDown ? "[L-TUR DOWN]" : "[L-TURRET OK]", pipStartX, pipY, 1.1f, lCol, 0.95f);
+
+        // Pip 2: Shield
+        glm::vec3 sCol = bossShieldDown ? glm::vec3(0.5f, 0.15f, 0.15f) : glm::vec3(0.2f, 0.85f, 1.0f);
+        DrawText(shader, bossShieldDown ? "[SHIELD DOWN]" : "[SHIELD ON]", pipStartX + pipW + pipGap, pipY, 1.1f, sCol, 0.95f);
+
+        // Pip 3: R-Turret
+        glm::vec3 rCol = bossRightTurretDown ? glm::vec3(0.5f, 0.15f, 0.15f) : glm::vec3(0.2f, 0.9f, 0.4f);
+        DrawText(shader, bossRightTurretDown ? "[R-TUR DOWN]" : "[R-TURRET OK]", pipStartX + (pipW + pipGap) * 2.0f, pipY, 1.1f, rCol, 0.95f);
+
+        // Pip 4: Core
+        glm::vec3 cCol = bossCoreExposed ? glm::vec3(1.0f, 0.35f, 0.1f) : glm::vec3(0.4f, 0.45f, 0.5f);
+        DrawText(shader, bossCoreExposed ? "[CORE VULN]" : "[CORE SHIELDED]", pipStartX + (pipW + pipGap) * 3.0f, pipY, 1.1f, cCol, 0.95f);
+    }
+
+    // =========================================================================
+    // 4. BOSS WARNING EMERGENCY DISPLAY
+    // =========================================================================
+    if (bossWarning) {
+        float warnW = 560.0f;
+        float warnH = 80.0f;
+        float wx = (screenWidth - warnW) * 0.5f;
+        float wy = screenHeight * 0.28f;
+
+        float flash = 0.55f + 0.40f * std::sin(curTime * 16.0f);
 
         // Backdrop
-        glm::mat4 mWarnBg = glm::mat4(1.0f);
-        mWarnBg = glm::translate(mWarnBg, glm::vec3(wx, wy, 0.0f));
-        mWarnBg = glm::scale(mWarnBg, glm::vec3(warnW, warnH, 1.0f));
-        shader.SetMat4("uModel", mWarnBg);
-        shader.SetFloat("uAlpha", flashAlpha);
-        shader.SetVec3("uAmbientColor", glm::vec3(0.75f, 0.08f, 0.08f));
-        quadMesh.Draw(shader);
+        DrawRect(shader, wx, wy, warnW, warnH, glm::vec3(0.55f, 0.05f, 0.05f), flash * 0.85f);
+        DrawRectOutline(shader, wx, wy, warnW, warnH, 3.0f, glm::vec3(1.0f, 0.85f, 0.1f), 0.95f);
 
-        // Warning Border Strips
-        glm::mat4 mStripTop = glm::mat4(1.0f);
-        mStripTop = glm::translate(mStripTop, glm::vec3(wx, wy - 6.0f, 0.0f));
-        mStripTop = glm::scale(mStripTop, glm::vec3(warnW, 4.0f, 1.0f));
-        shader.SetMat4("uModel", mStripTop);
-        shader.SetVec3("uAmbientColor", glm::vec3(1.0f, 0.85f, 0.1f));
-        quadMesh.Draw(shader);
+        // Hazard borders
+        DrawRect(shader, wx, wy - 6.0f, warnW, 4.0f, glm::vec3(1.0f, 0.85f, 0.1f), 0.95f);
+        DrawRect(shader, wx, wy + warnH + 2.0f, warnW, 4.0f, glm::vec3(1.0f, 0.85f, 0.1f), 0.95f);
 
-        glm::mat4 mStripBot = glm::mat4(1.0f);
-        mStripBot = glm::translate(mStripBot, glm::vec3(wx, wy + warnH + 2.0f, 0.0f));
-        mStripBot = glm::scale(mStripBot, glm::vec3(warnW, 4.0f, 1.0f));
-        shader.SetMat4("uModel", mStripBot);
-        shader.SetVec3("uAmbientColor", glm::vec3(1.0f, 0.85f, 0.1f));
-        quadMesh.Draw(shader);
+        // Bold warning text
+        DrawText(shader, "! WARNING: ENEMY DREADNOUGHT DETECTED !", wx + 20.0f, wy + 20.0f, 1.8f,
+                 glm::vec3(1.0f, 0.95f, 0.9f), 1.0f);
+        DrawText(shader, "ALL WEAPONS AUTHORIZED // PREPARE TO ENGAGE", wx + 40.0f, wy + 48.0f, 1.4f,
+                 glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
     }
 
-    // 7. BOSS HEALTH BAR & SUBSYSTEM STATUS (Top Center)
-    if (bossActive) {
-        float bBarW = 440.0f;
-        float bBarH = 16.0f;
-        float bx = (screenWidth - bBarW) * 0.5f;
-        float by = 40.0f;
-
-        // Title Plate Frame (GOLIATH DREADNOUGHT)
-        glm::mat4 mPlate = glm::mat4(1.0f);
-        mPlate = glm::translate(mPlate, glm::vec3(bx - 12.0f, by - 16.0f, 0.0f));
-        mPlate = glm::scale(mPlate, glm::vec3(bBarW + 24.0f, 10.0f, 1.0f));
-        shader.SetMat4("uModel", mPlate);
-        shader.SetFloat("uAlpha", 0.9f);
-        shader.SetVec3("uAmbientColor", glm::vec3(0.15f, 0.18f, 0.24f));
-        quadMesh.Draw(shader);
-
-        // Dreadnought Health Bar
-        glm::vec3 bossColor(1.0f, 0.35f, 0.15f);
-        if (bossCoreExposed) {
-            bossColor = glm::vec3(1.0f, 0.1f, 0.15f); // Blazing red during core overdrive
-        } else if (bossHealthRatio > 0.5f) {
-            bossColor = glm::vec3(0.95f, 0.7f, 0.2f);
-        }
-
-        DrawBar(shader, bx, by, bBarW, bBarH, bossHealthRatio,
-                bossColor, glm::vec3(0.08f, 0.09f, 0.12f));
-
-        // Subsystem Status Pips: [L.TURRET] [SHIELD] [R.TURRET] [CORE]
-        float pipW = 75.0f;
-        float pipH = 8.0f;
-        float pipGap = 12.0f;
-        float totalPipsW = (pipW * 4.0f) + (pipGap * 3.0f);
-        float pipsStartX = (screenWidth - totalPipsW) * 0.5f;
-        float pipsY = by + bBarH + 8.0f;
-
-        // Pip 1: Port Turret
-        glm::vec3 lTurretCol = bossLeftTurretDown ? glm::vec3(0.35f, 0.1f, 0.1f) : glm::vec3(0.2f, 0.9f, 0.4f);
-        DrawBar(shader, pipsStartX, pipsY, pipW, pipH, 1.0f, lTurretCol, glm::vec3(0.05f, 0.05f, 0.07f));
-
-        // Pip 2: Shield Generator
-        glm::vec3 shieldCol = bossShieldDown ? glm::vec3(0.35f, 0.1f, 0.1f) : glm::vec3(0.2f, 0.75f, 1.0f);
-        DrawBar(shader, pipsStartX + (pipW + pipGap), pipsY, pipW, pipH, 1.0f, shieldCol, glm::vec3(0.05f, 0.05f, 0.07f));
-
-        // Pip 3: Starboard Turret
-        glm::vec3 rTurretCol = bossRightTurretDown ? glm::vec3(0.35f, 0.1f, 0.1f) : glm::vec3(0.2f, 0.9f, 0.4f);
-        DrawBar(shader, pipsStartX + (pipW + pipGap) * 2.0f, pipsY, pipW, pipH, 1.0f, rTurretCol, glm::vec3(0.05f, 0.05f, 0.07f));
-
-        // Pip 4: Quantum Core
-        glm::vec3 coreCol = bossCoreExposed ? glm::vec3(1.0f, 0.4f, 0.1f) : glm::vec3(0.25f, 0.28f, 0.35f);
-        DrawBar(shader, pipsStartX + (pipW + pipGap) * 3.0f, pipsY, pipW, pipH, 1.0f, coreCol, glm::vec3(0.05f, 0.05f, 0.07f));
-    }
-
-    // 8. VICTORY SCREEN (MISSION COMPLETE)
+    // =========================================================================
+    // 5. VICTORY SCREEN (MISSION COMPLETE)
+    // =========================================================================
     if (isVictory) {
-        float vicW = 560.0f;
-        float vicH = 130.0f;
+        float vicW = 580.0f;
+        float vicH = 150.0f;
         float vx = (screenWidth - vicW) * 0.5f;
         float vy = (screenHeight - vicH) * 0.5f;
 
-        // Radiant backdrop
-        glm::mat4 mVic = glm::mat4(1.0f);
-        mVic = glm::translate(mVic, glm::vec3(vx, vy, 0.0f));
-        mVic = glm::scale(mVic, glm::vec3(vicW, vicH, 1.0f));
-        shader.SetMat4("uModel", mVic);
-        shader.SetFloat("uAlpha", 0.85f);
-        shader.SetVec3("uAmbientColor", glm::vec3(0.08f, 0.22f, 0.38f));
-        quadMesh.Draw(shader);
+        DrawRect(shader, vx, vy, vicW, vicH, glm::vec3(0.04f, 0.14f, 0.26f), 0.92f);
+        DrawRectOutline(shader, vx, vy, vicW, vicH, 3.0f, glm::vec3(0.2f, 0.85f, 1.0f), 0.95f);
+        DrawRect(shader, vx, vy - 6.0f, vicW, 4.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
+        DrawRect(shader, vx, vy + vicH + 2.0f, vicW, 4.0f, glm::vec3(1.0f, 0.85f, 0.2f), 0.95f);
 
-        // Gold Trim Bars
-        glm::mat4 mTrimTop = glm::mat4(1.0f);
-        mTrimTop = glm::translate(mTrimTop, glm::vec3(vx, vy - 4.0f, 0.0f));
-        mTrimTop = glm::scale(mTrimTop, glm::vec3(vicW, 6.0f, 1.0f));
-        shader.SetMat4("uModel", mTrimTop);
-        shader.SetVec3("uAmbientColor", glm::vec3(1.0f, 0.85f, 0.2f));
-        quadMesh.Draw(shader);
+        DrawText(shader, "MISSION COMPLETE", vx + 110.0f, vy + 24.0f, 2.8f, glm::vec3(0.3f, 1.0f, 0.8f), 1.0f);
+        DrawText(shader, "SECTOR CANYON CLEARED // THREAT ELIMINATED", vx + 70.0f, vy + 68.0f, 1.5f, glm::vec3(0.85f, 0.95f, 1.0f), 0.95f);
 
-        glm::mat4 mTrimBot = glm::mat4(1.0f);
-        mTrimBot = glm::translate(mTrimBot, glm::vec3(vx, vy + vicH, 0.0f));
-        mTrimBot = glm::scale(mTrimBot, glm::vec3(vicW, 6.0f, 1.0f));
-        shader.SetMat4("uModel", mTrimBot);
-        shader.SetVec3("uAmbientColor", glm::vec3(1.0f, 0.85f, 0.2f));
-        quadMesh.Draw(shader);
+        char finalScoreBuf[32];
+        std::snprintf(finalScoreBuf, sizeof(finalScoreBuf), "FINAL SCORE: %06d", score);
+        DrawText(shader, finalScoreBuf, vx + 160.0f, vy + 94.0f, 1.8f, glm::vec3(1.0f, 0.9f, 0.25f), 0.95f);
+
+        DrawText(shader, "PRESS [R] OR [SPACE] TO PLAY AGAIN", vx + 105.0f, vy + 122.0f, 1.4f, glm::vec3(0.6f, 0.85f, 1.0f), 0.9f);
     }
 
-    // 9. GAME OVER BANNER
+    // =========================================================================
+    // 6. GAME OVER SCREEN
+    // =========================================================================
     if (isGameOver) {
-        float bannerW = 420.0f;
-        float bannerH = 110.0f;
-        float bx = (screenWidth - bannerW) * 0.5f;
-        float by = (screenHeight - bannerH) * 0.5f;
+        float goW = 540.0f;
+        float goH = 140.0f;
+        float gx = (screenWidth - goW) * 0.5f;
+        float gy = (screenHeight - goH) * 0.5f;
 
-        glm::mat4 modelBanner = glm::mat4(1.0f);
-        modelBanner = glm::translate(modelBanner, glm::vec3(bx, by, 0.0f));
-        modelBanner = glm::scale(modelBanner, glm::vec3(bannerW, bannerH, 1.0f));
-        shader.SetMat4("uModel", modelBanner);
-        shader.SetFloat("uAlpha", 0.82f);
-        shader.SetVec3("uAmbientColor", glm::vec3(0.72f, 0.12f, 0.12f));
-        quadMesh.Draw(shader);
+        DrawRect(shader, gx, gy, goW, goH, glm::vec3(0.25f, 0.05f, 0.05f), 0.92f);
+        DrawRectOutline(shader, gx, gy, goW, goH, 3.0f, glm::vec3(0.9f, 0.2f, 0.15f), 0.95f);
+        DrawRect(shader, gx, gy - 6.0f, goW, 4.0f, glm::vec3(0.8f, 0.1f, 0.1f), 0.95f);
+        DrawRect(shader, gx, gy + goH + 2.0f, goW, 4.0f, glm::vec3(0.8f, 0.1f, 0.1f), 0.95f);
+
+        DrawText(shader, "STARFIGHTER DOWN", gx + 100.0f, gy + 24.0f, 2.8f, glm::vec3(1.0f, 0.2f, 0.2f), 1.0f);
+        DrawText(shader, "MISSION FAILED // HULL COMPROMISED", gx + 95.0f, gy + 68.0f, 1.5f, glm::vec3(1.0f, 0.7f, 0.7f), 0.95f);
+
+        char finalScoreBuf[32];
+        std::snprintf(finalScoreBuf, sizeof(finalScoreBuf), "FINAL SCORE: %06d", score);
+        DrawText(shader, finalScoreBuf, gx + 145.0f, gy + 94.0f, 1.8f, glm::vec3(1.0f, 0.85f, 0.3f), 0.95f);
+
+        DrawText(shader, "PRESS [R] OR [SPACE] TO RETRY", gx + 120.0f, gy + 118.0f, 1.4f, glm::vec3(0.85f, 0.85f, 0.9f), 0.9f);
     }
 
     glDisable(GL_BLEND);

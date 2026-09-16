@@ -13,11 +13,14 @@ uniform vec3 uFogColor;
 uniform float uFogStart;
 uniform float uFogEnd;
 uniform vec3 uCameraPos;
-uniform int uUseLighting;       // 1 for shaded, 0 for pure emissive/unlit (lasers, reticle)
+uniform int uUseLighting;       // 1 for shaded, 0 for pure emissive/unlit (lasers, reticle, HUD)
+uniform int uUseFog;            // 1 to apply distance fog, 0 to skip fog (HUD, lasers, UI)
+uniform int uUseColorOverride;  // 1 to use uColorOverride, 0 to use VertexColor
+uniform vec3 uColorOverride;    // Custom tint color
 uniform float uAlpha;           // Transparency factor
 
 void main() {
-    vec3 baseColor = VertexColor;
+    vec3 baseColor = (uUseColorOverride == 1) ? uColorOverride : VertexColor;
     
     vec3 finalColor = baseColor;
     if (uUseLighting == 1) {
@@ -32,9 +35,11 @@ void main() {
     }
     
     // Distance Fog (retro arcade / N64 depth fade)
-    float distanceToCam = length(uCameraPos - FragPos);
-    float fogFactor = clamp((distanceToCam - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
-    finalColor = mix(finalColor, uFogColor, fogFactor);
+    if (uUseFog == 1) {
+        float distanceToCam = length(uCameraPos - FragPos);
+        float fogFactor = clamp((distanceToCam - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
+        finalColor = mix(finalColor, uFogColor, fogFactor);
+    }
     
     FragColor = vec4(finalColor, uAlpha);
 }

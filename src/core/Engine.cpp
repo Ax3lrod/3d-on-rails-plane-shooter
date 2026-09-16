@@ -587,6 +587,10 @@ void Engine::Render() {
     shader.SetFloat("uFogStart", 90.0f);
     shader.SetFloat("uFogEnd", 290.0f);
     shader.SetVec3("uCameraPos", camera.position);
+    shader.SetInt("uUseLighting", 1);
+    shader.SetInt("uUseFog", 1);
+    shader.SetInt("uUseColorOverride", 0);
+    shader.SetFloat("uAlpha", 1.0f);
 
     // 3. Draw 3D world entities
     environment->Draw(shader);
