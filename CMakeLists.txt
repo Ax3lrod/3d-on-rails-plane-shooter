@@ -16,21 +16,53 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 # ---------------------------------------------------------
+# GLM (Mathematics library)
+# ---------------------------------------------------------
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.1
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(glm)
+
+# ---------------------------------------------------------
 # GLAD
 # ---------------------------------------------------------
 add_library(glad src/glad.c)
 target_include_directories(glad PUBLIC include)
 
-# ---------------------------------------------------------
-# Build main executable
-# ---------------------------------------------------------
-file(GLOB SOURCES "src/*.cpp")
+set(SOURCES
+    src/main.cpp
+    src/core/Engine.cpp
+    src/core/Camera.cpp
+    src/core/Input.cpp
+    src/renderer/Mesh.cpp
+    src/renderer/shaderClass.cpp
+    src/renderer/VAO.cpp
+    src/renderer/VBO.cpp
+    src/renderer/EBO.cpp
+    src/entities/PlayerStarfighter.cpp
+    src/entities/EnemyManager.cpp
+    src/combat/CombatSystem.cpp
+    src/world/WorldEnvironment.cpp
+    src/ui/HUD.cpp
+)
 add_executable(OpenGLProject ${SOURCES})
 
-target_include_directories(OpenGLProject PUBLIC include)
+target_include_directories(OpenGLProject PUBLIC
+    include
+    headers
+    headers/core
+    headers/renderer
+    headers/entities
+    headers/world
+    headers/combat
+    headers/ui
+)
 
 # Link dependencies
-target_link_libraries(OpenGLProject PRIVATE glfw glad)
+target_link_libraries(OpenGLProject PRIVATE glfw glad glm::glm)
 
 # Windows needs extra libs
 if (WIN32)
