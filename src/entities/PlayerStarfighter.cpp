@@ -10,6 +10,16 @@ PlayerStarfighter::PlayerStarfighter()
           glm::vec3(0.12f, 0.45f, 0.85f), // High-tech cobalt blue wings
           glm::vec3(0.1f, 0.85f, 0.95f)   // Luminous cyan canopy
       )),
+      fuselageMesh(Mesh::CreateStarfighterFuselage(
+          glm::vec3(0.85f, 0.88f, 0.92f),
+          glm::vec3(0.1f, 0.85f, 0.95f)
+      )),
+      leftWingMesh(Mesh::CreateStarfighterLeftWing(
+          glm::vec3(0.12f, 0.45f, 0.85f)
+      )),
+      rightWingMesh(Mesh::CreateStarfighterRightWing(
+          glm::vec3(0.12f, 0.45f, 0.85f)
+      )),
       chargeOrbMesh(Mesh::CreateSphere(0.7f, 10, 12, glm::vec3(0.2f, 1.0f, 0.6f))),
       baseSpeed(48.0f),
       boostSpeed(84.0f),
@@ -51,7 +61,13 @@ PlayerStarfighter::PlayerStarfighter()
       bombCount(3),
       maxBombs(5),
       score(0),
-      ringsCollected(0) {}
+      ringsCollected(0),
+      leftWingHealth(100.0f),
+      rightWingHealth(100.0f),
+      leftWingLost(false),
+      rightWingLost(false),
+      wingAlertTimer(0.0f),
+      wingAlertMessage("") {}
 
 void PlayerStarfighter::TriggerSpin(float direction) {
     if (!isSpinning) {
@@ -107,6 +123,87 @@ bool PlayerStarfighter::LaunchBomb() {
         return true;
     }
     return false;
+}
+
+bool PlayerStarfighter::DamageLeftWing(float amount) {
+    if (leftWingLost) return false;
+
+    leftWingHealth = std::max(0.0f, leftWingHealth - amount);
+    if (leftWingHealth <= 0.0f) {
+        leftWingLost = true;
+        leftWingHealth = 0.0f;
+        wingAlertTimer = 3.0f;
+        wingAlertMessage = "WARNING: LEFT WING DESTROYED";
+
+        // Spawn tumbling wing debris
+        TumblingWing debris;
+        debris.position = GetLeftWingRootWorldPos();
+        debris.velocity = glm::vec3(-12.0f, 7.0f, -currentSpeed * 0.35f);
+        debris.rotation = glm::vec3(currentPitch, currentYaw, currentBank);
+        debris.rotSpeed = glm::vec3(400.0f, -220.0f, 520.0f);
+        debris.isLeft = true;
+        debris.lifetime = 3.5f;
+        debris.active = true;
+        tumblingWings.push_back(debris);
+
+        return true; // Wing severed!
+    }
+    return false;
+}
+
+bool PlayerStarfighter::DamageRightWing(float amount) {
+    if (rightWingLost) return false;
+
+    rightWingHealth = std::max(0.0f, rightWingHealth - amount);
+    if (rightWingHealth <= 0.0f) {
+        rightWingLost = true;
+        rightWingHealth = 0.0f;
+        wingAlertTimer = 3.0f;
+        wingAlertMessage = "WARNING: RIGHT WING DESTROYED";
+
+        // Spawn tumbling wing debris
+        TumblingWing debris;
+        debris.position = GetRightWingRootWorldPos();
+        debris.velocity = glm::vec3(12.0f, 7.0f, -currentSpeed * 0.35f);
+        debris.rotation = glm::vec3(currentPitch, currentYaw, currentBank);
+        debris.rotSpeed = glm::vec3(400.0f, 220.0f, -520.0f);
+        debris.isLeft = false;
+        debris.lifetime = 3.5f;
+        debris.active = true;
+        tumblingWings.push_back(debris);
+
+        return true; // Wing severed!
+    }
+    return false;
+}
+
+void PlayerStarfighter::RepairWings() {
+    leftWingLost = false;
+    rightWingLost = false;
+    leftWingHealth = 100.0f;
+    rightWingHealth = 100.0f;
+    wingAlertTimer = 2.4f;
+    wingAlertMessage = "WINGS REPAIRED";
+}
+
+glm::vec3 PlayerStarfighter::GetLeftWingRootWorldPos() const {
+    glm::mat4 model = transform.GetModelMatrix();
+    return glm::vec3(model * glm::vec4(-0.45f, 0.05f, 0.7f, 1.0f));
+}
+
+glm::vec3 PlayerStarfighter::GetRightWingRootWorldPos() const {
+    glm::mat4 model = transform.GetModelMatrix();
+    return glm::vec3(model * glm::vec4(0.45f, 0.05f, 0.7f, 1.0f));
+}
+
+glm::vec3 PlayerStarfighter::GetLeftWingTipWorldPos() const {
+    glm::mat4 model = transform.GetModelMatrix();
+    return glm::vec3(model * glm::vec4(-2.6f, -0.05f, 0.9f, 1.0f));
+}
+
+glm::vec3 PlayerStarfighter::GetRightWingTipWorldPos() const {
+    glm::mat4 model = transform.GetModelMatrix();
+    return glm::vec3(model * glm::vec4(2.6f, -0.05f, 0.9f, 1.0f));
 }
 
 void PlayerStarfighter::HandleInput(float dt) {
@@ -175,6 +272,13 @@ void PlayerStarfighter::HandleInput(float dt) {
     transform.position.x += inputX * moveSpeedX * dt;
     transform.position.y += inputY * moveSpeedY * dt;
 
+    // Asymmetric aerodynamic drag / drift when wings are lost
+    if (leftWingLost && !rightWingLost) {
+        transform.position.x -= 3.2f * dt; // Drifts left
+    } else if (rightWingLost && !leftWingLost) {
+        transform.position.x += 3.2f * dt; // Drifts right
+    }
+
     // Clamp inside corridor bounds
     transform.position.x = std::clamp(transform.position.x, minX, maxX);
     transform.position.y = std::clamp(transform.position.y, minY, maxY);
@@ -183,6 +287,15 @@ void PlayerStarfighter::HandleInput(float dt) {
     float targetBank = -inputX * maxBankAngle;
     float targetPitch = inputY * maxPitchAngle;
     float targetYaw = -inputX * maxYawAngle;
+
+    // Aerodynamic list bias when wings are severed
+    if (leftWingLost && !rightWingLost) {
+        targetBank += 8.5f; // Lists left
+    } else if (rightWingLost && !leftWingLost) {
+        targetBank -= 8.5f; // Lists right
+    } else if (leftWingLost && rightWingLost) {
+        targetPitch -= 4.0f; // Sinks slightly without wing surface
+    }
 
     float bankSpeed = 12.0f;
     float pitchSpeed = 10.0f;
@@ -207,8 +320,9 @@ void PlayerStarfighter::Update(float dt) {
         } else {
             // Full 360 degree spin
             spinRoll = spinDirection * 360.0f * progress;
-            // Lateral evasive dash
-            transform.position.x += spinDirection * 22.0f * dt;
+            // Lateral evasive dash (slightly reduced agility if wing missing)
+            float dashSpeed = (leftWingLost || rightWingLost) ? 14.0f : 22.0f;
+            transform.position.x += spinDirection * dashSpeed * dt;
             transform.position.x = std::clamp(transform.position.x, minX, maxX);
         }
     }
@@ -235,6 +349,25 @@ void PlayerStarfighter::Update(float dt) {
     // Update timers
     if (invulnerableTimer > 0.0f) invulnerableTimer -= dt;
     if (fireTimer > 0.0f) fireTimer -= dt;
+    if (wingAlertTimer > 0.0f) wingAlertTimer -= dt;
+
+    // Update tumbling wing debris pieces
+    for (auto& debris : tumblingWings) {
+        if (!debris.active) continue;
+        debris.position += debris.velocity * dt;
+        debris.velocity.y -= 22.0f * dt; // Gravity pull into canyon
+        debris.velocity.x *= (1.0f - 0.35f * dt); // Air resistance
+        debris.rotation += debris.rotSpeed * dt;
+        debris.lifetime -= dt;
+        if (debris.lifetime <= 0.0f) {
+            debris.active = false;
+        }
+    }
+    tumblingWings.erase(
+        std::remove_if(tumblingWings.begin(), tumblingWings.end(),
+                       [](const TumblingWing& w) { return !w.active; }),
+        tumblingWings.end()
+    );
 }
 
 void PlayerStarfighter::Draw(const Shader& shader) const {
@@ -243,10 +376,44 @@ void PlayerStarfighter::Draw(const Shader& shader) const {
         if (flash % 2 == 0) return;
     }
 
-    shader.SetMat4("uModel", transform.GetModelMatrix());
+    glm::mat4 shipModel = transform.GetModelMatrix();
+    shader.SetMat4("uModel", shipModel);
     shader.SetInt("uUseLighting", 1);
     shader.SetFloat("uAlpha", 1.0f);
-    mesh.Draw(shader);
+
+    // 1. Draw central fuselage (always present)
+    fuselageMesh.Draw(shader);
+
+    // 2. Draw left wing if intact
+    if (!leftWingLost) {
+        leftWingMesh.Draw(shader);
+    }
+
+    // 3. Draw right wing if intact
+    if (!rightWingLost) {
+        rightWingMesh.Draw(shader);
+    }
+
+    // 4. Draw tumbling wing debris pieces
+    for (const auto& debris : tumblingWings) {
+        if (!debris.active) continue;
+
+        glm::mat4 debrisModel = glm::mat4(1.0f);
+        debrisModel = glm::translate(debrisModel, debris.position);
+        debrisModel = glm::rotate(debrisModel, glm::radians(debris.rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        debrisModel = glm::rotate(debrisModel, glm::radians(debris.rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        debrisModel = glm::rotate(debrisModel, glm::radians(debris.rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        shader.SetMat4("uModel", debrisModel);
+        if (debris.isLeft) {
+            leftWingMesh.Draw(shader);
+        } else {
+            rightWingMesh.Draw(shader);
+        }
+    }
+
+    // Reset model matrix back to ship
+    shader.SetMat4("uModel", shipModel);
 
     // Draw glowing charge orb at nose when charging
     if (isCharging && chargeTimer > 0.12f) {

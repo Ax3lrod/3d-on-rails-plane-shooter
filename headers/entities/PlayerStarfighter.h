@@ -5,10 +5,26 @@
 #include "Mesh.h"
 #include "Camera.h"
 
+#include <string>
+#include <vector>
+
+struct TumblingWing {
+    glm::vec3 position;
+    glm::vec3 velocity;
+    glm::vec3 rotation;
+    glm::vec3 rotSpeed;
+    bool isLeft;
+    float lifetime;
+    bool active;
+};
+
 class PlayerStarfighter {
 public:
     Transform transform;
     Mesh mesh;
+    Mesh fuselageMesh;
+    Mesh leftWingMesh;
+    Mesh rightWingMesh;
     Mesh chargeOrbMesh;
 
     // Flight parameters
@@ -72,6 +88,15 @@ public:
     int score;
     int ringsCollected;
 
+    // Wing Damage & Breakdown System
+    float leftWingHealth;
+    float rightWingHealth;
+    bool leftWingLost;
+    bool rightWingLost;
+    std::vector<TumblingWing> tumblingWings;
+    float wingAlertTimer;
+    std::string wingAlertMessage;
+
     PlayerStarfighter();
 
     void Update(float dt);
@@ -89,6 +114,16 @@ public:
     float GetChargeProgress() const;
     bool LaunchBomb();
     void AddBombs(int count);
+
+    bool DamageLeftWing(float amount);
+    bool DamageRightWing(float amount);
+    void RepairWings();
+    glm::vec3 GetLeftWingRootWorldPos() const;
+    glm::vec3 GetRightWingRootWorldPos() const;
+    glm::vec3 GetLeftWingTipWorldPos() const;
+    glm::vec3 GetRightWingTipWorldPos() const;
+    bool HasLeftWing() const { return !leftWingLost; }
+    bool HasRightWing() const { return !rightWingLost; }
 
     glm::vec3 GetLeftMuzzlePos() const;
     glm::vec3 GetRightMuzzlePos() const;

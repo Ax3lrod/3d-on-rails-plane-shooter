@@ -43,6 +43,9 @@ public:
     static Mesh CreateRing(float innerRadius, float outerRadius, int segments, const glm::vec3& color);
     static Mesh CreateCrosshair(float size, const glm::vec3& color);
     static Mesh CreateStarfighter(const glm::vec3& bodyColor, const glm::vec3& wingColor, const glm::vec3& cockpitColor);
+    static Mesh CreateStarfighterFuselage(const glm::vec3& bodyColor, const glm::vec3& cockpitColor);
+    static Mesh CreateStarfighterLeftWing(const glm::vec3& wingColor);
+    static Mesh CreateStarfighterRightWing(const glm::vec3& wingColor);
     static Mesh CreateEnemyDrone(const glm::vec3& bodyColor, const glm::vec3& eyeColor);
     static Mesh CreateAsteroid(float radius, const glm::vec3& color);
     static Mesh CreateLaserBolt(float width, float length, const glm::vec3& color);

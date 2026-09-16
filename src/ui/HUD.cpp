@@ -222,7 +222,10 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
                  bool bossActive, bool bossWarning, float bossHealthRatio,
                  bool bossLeftTurretDown, bool bossRightTurretDown,
                  bool bossShieldDown, bool bossCoreExposed,
-                 bool isVictory, bool isGameOver) const {
+                 bool isVictory, bool isGameOver,
+                 float leftWingHealth, bool leftWingLost,
+                 float rightWingHealth, bool rightWingLost,
+                 float wingAlertTimer, const std::string& wingAlertMsg) const {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -246,7 +249,7 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
     float pX = 28.0f;
     float pY = 24.0f;
     float pW = 280.0f;
-    float pH = 110.0f;
+    float pH = 142.0f;
 
     // Tactical HUD Panel Backplate with cybernetic corner accents
     DrawRect(shader, pX, pY, pW, pH, glm::vec3(0.05f, 0.08f, 0.14f), 0.75f);
@@ -289,14 +292,14 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
         boostStatus = "OVERHEAT";
     }
 
-    DrawText(shader, "BOOST", pX + 12.0f, pY + 50.0f, 1.5f, glm::vec3(0.7f, 0.9f, 1.0f), 0.95f);
-    DrawText(shader, boostStatus, pX + pW - 85.0f, pY + 50.0f, 1.5f, boostColor, 0.95f);
+    DrawText(shader, "BOOST", pX + 12.0f, pY + 48.0f, 1.5f, glm::vec3(0.7f, 0.9f, 1.0f), 0.95f);
+    DrawText(shader, boostStatus, pX + pW - 85.0f, pY + 48.0f, 1.5f, boostColor, 0.95f);
 
-    DrawSegmentedBar(shader, pX + 12.0f, pY + 64.0f, pW - 24.0f, 9.0f, 12, boostRatio,
+    DrawSegmentedBar(shader, pX + 12.0f, pY + 62.0f, pW - 24.0f, 9.0f, 12, boostRatio,
                      boostColor, glm::vec3(0.10f, 0.14f, 0.20f), glm::vec3(0.25f, 0.4f, 0.65f));
 
     // --- Ordnance status / Smart Bomb count ---
-    DrawText(shader, "BOMBS:", pX + 12.0f, pY + 84.0f, 1.5f, glm::vec3(0.9f, 0.85f, 0.3f), 0.95f);
+    DrawText(shader, "BOMBS:", pX + 12.0f, pY + 80.0f, 1.4f, glm::vec3(0.9f, 0.85f, 0.3f), 0.95f);
     float bombStartX = pX + 75.0f;
     for (int i = 0; i < 5; ++i) {
         bool hasBomb = (i < bombCount);
@@ -304,9 +307,29 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
         float bAlpha = hasBomb ? 0.95f : 0.35f;
 
         // Torpedo Icon
-        DrawRect(shader, bombStartX + i * 16.0f, pY + 84.0f, 11.0f, 11.0f, bCol, bAlpha);
-        DrawRectOutline(shader, bombStartX + i * 16.0f, pY + 84.0f, 11.0f, 11.0f, 1.0f, glm::vec3(1.0f), hasBomb ? 0.8f : 0.2f);
+        DrawRect(shader, bombStartX + i * 16.0f, pY + 80.0f, 11.0f, 11.0f, bCol, bAlpha);
+        DrawRectOutline(shader, bombStartX + i * 16.0f, pY + 80.0f, 11.0f, 11.0f, 1.0f, glm::vec3(1.0f), hasBomb ? 0.8f : 0.2f);
     }
+
+    // --- Wing Integrity Readout ---
+    float lWingRatio = std::clamp(leftWingHealth / 100.0f, 0.0f, 1.0f);
+    float rWingRatio = std::clamp(rightWingHealth / 100.0f, 0.0f, 1.0f);
+
+    glm::vec3 lWingColor = leftWingLost ? ((std::sin(curTime * 12.0f) > 0.0f) ? glm::vec3(1.0f, 0.2f, 0.2f) : glm::vec3(0.4f, 0.05f, 0.05f))
+                                        : ((lWingRatio < 0.6f) ? glm::vec3(1.0f, 0.85f, 0.2f) : glm::vec3(0.2f, 0.95f, 0.35f));
+    glm::vec3 rWingColor = rightWingLost ? ((std::sin(curTime * 12.0f) > 0.0f) ? glm::vec3(1.0f, 0.2f, 0.2f) : glm::vec3(0.4f, 0.05f, 0.05f))
+                                         : ((rWingRatio < 0.6f) ? glm::vec3(1.0f, 0.85f, 0.2f) : glm::vec3(0.2f, 0.95f, 0.35f));
+
+    std::string lWingText = leftWingLost ? "L-WING LOST" : (lWingRatio < 0.6f ? "L-WING DMG" : "L-WING OK");
+    std::string rWingText = rightWingLost ? "R-WING LOST" : (rWingRatio < 0.6f ? "R-WING DMG" : "R-WING OK");
+
+    DrawText(shader, lWingText, pX + 12.0f, pY + 102.0f, 1.3f, lWingColor, 0.95f);
+    DrawText(shader, rWingText, pX + 148.0f, pY + 102.0f, 1.3f, rWingColor, 0.95f);
+
+    DrawSegmentedBar(shader, pX + 12.0f, pY + 118.0f, 116.0f, 7.0f, 6, leftWingLost ? 0.0f : lWingRatio,
+                     lWingColor, glm::vec3(0.12f, 0.15f, 0.22f), glm::vec3(0.25f, 0.45f, 0.65f));
+    DrawSegmentedBar(shader, pX + 148.0f, pY + 118.0f, 116.0f, 7.0f, 6, rightWingLost ? 0.0f : rWingRatio,
+                     rWingColor, glm::vec3(0.12f, 0.15f, 0.22f), glm::vec3(0.25f, 0.45f, 0.65f));
 
     // --- Charge Shot Meter (Appears dynamically below panel) ---
     if (chargeProgress > 0.05f) {
@@ -401,6 +424,29 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
         // Pip 4: Core
         glm::vec3 cCol = bossCoreExposed ? glm::vec3(1.0f, 0.35f, 0.1f) : glm::vec3(0.4f, 0.45f, 0.5f);
         DrawText(shader, bossCoreExposed ? "[CORE VULN]" : "[CORE SHIELDED]", pipStartX + (pipW + pipGap) * 3.0f, pipY, 1.1f, cCol, 0.95f);
+    }
+
+    // =========================================================================
+    // 3.5. WING DAMAGE / REPAIR ALERT BANNER
+    // =========================================================================
+    if (wingAlertTimer > 0.0f && !wingAlertMsg.empty()) {
+        float bW = 460.0f;
+        float bH = 46.0f;
+        float bx = (screenWidth - bW) * 0.5f;
+        float by = screenHeight * 0.20f;
+
+        bool isLost = (wingAlertMsg.find("DESTROYED") != std::string::npos);
+        float flash = 0.6f + 0.4f * std::sin(curTime * 14.0f);
+
+        glm::vec3 bgCol = isLost ? glm::vec3(0.5f, 0.08f, 0.08f) : glm::vec3(0.06f, 0.28f, 0.22f);
+        glm::vec3 borderCol = isLost ? glm::vec3(1.0f, 0.3f, 0.2f) : glm::vec3(0.2f, 1.0f, 0.7f);
+
+        DrawRect(shader, bx, by, bW, bH, bgCol, flash * 0.9f);
+        DrawRectOutline(shader, bx, by, bW, bH, 2.0f, borderCol, 0.95f);
+        DrawRect(shader, bx, by - 3.0f, bW, 2.0f, borderCol, 0.9f);
+        DrawRect(shader, bx, by + bH + 1.0f, bW, 2.0f, borderCol, 0.9f);
+
+        DrawText(shader, wingAlertMsg, bx + 28.0f, by + 14.0f, 1.6f, glm::vec3(1.0f, 0.95f, 0.95f), 1.0f);
     }
 
     // =========================================================================

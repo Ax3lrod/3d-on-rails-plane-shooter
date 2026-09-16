@@ -34,7 +34,10 @@ public:
                 bool bossActive, bool bossWarning, float bossHealthRatio,
                 bool bossLeftTurretDown, bool bossRightTurretDown,
                 bool bossShieldDown, bool bossCoreExposed,
-                bool isVictory, bool isGameOver) const;
+                bool isVictory, bool isGameOver,
+                float leftWingHealth = 100.0f, bool leftWingLost = false,
+                float rightWingHealth = 100.0f, bool rightWingLost = false,
+                float wingAlertTimer = 0.0f, const std::string& wingAlertMsg = "") const;
 };
 
 #endif

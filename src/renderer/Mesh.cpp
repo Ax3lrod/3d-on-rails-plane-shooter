@@ -216,6 +216,120 @@ Mesh Mesh::CreateStarfighter(const glm::vec3& bodyColor, const glm::vec3& wingCo
     return Mesh(verts, inds);
 }
 
+Mesh Mesh::CreateStarfighterFuselage(const glm::vec3& bodyColor, const glm::vec3& cockpitColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // Starfighter Key Landmarks:
+    // Forward is -Z, Up is +Y, Right is +X
+    glm::vec3 noseTip(0.0f, 0.0f, -2.4f);
+    glm::vec3 noseTop(0.0f, 0.22f, -1.0f);
+    glm::vec3 noseBottom(0.0f, -0.2f, -1.0f);
+    glm::vec3 noseLeft(-0.35f, 0.0f, -1.0f);
+    glm::vec3 noseRight(0.35f, 0.0f, -1.0f);
+
+    glm::vec3 cockpitTop(0.0f, 0.45f, -0.1f);
+    glm::vec3 cabinRear(0.0f, 0.35f, 0.9f);
+    glm::vec3 cabinLeft(-0.5f, 0.1f, 0.8f);
+    glm::vec3 cabinRight(0.5f, 0.1f, 0.8f);
+    glm::vec3 keelBottom(0.0f, -0.32f, 0.8f);
+
+    // 1. Sleek Nose Cone
+    AddTriangle(verts, inds, noseTip, noseRight, noseTop, bodyColor);
+    AddTriangle(verts, inds, noseTip, noseTop, noseLeft, bodyColor);
+    AddTriangle(verts, inds, noseTip, noseLeft, noseBottom, bodyColor * 0.8f);
+    AddTriangle(verts, inds, noseTip, noseBottom, noseRight, bodyColor * 0.8f);
+
+    // 2. Cockpit Canopy (Translucent cyan/amber glass look)
+    AddTriangle(verts, inds, noseTop, cabinRight, cockpitTop, cockpitColor);
+    AddTriangle(verts, inds, noseTop, cockpitTop, cabinLeft, cockpitColor);
+    AddTriangle(verts, inds, cockpitTop, cabinRight, cabinRear, cockpitColor * 0.9f);
+    AddTriangle(verts, inds, cockpitTop, cabinRear, cabinLeft, cockpitColor * 0.9f);
+
+    // 3. Main Fuselage flanks
+    AddQuad(verts, inds, noseLeft, cabinLeft, keelBottom, noseBottom, bodyColor * 0.85f);
+    AddQuad(verts, inds, noseRight, noseBottom, keelBottom, cabinRight, bodyColor * 0.85f);
+    AddQuad(verts, inds, cabinLeft, cabinRight, keelBottom, keelBottom, bodyColor * 0.75f);
+
+    // 4. Exposed Wing Mount Sockets (Mechanical dark alloy)
+    glm::vec3 socketColor(0.24f, 0.26f, 0.3f);
+    AddQuad(verts, inds,
+            {-0.46f, -0.05f, 0.1f}, {-0.46f, -0.05f, 1.35f},
+            {-0.46f,  0.15f, 1.35f}, {-0.46f,  0.15f, 0.1f},
+            socketColor);
+    AddQuad(verts, inds,
+            {0.46f, -0.05f, 1.35f}, {0.46f, -0.05f, 0.1f},
+            {0.46f,  0.15f, 0.1f}, {0.46f,  0.15f, 1.35f},
+            socketColor);
+
+    // 5. Glowing Twin Thruster Exhausts
+    glm::vec3 glowColor(0.2f, 0.8f, 1.0f);
+    AddQuad(verts, inds,
+            {-0.4f, -0.1f, 1.42f}, {-0.15f, -0.1f, 1.42f},
+            {-0.15f,  0.15f, 1.42f}, {-0.4f,  0.15f, 1.42f},
+            glowColor);
+    AddQuad(verts, inds,
+            {0.15f, -0.1f, 1.42f}, {0.4f, -0.1f, 1.42f},
+            {0.4f,  0.15f, 1.42f}, {0.15f,  0.15f, 1.42f},
+            glowColor);
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateStarfighterLeftWing(const glm::vec3& wingColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    glm::vec3 leftWingRoot(-0.45f, 0.05f, 0.1f);
+    glm::vec3 leftWingTip(-2.6f, -0.05f, 0.9f);
+    glm::vec3 leftWingRear(-0.45f, 0.05f, 1.4f);
+    glm::vec3 leftFinTip(-2.6f, 0.65f, 1.1f);
+
+    AddTriangle(verts, inds, leftWingRoot, leftWingTip, leftWingRear, wingColor);
+    AddTriangle(verts, inds, leftWingRear, leftWingTip, leftWingRoot, wingColor * 0.7f); // underside
+    // Winglet / vertical stabilizer
+    AddTriangle(verts, inds, leftWingTip, leftFinTip, glm::vec3(-2.4f, 0.0f, 1.3f), wingColor * 1.15f);
+    AddTriangle(verts, inds, glm::vec3(-2.4f, 0.0f, 1.3f), leftFinTip, leftWingTip, wingColor * 0.85f);
+
+    // Blaster Cannon
+    glm::vec3 leftCannonPos(-1.2f, -0.1f, 0.3f);
+    AddQuad(verts, inds, 
+            leftCannonPos + glm::vec3(-0.06f, -0.06f, -0.7f),
+            leftCannonPos + glm::vec3( 0.06f, -0.06f, -0.7f),
+            leftCannonPos + glm::vec3( 0.06f,  0.06f,  0.3f),
+            leftCannonPos + glm::vec3(-0.06f,  0.06f,  0.3f),
+            glm::vec3(0.2f, 0.2f, 0.25f));
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateStarfighterRightWing(const glm::vec3& wingColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    glm::vec3 rightWingRoot(0.45f, 0.05f, 0.1f);
+    glm::vec3 rightWingTip(2.6f, -0.05f, 0.9f);
+    glm::vec3 rightWingRear(0.45f, 0.05f, 1.4f);
+    glm::vec3 rightFinTip(2.6f, 0.65f, 1.1f);
+
+    AddTriangle(verts, inds, rightWingRoot, rightWingRear, rightWingTip, wingColor);
+    AddTriangle(verts, inds, rightWingTip, rightWingRear, rightWingRoot, wingColor * 0.7f); // underside
+    // Right winglet
+    AddTriangle(verts, inds, rightWingTip, glm::vec3(2.4f, 0.0f, 1.3f), rightFinTip, wingColor * 1.15f);
+    AddTriangle(verts, inds, rightFinTip, glm::vec3(2.4f, 0.0f, 1.3f), rightWingTip, wingColor * 0.85f);
+
+    // Blaster Cannon
+    glm::vec3 rightCannonPos(1.2f, -0.1f, 0.3f);
+    AddQuad(verts, inds,
+            rightCannonPos + glm::vec3(-0.06f, -0.06f, -0.7f),
+            rightCannonPos + glm::vec3( 0.06f, -0.06f, -0.7f),
+            rightCannonPos + glm::vec3( 0.06f,  0.06f,  0.3f),
+            rightCannonPos + glm::vec3(-0.06f,  0.06f,  0.3f),
+            glm::vec3(0.2f, 0.2f, 0.25f));
+
+    return Mesh(verts, inds);
+}
+
 Mesh Mesh::CreateEnemyDrone(const glm::vec3& bodyColor, const glm::vec3& eyeColor) {
     std::vector<Vertex> verts;
     std::vector<GLuint> inds;

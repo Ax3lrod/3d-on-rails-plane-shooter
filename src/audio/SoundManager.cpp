@@ -269,7 +269,7 @@ void SoundManager::AudioThreadFunc() {
 // =========================================================================
 
 void SoundManager::PrebakeSounds() {
-    soundBank.resize(15);
+    soundBank.resize(17);
     GenerateLaserSound();
     GenerateEnemyLaserSound();
     GenerateChargeHumSound();
@@ -285,6 +285,8 @@ void SoundManager::PrebakeSounds() {
     GenerateRingCollectSound();
     GenerateWarningSirenSound();
     GenerateVictoryFanfareSound();
+    GenerateWingSnapSound();
+    GenerateWingRepairSound();
 }
 
 // 1. Dual Laser Fire (Crisp Star Fox square/saw downward sweep)
@@ -633,5 +635,79 @@ void SoundManager::GenerateVictoryFanfareSound() {
                         : (1.0f - 0.3f * (noteTime / durations[currentNote]));
 
         pcm[i] = ClampSample((s1 + s2 + s3) * noteEnv * 20000.0f);
+    }
+}
+
+// 16. Wing Snap (Crunchy metal stress, shear, and detachment snap)
+void SoundManager::GenerateWingSnapSound() {
+    float duration = 0.42f;
+    size_t count = static_cast<size_t>(SAMPLE_RATE * duration);
+    std::vector<int16_t>& pcm = soundBank[static_cast<size_t>(SoundID::WingSnap)].pcmData;
+    pcm.resize(count);
+
+    float noiseFilter = 0.0f;
+    float phase = 0.0f;
+    float subPhase = 0.0f;
+
+    for (size_t i = 0; i < count; ++i) {
+        float t = static_cast<float>(i) / SAMPLE_RATE;
+        float progress = t / duration;
+
+        // White noise transient for the shear crack
+        float rawNoise = (static_cast<float>(rand()) / RAND_MAX) * 2.0f - 1.0f;
+        noiseFilter += 0.35f * (rawNoise - noiseFilter);
+
+        // Low resonant groan / metallic stress tone
+        float stressFreq = 160.0f * (1.0f - progress * 0.7f);
+        phase += 2.0f * PI * stressFreq / SAMPLE_RATE;
+        float metalGroan = (std::sin(phase) >= 0.0f ? 0.7f : -0.7f);
+
+        // Sub-bass impact thud
+        subPhase += 2.0f * PI * (75.0f * (1.0f - progress)) / SAMPLE_RATE;
+        float subThud = std::sin(subPhase);
+
+        float snapEnv = (progress < 0.08f) ? (progress / 0.08f) : std::pow(1.0f - (progress - 0.08f) / 0.92f, 2.0f);
+        float combined = (noiseFilter * 0.6f + metalGroan * 0.3f + subThud * 0.4f) * snapEnv;
+
+        pcm[i] = ClampSample(combined * 27000.0f);
+    }
+}
+
+// 17. Wing Repair (High-tech holographic reassembly chirp & confirmation chime)
+void SoundManager::GenerateWingRepairSound() {
+    float duration = 0.55f;
+    size_t count = static_cast<size_t>(SAMPLE_RATE * duration);
+    std::vector<int16_t>& pcm = soundBank[static_cast<size_t>(SoundID::WingRepair)].pcmData;
+    pcm.resize(count);
+
+    float phase1 = 0.0f;
+    float phase2 = 0.0f;
+    float phaseChime = 0.0f;
+
+    for (size_t i = 0; i < count; ++i) {
+        float t = static_cast<float>(i) / SAMPLE_RATE;
+        float progress = t / duration;
+
+        // Phase 1: Rising holographic frequency sweep
+        float freq1 = 520.0f + 1200.0f * std::pow(progress, 1.2f);
+        phase1 += 2.0f * PI * freq1 / SAMPLE_RATE;
+        float sweep = std::sin(phase1);
+
+        // Phase 2: Shimmering octave harmonic
+        phase2 += 2.0f * PI * (freq1 * 1.5f) / SAMPLE_RATE;
+        float harmonic = std::sin(phase2) * 0.4f;
+
+        // Final crystalline lock chime during second half
+        float chime = 0.0f;
+        if (progress > 0.45f) {
+            float chimeProgress = (progress - 0.45f) / 0.55f;
+            phaseChime += 2.0f * PI * 1318.5f / SAMPLE_RATE; // E6
+            chime = std::sin(phaseChime) * std::pow(1.0f - chimeProgress, 1.5f) * 0.7f;
+        }
+
+        float env = (progress < 0.1f) ? (progress / 0.1f) : std::pow(1.0f - (progress - 0.1f) / 0.9f, 1.2f);
+        float out = (sweep * 0.5f + harmonic * 0.3f + chime * 0.6f) * env;
+
+        pcm[i] = ClampSample(out * 23000.0f);
     }
 }

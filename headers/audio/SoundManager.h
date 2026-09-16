@@ -28,7 +28,9 @@ enum class SoundID {
     ExplosionLarge,
     RingCollect,
     WarningSiren,
-    VictoryFanfare
+    VictoryFanfare,
+    WingSnap,
+    WingRepair
 };
 
 struct SoundSample {
@@ -78,6 +80,8 @@ private:
     void GenerateRingCollectSound();
     void GenerateWarningSirenSound();
     void GenerateVictoryFanfareSound();
+    void GenerateWingSnapSound();
+    void GenerateWingRepairSound();
 
     void AudioThreadFunc();
 

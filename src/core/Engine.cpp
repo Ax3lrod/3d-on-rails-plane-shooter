@@ -158,18 +158,33 @@ void Engine::ProcessInput(float) {
         if (player->CanFire()) {
             player->ResetFireTimer();
 
-            glm::vec3 leftMuzzle = player->GetLeftMuzzlePos();
-            glm::vec3 rightMuzzle = player->GetRightMuzzlePos();
             glm::vec3 target = player->GetFarTargetPos();
+            bool firedAny = false;
 
-            projectiles->SpawnLaser(leftMuzzle, target, true, 220.0f);
-            projectiles->SpawnLaser(rightMuzzle, target, true, 220.0f);
+            if (player->HasLeftWing()) {
+                glm::vec3 leftMuzzle = player->GetLeftMuzzlePos();
+                projectiles->SpawnLaser(leftMuzzle, target, true, 220.0f);
+                particles->SpawnExplosion(leftMuzzle, 3, glm::vec3(0.2f, 1.0f, 0.5f));
+                firedAny = true;
+            }
 
-            particles->SpawnExplosion(leftMuzzle, 3, glm::vec3(0.2f, 1.0f, 0.5f));
-            particles->SpawnExplosion(rightMuzzle, 3, glm::vec3(0.2f, 1.0f, 0.5f));
+            if (player->HasRightWing()) {
+                glm::vec3 rightMuzzle = player->GetRightMuzzlePos();
+                projectiles->SpawnLaser(rightMuzzle, target, true, 220.0f);
+                particles->SpawnExplosion(rightMuzzle, 3, glm::vec3(0.2f, 1.0f, 0.5f));
+                firedAny = true;
+            }
+
+            // Emergency backup blaster if both wings are lost
+            if (!firedAny) {
+                glm::vec3 noseMuzzle = player->GetNosePos();
+                projectiles->SpawnLaser(noseMuzzle, target, true, 220.0f);
+                particles->SpawnExplosion(noseMuzzle, 4, glm::vec3(1.0f, 0.65f, 0.25f));
+            }
 
             if (audio) {
-                audio->Play(SoundID::LaserFire, 0.85f, 0.95f + ((rand() % 10) * 0.01f));
+                float pitch = firedAny ? (0.95f + ((rand() % 10) * 0.01f)) : 0.75f;
+                audio->Play(SoundID::LaserFire, 0.85f, pitch);
             }
         }
     }
@@ -455,10 +470,63 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 6. Player vs Hazard Pillars
+    // 6. Player vs Hazard Pillars (with wing-tip bounds)
     for (auto& pil : environment->pillars) {
         if (pil.destroyed) continue;
 
+        // Check left wing collision
+        if (!player->leftWingLost) {
+            glm::vec3 lTip = player->GetLeftWingTipWorldPos();
+            float dxL = lTip.x - pil.position.x;
+            float dzL = lTip.z - pil.position.z;
+            float distL = std::sqrt(dxL * dxL + dzL * dzL);
+            if (distL < (pil.radius + 0.8f) && lTip.y < 7.0f) {
+                pil.destroyed = true;
+                if (player->IsDeflecting()) {
+                    particles->SpawnExplosion(pil.position + glm::vec3(0.0f, 3.0f, 0.0f), 30, glm::vec3(0.2f, 0.9f, 1.0f));
+                    camera.TriggerShake(0.35f, 0.2f);
+                    if (audio) audio->Play(SoundID::ExplosionLarge, 0.9f);
+                } else {
+                    bool severed = player->DamageLeftWing(100.0f);
+                    particles->SpawnExplosion(lTip, 32, glm::vec3(1.0f, 0.4f, 0.1f));
+                    camera.TriggerShake(0.9f, 0.4f);
+                    if (audio) {
+                        audio->Play(SoundID::WingSnap, 1.0f);
+                        audio->Play(SoundID::ExplosionLarge, 0.85f);
+                    }
+                    player->TakeDamage(15.0f);
+                }
+                continue;
+            }
+        }
+
+        // Check right wing collision
+        if (!player->rightWingLost) {
+            glm::vec3 rTip = player->GetRightWingTipWorldPos();
+            float dxR = rTip.x - pil.position.x;
+            float dzR = rTip.z - pil.position.z;
+            float distR = std::sqrt(dxR * dxR + dzR * dzR);
+            if (distR < (pil.radius + 0.8f) && rTip.y < 7.0f) {
+                pil.destroyed = true;
+                if (player->IsDeflecting()) {
+                    particles->SpawnExplosion(pil.position + glm::vec3(0.0f, 3.0f, 0.0f), 30, glm::vec3(0.2f, 0.9f, 1.0f));
+                    camera.TriggerShake(0.35f, 0.2f);
+                    if (audio) audio->Play(SoundID::ExplosionLarge, 0.9f);
+                } else {
+                    bool severed = player->DamageRightWing(100.0f);
+                    particles->SpawnExplosion(rTip, 32, glm::vec3(1.0f, 0.4f, 0.1f));
+                    camera.TriggerShake(0.9f, 0.4f);
+                    if (audio) {
+                        audio->Play(SoundID::WingSnap, 1.0f);
+                        audio->Play(SoundID::ExplosionLarge, 0.85f);
+                    }
+                    player->TakeDamage(15.0f);
+                }
+                continue;
+            }
+        }
+
+        // Check central fuselage collision
         float dx = player->transform.position.x - pil.position.x;
         float dz = player->transform.position.z - pil.position.z;
         float dist = std::sqrt(dx * dx + dz * dz);
@@ -474,6 +542,8 @@ void Engine::HandleCollisions() {
                 }
             } else {
                 player->TakeDamage(30.0f);
+                player->DamageLeftWing(35.0f);
+                player->DamageRightWing(35.0f);
                 particles->SpawnExplosion(player->transform.position, 35, glm::vec3(0.7f, 0.45f, 0.3f));
                 camera.TriggerShake(1.0f, 0.5f);
                 if (audio) {
@@ -487,10 +557,61 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 5. Enemy Lasers vs Player
+    // 5. Enemy Lasers vs Player (with wing bounds)
     for (auto& p : projectiles->projectiles) {
         if (!p.active || p.isPlayer) continue;
 
+        // Check Left Wing hit
+        if (!player->leftWingLost) {
+            float distL = glm::distance(p.position, player->GetLeftWingTipWorldPos());
+            if (distL < (p.radius + 1.1f)) {
+                p.active = false;
+                if (player->IsDeflecting()) {
+                    particles->SpawnExplosion(p.position, 14, glm::vec3(0.2f, 0.9f, 1.0f));
+                    camera.TriggerShake(0.2f, 0.15f);
+                    if (audio) audio->Play(SoundID::LockOnPing, 0.85f, 1.6f);
+                } else {
+                    bool severed = player->DamageLeftWing(35.0f);
+                    particles->SpawnExplosion(p.position, 14, glm::vec3(1.0f, 0.4f, 0.2f));
+                    camera.TriggerShake(0.6f, 0.3f);
+                    if (audio) {
+                        audio->Play(severed ? SoundID::WingSnap : SoundID::ExplosionSmall, 0.95f);
+                    }
+                    player->TakeDamage(10.0f);
+                    if (player->shield <= 0.0f) {
+                        state = GameState::GameOver;
+                    }
+                }
+                continue;
+            }
+        }
+
+        // Check Right Wing hit
+        if (!player->rightWingLost) {
+            float distR = glm::distance(p.position, player->GetRightWingTipWorldPos());
+            if (distR < (p.radius + 1.1f)) {
+                p.active = false;
+                if (player->IsDeflecting()) {
+                    particles->SpawnExplosion(p.position, 14, glm::vec3(0.2f, 0.9f, 1.0f));
+                    camera.TriggerShake(0.2f, 0.15f);
+                    if (audio) audio->Play(SoundID::LockOnPing, 0.85f, 1.6f);
+                } else {
+                    bool severed = player->DamageRightWing(35.0f);
+                    particles->SpawnExplosion(p.position, 14, glm::vec3(1.0f, 0.4f, 0.2f));
+                    camera.TriggerShake(0.6f, 0.3f);
+                    if (audio) {
+                        audio->Play(severed ? SoundID::WingSnap : SoundID::ExplosionSmall, 0.95f);
+                    }
+                    player->TakeDamage(10.0f);
+                    if (player->shield <= 0.0f) {
+                        state = GameState::GameOver;
+                    }
+                }
+                continue;
+            }
+        }
+
+        // Center fuselage hit
         float dist = glm::distance(p.position, player->transform.position);
         if (dist < (p.radius + 1.8f)) {
             p.active = false;
@@ -519,7 +640,7 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 6. Player vs Rings
+    // 6. Player vs Rings (Gold awards bombs; Silver repairs wings & heals shield!)
     for (auto& r : environment->rings) {
         if (r.collected) continue;
 
@@ -528,7 +649,17 @@ void Engine::HandleCollisions() {
             r.collected = true;
             player->ringsCollected++;
             player->score += r.isGold ? 1000 : 500;
-            player->AddShield(r.isGold ? 35.0f : 20.0f);
+            player->AddShield(r.isGold ? 35.0f : 25.0f);
+
+            // Silver rings repair both wings!
+            if (!r.isGold) {
+                bool neededRepair = (player->leftWingLost || player->rightWingLost ||
+                                     player->leftWingHealth < 100.0f || player->rightWingHealth < 100.0f);
+                player->RepairWings();
+                if (neededRepair && audio) {
+                    audio->Play(SoundID::WingRepair, 1.0f);
+                }
+            }
 
             // Every 3 gold rings grants an extra Smart Bomb!
             if (r.isGold && player->ringsCollected % 3 == 0) {
@@ -543,10 +674,53 @@ void Engine::HandleCollisions() {
         }
     }
 
-    // 7. Player vs Asteroids
+    // 7. Player vs Asteroids (with wing bounds)
     for (auto& a : environment->asteroids) {
         if (a.destroyed) continue;
 
+        // Check Left Wing
+        if (!player->leftWingLost) {
+            float distL = glm::distance(player->GetLeftWingTipWorldPos(), a.position);
+            if (distL < (a.radius + 1.0f)) {
+                a.destroyed = true;
+                if (player->IsDeflecting()) {
+                    particles->SpawnExplosion(a.position, 30, glm::vec3(0.2f, 0.9f, 1.0f));
+                    camera.TriggerShake(0.3f, 0.2f);
+                } else {
+                    bool severed = player->DamageLeftWing(50.0f);
+                    particles->SpawnExplosion(player->GetLeftWingTipWorldPos(), 28, glm::vec3(0.8f, 0.5f, 0.3f));
+                    camera.TriggerShake(0.8f, 0.35f);
+                    if (audio) {
+                        audio->Play(severed ? SoundID::WingSnap : SoundID::ExplosionLarge, 0.95f);
+                    }
+                    player->TakeDamage(12.0f);
+                }
+                continue;
+            }
+        }
+
+        // Check Right Wing
+        if (!player->rightWingLost) {
+            float distR = glm::distance(player->GetRightWingTipWorldPos(), a.position);
+            if (distR < (a.radius + 1.0f)) {
+                a.destroyed = true;
+                if (player->IsDeflecting()) {
+                    particles->SpawnExplosion(a.position, 30, glm::vec3(0.2f, 0.9f, 1.0f));
+                    camera.TriggerShake(0.3f, 0.2f);
+                } else {
+                    bool severed = player->DamageRightWing(50.0f);
+                    particles->SpawnExplosion(player->GetRightWingTipWorldPos(), 28, glm::vec3(0.8f, 0.5f, 0.3f));
+                    camera.TriggerShake(0.8f, 0.35f);
+                    if (audio) {
+                        audio->Play(severed ? SoundID::WingSnap : SoundID::ExplosionLarge, 0.95f);
+                    }
+                    player->TakeDamage(12.0f);
+                }
+                continue;
+            }
+        }
+
+        // Center collision
         float dist = glm::distance(player->transform.position, a.position);
         if (dist < (a.radius + 1.6f)) {
             a.destroyed = true;
@@ -572,6 +746,22 @@ void Engine::Update(float dt) {
 
     if (state == GameState::Playing) {
         player->Update(dt);
+
+        // Smoke & electrical spark trails from severed wing roots
+        if (player->leftWingLost) {
+            glm::vec3 leftRoot = player->GetLeftWingRootWorldPos();
+            particles->SpawnExplosion(leftRoot, 1, glm::vec3(0.35f, 0.35f, 0.38f)); // Smoke puff
+            if (rand() % 3 == 0) {
+                particles->SpawnExplosion(leftRoot, 1, glm::vec3(1.0f, 0.55f, 0.15f)); // Fire spark
+            }
+        }
+        if (player->rightWingLost) {
+            glm::vec3 rightRoot = player->GetRightWingRootWorldPos();
+            particles->SpawnExplosion(rightRoot, 1, glm::vec3(0.35f, 0.35f, 0.38f)); // Smoke puff
+            if (rand() % 3 == 0) {
+                particles->SpawnExplosion(rightRoot, 1, glm::vec3(1.0f, 0.55f, 0.15f)); // Fire spark
+            }
+        }
 
         // Spawn Boss when corridor threshold is reached
         if (!bossSpawned && player->transform.position.z <= -950.0f) {
@@ -766,7 +956,10 @@ void Engine::Render() {
                 player->bombCount, player->GetChargeProgress(),
                 bActive, bWarn, bHealthRatio,
                 bLDown, bRDown, bSDown, bCoreExp,
-                state == GameState::Victory, state == GameState::GameOver);
+                state == GameState::Victory, state == GameState::GameOver,
+                player->leftWingHealth, player->leftWingLost,
+                player->rightWingHealth, player->rightWingLost,
+                player->wingAlertTimer, player->wingAlertMessage);
 
     glfwSwapBuffers(window);
 }

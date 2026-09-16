@@ -66,3 +66,11 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 10.3**: Synthesize procedural sound assets (Twin Lasers, Enemy Plasma, Charge Hum, Lock-On Ping, Smart Bomb Detonation, Barrel Roll Whoosh, Explosions, Ring Chime, Warning Siren, and Boost Roar).
 - [x] **Task 10.4**: Hook audio triggers into game systems (weapons, starfighter maneuvers, collisions, pickups, and boss alert).
 - [x] **Task 10.5**: Compile, test, and verify audio performance and latency.
+
+## Phase 11: Wing Damage & Starfighter Breakdown System
+- [x] **Task 11.1**: Modular Starfighter Mesh Decomposition & Tumbling Wing Debris: Decompose `PlayerStarfighter` into Fuselage, Left Wing, and Right Wing meshes; implement tumbling wing physics debris and trailing smoke/sparks.
+- [x] **Task 11.2**: Asymmetrical Flight Physics & Weapon Degradation: Implement wing health states, asymmetric aerodynamic roll/yaw drag on severed wings, and single/center blaster firing logic.
+- [x] **Task 11.3**: Wing-Specific Collision Detection & Metal Tearing Audio: Implement wingtip collision bounds for canyon walls, monoliths, and enemy fire; synthesize `WingSnap` tearing audio in `SoundManager`.
+- [x] **Task 11.4**: Silver Repair Rings & Wing Restoration: Enhance silver rings to repair damaged/lost wings to 100%, extinguish smoke, and restore twin blasters.
+- [x] **Task 11.5**: Cockpit HUD Wing Status Silhouette & Audio Alerts: Render real-time `[L-WING]` and `[R-WING]` status indicators on HUD with damage/lost colors and warning banners.
+- [x] **Task 11.6**: Verification & Playtest Build: Compile, test, and verify debris tumbling, flight mechanics, collision shearing, and wing repair.
