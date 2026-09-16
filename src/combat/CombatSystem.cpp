@@ -390,6 +390,75 @@ void ParticleSystem::SpawnSurfacePlume(const glm::vec3& shipPos, float altitude,
     }
 }
 
+void ParticleSystem::SpawnCriticalDamageSmoke(const glm::vec3& pos, const glm::vec3& shipVel) {
+    for (int i = 0; i < 2; ++i) {
+        glm::vec3 jitter(RandomBipolar() * 0.35f, RandomBipolar() * 0.25f, RandomBipolar() * 0.35f);
+        glm::vec3 vel = shipVel * 0.15f + glm::vec3(jitter.x * 3.0f, 2.5f + ((float)rand() / RAND_MAX) * 3.0f, 18.0f + jitter.z * 6.0f);
+        float shade = 0.08f + ((float)rand() / RAND_MAX) * 0.14f;
+        glm::vec3 smokeCol(shade, shade, shade * 1.1f);
+        float lifetime = 0.45f + ((float)rand() / RAND_MAX) * 0.35f;
+        float size = 0.55f + ((float)rand() / RAND_MAX) * 0.45f;
+
+        particles.push_back({
+            pos + jitter,
+            vel,
+            smokeCol,
+            lifetime,
+            lifetime,
+            size,
+            true
+        });
+    }
+}
+
+void ParticleSystem::SpawnFireEmbers(const glm::vec3& pos, const glm::vec3& shipVel) {
+    for (int i = 0; i < 2; ++i) {
+        glm::vec3 jitter(RandomBipolar() * 0.2f, RandomBipolar() * 0.2f, RandomBipolar() * 0.2f);
+        glm::vec3 vel = shipVel * 0.2f + glm::vec3(jitter.x * 5.0f, 1.5f + RandomBipolar() * 2.5f, 22.0f + jitter.z * 10.0f);
+        glm::vec3 emberCol = ((float)rand() / RAND_MAX > 0.4f)
+            ? glm::vec3(1.0f, 0.45f, 0.08f)   // Blazing orange
+            : glm::vec3(1.0f, 0.85f, 0.20f);  // Searing yellow
+        float lifetime = 0.20f + ((float)rand() / RAND_MAX) * 0.20f;
+        float size = 0.25f + ((float)rand() / RAND_MAX) * 0.20f;
+
+        particles.push_back({
+            pos + jitter,
+            vel,
+            emberCol,
+            lifetime,
+            lifetime,
+            size,
+            true
+        });
+    }
+}
+
+void ParticleSystem::SpawnWaterRipple(const glm::vec3& shipPos, float altitude, float bankAngle) {
+    (void)bankAngle;
+    if (altitude > 3.2f || altitude < 0.1f) return;
+
+    float surfaceY = shipPos.y - altitude + 0.03f;
+    const int ringSegs = 6;
+    float expandSpeed = 5.0f + (3.2f - altitude) * 3.5f;
+    for (int i = 0; i < ringSegs; ++i) {
+        float angle = (float)i / ringSegs * glm::two_pi<float>();
+        glm::vec3 vel(std::cos(angle) * expandSpeed, 0.0f, std::sin(angle) * expandSpeed + 22.0f);
+        glm::vec3 rPos(shipPos.x + std::cos(angle) * 0.6f, surfaceY, shipPos.z + std::sin(angle) * 0.6f);
+        glm::vec3 rCol = (i % 2 == 0) ? glm::vec3(0.5f, 0.9f, 1.0f) : glm::vec3(0.9f, 0.98f, 1.0f);
+        float lifetime = 0.32f;
+
+        particles.push_back({
+            rPos,
+            vel,
+            rCol,
+            lifetime,
+            lifetime,
+            0.32f,
+            true
+        });
+    }
+}
+
 void ParticleSystem::Update(float dt) {
     for (auto& p : particles) {
         if (!p.active) continue;

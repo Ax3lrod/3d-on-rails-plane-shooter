@@ -958,3 +958,30 @@ Mesh Mesh::CreateSpaceDebris(float length, float width, const glm::vec3& color) 
 
     return Mesh(verts, inds);
 }
+
+Mesh Mesh::CreateShadowDisc(float radius, int segments) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    glm::vec3 n(0.0f, 1.0f, 0.0f);
+    glm::vec3 c(0.02f, 0.04f, 0.08f);
+
+    // Center vertex (index 0)
+    verts.push_back({{0.0f, 0.0f, 0.0f}, n, c});
+
+    // Perimeter vertices
+    for (int i = 0; i < segments; ++i) {
+        float angle = (float)i / segments * glm::two_pi<float>();
+        float x = std::cos(angle) * radius;
+        float z = std::sin(angle) * radius;
+        verts.push_back({{x, 0.0f, z}, n, c * 0.4f});
+    }
+
+    for (int i = 0; i < segments; ++i) {
+        int next = (i + 1) % segments;
+        inds.push_back(0);
+        inds.push_back(i + 1);
+        inds.push_back(next + 1);
+    }
+
+    return Mesh(verts, inds);
+}

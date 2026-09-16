@@ -18,14 +18,17 @@ uniform int uUseFog;            // 1 to apply distance fog, 0 to skip fog (HUD, 
 uniform int uUseColorOverride;  // 1 to use uColorOverride, 0 to use VertexColor
 uniform vec3 uColorOverride;    // Custom tint color
 uniform float uAlpha;           // Transparency factor
+uniform int uUseFlatShading;    // 1 for retro arcade faceted flat normals, 0 for smooth
 
 void main() {
     vec3 baseColor = (uUseColorOverride == 1) ? uColorOverride : VertexColor;
     
     vec3 finalColor = baseColor;
     if (uUseLighting == 1) {
-        // Diffuse directional light
-        vec3 norm = normalize(Normal);
+        // Diffuse directional light (supports authentic 90s flat-faceted polygons)
+        vec3 norm = (uUseFlatShading == 1)
+            ? normalize(cross(dFdx(FragPos), dFdy(FragPos)))
+            : normalize(Normal);
         vec3 lightDir = normalize(uLightDir);
         float diff = max(dot(norm, lightDir), 0.0);
         

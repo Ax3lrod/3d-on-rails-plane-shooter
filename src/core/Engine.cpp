@@ -17,6 +17,7 @@ Engine::Engine(int width, int height, const std::string& title)
       selectedSettingsIndex(0),
       invertPitchY(false),
       defaultCockpitMode(false),
+      flatShading(true),
       warpTransitionTimer(0.0f),
       hardRouteWon(false),
       comboHits(0),
@@ -178,6 +179,7 @@ bool Engine::Init() {
 
     hangarFloorMesh = std::make_unique<Mesh>(Mesh::CreateCube(glm::vec3(40.0f, 0.4f, 40.0f), glm::vec3(0.08f, 0.11f, 0.16f)));
     turntableMesh = std::make_unique<Mesh>(Mesh::CreateRing(7.2f, 8.2f, 24, glm::vec3(0.2f, 0.85f, 1.0f)));
+    shadowMesh = Mesh::CreateShadowDisc(1.8f, 16);
 
     LoadHighScores();
 
@@ -316,15 +318,15 @@ void Engine::CompleteHyperspaceWarp() {
 
 void Engine::ProcessInput(float) {
     if (state == GameState::TitleHangar) {
-        if (Input::IsKeyPressed(GLFW_KEY_UP) || Input::IsKeyPressed(GLFW_KEY_W)) {
+        if (Input::IsMenuUpPressed()) {
             selectedTitleMenu = (selectedTitleMenu + 3) % 4;
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
         }
-        if (Input::IsKeyPressed(GLFW_KEY_DOWN) || Input::IsKeyPressed(GLFW_KEY_S)) {
+        if (Input::IsMenuDownPressed()) {
             selectedTitleMenu = (selectedTitleMenu + 1) % 4;
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
         }
-        if (Input::IsKeyPressed(GLFW_KEY_ENTER) || Input::IsKeyPressed(GLFW_KEY_SPACE)) {
+        if (Input::IsMenuConfirmPressed()) {
             if (selectedTitleMenu == 0) {
                 state = GameState::MissionBriefing;
                 if (audio) audio->Play(SoundID::RingCollect, 0.85f);
@@ -352,15 +354,15 @@ void Engine::ProcessInput(float) {
     }
 
     if (state == GameState::SettingsMenu) {
-        if (Input::IsKeyPressed(GLFW_KEY_UP) || Input::IsKeyPressed(GLFW_KEY_W)) {
-            selectedSettingsIndex = (selectedSettingsIndex + 6) % 7;
+        if (Input::IsMenuUpPressed()) {
+            selectedSettingsIndex = (selectedSettingsIndex + 7) % 8;
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
         }
-        if (Input::IsKeyPressed(GLFW_KEY_DOWN) || Input::IsKeyPressed(GLFW_KEY_S)) {
-            selectedSettingsIndex = (selectedSettingsIndex + 1) % 7;
+        if (Input::IsMenuDownPressed()) {
+            selectedSettingsIndex = (selectedSettingsIndex + 1) % 8;
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
         }
-        if (Input::IsKeyPressed(GLFW_KEY_LEFT) || Input::IsKeyPressed(GLFW_KEY_A)) {
+        if (Input::IsMenuLeftPressed()) {
             if (selectedSettingsIndex == 0 && audio) {
                 audio->SetMasterVolume(audio->GetMasterVolume() - 0.1f);
             } else if (selectedSettingsIndex == 1 && audio) {
@@ -383,10 +385,12 @@ void Engine::ProcessInput(float) {
                 if (postProcessor) postProcessor->ToggleCRT();
             } else if (selectedSettingsIndex == 6) {
                 defaultCockpitMode = !defaultCockpitMode;
+            } else if (selectedSettingsIndex == 7) {
+                flatShading = !flatShading;
             }
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.4f);
         }
-        if (Input::IsKeyPressed(GLFW_KEY_RIGHT) || Input::IsKeyPressed(GLFW_KEY_D)) {
+        if (Input::IsMenuRightPressed()) {
             if (selectedSettingsIndex == 0 && audio) {
                 audio->SetMasterVolume(audio->GetMasterVolume() + 0.1f);
             } else if (selectedSettingsIndex == 1 && audio) {
@@ -409,34 +413,36 @@ void Engine::ProcessInput(float) {
                 if (postProcessor) postProcessor->ToggleCRT();
             } else if (selectedSettingsIndex == 6) {
                 defaultCockpitMode = !defaultCockpitMode;
+            } else if (selectedSettingsIndex == 7) {
+                flatShading = !flatShading;
             }
             if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.4f);
         }
-        if (Input::IsKeyPressed(GLFW_KEY_ESCAPE) || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
+        if (Input::IsMenuCancelPressed() || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
             state = GameState::TitleHangar;
         }
         return;
     }
 
     if (state == GameState::Leaderboard) {
-        if (Input::IsKeyPressed(GLFW_KEY_ESCAPE) || Input::IsKeyPressed(GLFW_KEY_SPACE) || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
+        if (Input::IsMenuCancelPressed() || Input::IsMenuConfirmPressed()) {
             state = GameState::TitleHangar;
         }
         return;
     }
 
     if (state == GameState::MissionBriefing) {
-        if (Input::IsKeyPressed(GLFW_KEY_ENTER) || Input::IsKeyPressed(GLFW_KEY_SPACE)) {
+        if (Input::IsMenuConfirmPressed()) {
             StartMission();
         }
-        if (Input::IsKeyPressed(GLFW_KEY_ESCAPE)) {
+        if (Input::IsMenuCancelPressed()) {
             state = GameState::TitleHangar;
         }
         return;
     }
 
     if (state == GameState::GameOver || state == GameState::Victory) {
-        if (Input::IsKeyPressed(GLFW_KEY_R) || Input::IsKeyPressed(GLFW_KEY_SPACE) || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
+        if (Input::IsKeyPressed(GLFW_KEY_R) || Input::IsMenuConfirmPressed()) {
             if (player) {
                 int stageNum = (environment && environment->currentSector == SectorStage::Sector2_DeepSpace) ? 2 : 1;
                 CheckNewHighScore(player->score, stageNum, hardRouteWon);
@@ -447,7 +453,7 @@ void Engine::ProcessInput(float) {
     }
 
     // Toggle Cockpit First-Person / Third-Person Chase Cam
-    if (Input::IsKeyPressed(GLFW_KEY_V)) {
+    if (Input::IsCockpitTogglePressed()) {
         camera.ToggleViewMode();
     }
 
@@ -460,7 +466,7 @@ void Engine::ProcessInput(float) {
 
     // Skip Boss Intro Cinematic or hold controls during sweep
     if (camera.IsInCinematic() && camera.cinematicMode == CinematicMode::BossIntro) {
-        if (Input::IsKeyPressed(GLFW_KEY_SPACE) || Input::IsKeyPressed(GLFW_KEY_ENTER)) {
+        if (Input::IsMenuConfirmPressed()) {
             camera.StopCinematic();
         } else {
             return;
@@ -469,7 +475,7 @@ void Engine::ProcessInput(float) {
 
     // Weapons Input:
     // 1. Dual Plasma Lasers (Single tap)
-    bool isFireKey = Input::IsKeyPressed(GLFW_KEY_SPACE) || Input::IsKeyPressed(GLFW_KEY_J);
+    bool isFireKey = Input::IsFirePressed() || Input::IsKeyPressed(GLFW_KEY_J);
     if (isFireKey && player->CanFire()) {
         glm::vec3 aimTarget = player->GetFarTargetPos();
         if (player->leftWingLost) {
@@ -482,6 +488,8 @@ void Engine::ProcessInput(float) {
         }
 
         player->ResetFireTimer();
+        Input::SetRumble(0.08f, 0.16f, 0.08f);
+
         if (!player->leftWingLost) {
             particles->SpawnExplosion(player->GetLeftMuzzlePos(), 3, glm::vec3(0.2f, 1.0f, 0.4f));
         }
@@ -493,14 +501,14 @@ void Engine::ProcessInput(float) {
         }
     }
 
-    // 2. Charge Shot System (Holding Space or J builds charge)
-    bool isHoldingFire = Input::IsKeyDown(GLFW_KEY_SPACE) || Input::IsKeyDown(GLFW_KEY_J);
+    // 2. Charge Shot System (Holding Fire builds charge)
+    bool isHoldingFire = Input::IsFireDown() || Input::IsKeyDown(GLFW_KEY_J);
     if (isHoldingFire) {
         player->StartCharging();
     }
 
-    // 3. Release Charged Shot (Key released after charging)
-    bool justReleasedFire = Input::IsKeyReleased(GLFW_KEY_SPACE) || Input::IsKeyReleased(GLFW_KEY_J);
+    // 3. Release Charged Shot (Key/Button released after charging)
+    bool justReleasedFire = Input::IsFireReleased() || Input::IsKeyReleased(GLFW_KEY_J);
     if (justReleasedFire) {
         if (player->ReleaseChargedShot()) {
             glm::vec3 nosePos = player->GetNosePos();
@@ -509,6 +517,7 @@ void Engine::ProcessInput(float) {
             ordnance->SpawnChargedShot(nosePos, fwd, player->hasLockOn, targetPos);
             particles->SpawnExplosion(nosePos, 18, glm::vec3(0.2f, 1.0f, 0.8f));
             camera.TriggerShake(0.35f, 0.15f);
+            Input::SetRumble(0.40f, 0.45f, 0.22f);
             if (audio) {
                 audio->Play(SoundID::ChargedShotFire, 1.0f);
             }
@@ -516,10 +525,11 @@ void Engine::ProcessInput(float) {
     }
 
     // 4. Smart Bomb (Launch or Detonate Early)
-    if (Input::IsKeyPressed(GLFW_KEY_B) || Input::IsKeyPressed(GLFW_KEY_K)) {
+    if (Input::IsBombPressed() || Input::IsKeyPressed(GLFW_KEY_K)) {
         if (!ordnance->smartBombs.empty()) {
             ordnance->DetonateBomb(0);
             camera.TriggerShake(1.2f, 0.6f);
+            Input::SetRumble(0.95f, 0.95f, 0.55f);
             if (audio) {
                 audio->Play(SoundID::BombExplosion, 1.0f);
             }
@@ -528,6 +538,7 @@ void Engine::ProcessInput(float) {
             ordnance->SpawnSmartBomb(nosePos, player->GetForwardVector());
             particles->SpawnExplosion(nosePos, 12, glm::vec3(1.0f, 0.85f, 0.2f));
             camera.TriggerShake(0.35f, 0.18f);
+            Input::SetRumble(0.45f, 0.35f, 0.18f);
             if (audio) {
                 audio->Play(SoundID::BombLaunch, 0.95f);
             }
@@ -1089,13 +1100,29 @@ void Engine::Update(float dt) {
         particles->SpawnThrusterSparks(leftExhaust, shipVel);
         particles->SpawnThrusterSparks(rightExhaust, shipVel);
 
-        // Low-altitude surface spray plume (Ex-Zodiac ground/water skimming FX)
+        // Low-altitude surface spray plume & water ripples (Ex-Zodiac ground/water skimming FX)
         if (environment && environment->currentSector == SectorStage::Sector1_Canyon && !player->isAllRangeMode) {
             float floorY = -7.5f;
             float altitude = player->transform.position.y - floorY;
             if (altitude < 3.4f) {
                 particles->SpawnSurfacePlume(player->transform.position, altitude, shipVel, player->transform.rotation.z);
+                particles->SpawnWaterRipple(player->transform.position, altitude, player->transform.rotation.z);
             }
+        }
+
+        // Critical damage smoke & fire trails (Hull integrity < 25% or lost wings)
+        if (player->shield < 25.0f && player->shield > 0.0f) {
+            glm::vec3 cowlPos = player->transform.position + glm::vec3(0.0f, 0.15f, 0.45f);
+            particles->SpawnCriticalDamageSmoke(cowlPos, shipVel);
+            particles->SpawnFireEmbers(cowlPos, shipVel);
+        }
+        if (player->leftWingLost) {
+            particles->SpawnFireEmbers(player->GetLeftWingRootWorldPos(), shipVel);
+            particles->SpawnCriticalDamageSmoke(player->GetLeftWingRootWorldPos(), shipVel);
+        }
+        if (player->rightWingLost) {
+            particles->SpawnFireEmbers(player->GetRightWingRootWorldPos(), shipVel);
+            particles->SpawnCriticalDamageSmoke(player->GetRightWingRootWorldPos(), shipVel);
         }
 
         // Update Hit Combo chain countdown & scale bounce
@@ -1228,6 +1255,7 @@ void Engine::Render() {
         shader.SetInt("uUseFog", 1);
         shader.SetInt("uUseColorOverride", 0);
         shader.SetFloat("uAlpha", 1.0f);
+        shader.SetInt("uUseFlatShading", flatShading ? 1 : 0);
 
         // Hangar Floor
         glm::mat4 floorModel = glm::mat4(1.0f);
@@ -1262,7 +1290,8 @@ void Engine::Render() {
                                   hud ? hud->GetScale() : 1.0f,
                                   invertPitchY,
                                   postProcessor ? postProcessor->IsCRTEnabled() : false,
-                                  defaultCockpitMode);
+                                  defaultCockpitMode,
+                                  flatShading);
         } else if (state == GameState::Leaderboard) {
             hud->DrawLeaderboard(shader, windowWidth, windowHeight, highScores);
         } else if (state == GameState::MissionBriefing) {
@@ -1317,6 +1346,7 @@ void Engine::Render() {
     shader.SetInt("uUseFog", 1);
     shader.SetInt("uUseColorOverride", 0);
     shader.SetFloat("uAlpha", 1.0f);
+    shader.SetInt("uUseFlatShading", flatShading ? 1 : 0);
 
     environment->Draw(shader);
     enemies->Draw(shader);
@@ -1326,6 +1356,50 @@ void Engine::Render() {
     projectiles->Draw(shader);
     ordnance->Draw(shader);
     particles->Draw(shader);
+
+    // Dynamic Ground Shadow Projection (Sector 1: Canyon Water/Floor)
+    if (environment && environment->currentSector == SectorStage::Sector1_Canyon) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        shader.SetInt("uUseLighting", 0);
+        shader.SetInt("uUseColorOverride", 1);
+        shader.SetVec3("uColorOverride", glm::vec3(0.01f, 0.03f, 0.08f));
+
+        // Player Starfighter Ground Shadow
+        if (state == GameState::Playing || state == GameState::Victory) {
+            float playerAlt = player->transform.position.y - (-7.5f);
+            float shadowScaleX = 2.4f + playerAlt * 0.10f;
+            float shadowScaleZ = 3.6f + playerAlt * 0.12f;
+            float shadowAlpha = std::clamp(0.80f - playerAlt * 0.04f, 0.25f, 0.80f);
+
+            glm::mat4 sm = glm::mat4(1.0f);
+            sm = glm::translate(sm, glm::vec3(player->transform.position.x, -7.38f, player->transform.position.z));
+            sm = glm::rotate(sm, player->headingYaw + player->currentYaw, glm::vec3(0.0f, 1.0f, 0.0f));
+            sm = glm::scale(sm, glm::vec3(shadowScaleX, 1.0f, shadowScaleZ));
+            shader.SetMat4("uModel", sm);
+            shader.SetFloat("uAlpha", shadowAlpha);
+            shadowMesh.Draw(shader);
+        }
+
+        // Low-flying Enemy Drone Shadows
+        for (const auto& e : enemies->enemies) {
+            if (!e.active) continue;
+            float enemyAlt = e.transform.position.y - (-7.5f);
+            if (enemyAlt < 14.0f) {
+                float eScale = 1.5f + enemyAlt * 0.08f;
+                float eAlpha = std::clamp(0.65f - enemyAlt * 0.04f, 0.15f, 0.65f);
+                glm::mat4 em = glm::mat4(1.0f);
+                em = glm::translate(em, glm::vec3(e.transform.position.x, -7.38f, e.transform.position.z));
+                em = glm::scale(em, glm::vec3(eScale, 1.0f, eScale * 1.3f));
+                shader.SetMat4("uModel", em);
+                shader.SetFloat("uAlpha", eAlpha);
+                shadowMesh.Draw(shader);
+            }
+        }
+
+        shader.SetInt("uUseColorOverride", 0);
+        shader.SetInt("uUseLighting", 1);
+    }
 
     if (state == GameState::Playing || state == GameState::Victory || state == GameState::StageClearWarp) {
         player->Draw(shader);

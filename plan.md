@@ -136,10 +136,16 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 20.4**: Restyle On-Screen Boss Health Bar and Wingman Comms Card with sleek arcade bezel frames.
 - [x] **Task 20.5**: Compile, test, and verify the HUD overhaul.
 
-## Phase 21: Checkered Low-Poly Terrain & Vibrant Sega/Arcade Visual Aesthetic
-- [x] **Task 21.1**: Procedural 3D Checkered Surface: Two-tone alternating checkerboard polygons on canyon floor, dunes, and water plane.
-- [x] **Task 21.2**: Sega 32-bit Arcade Sky Gradient & Horizon: Vibrant blue-to-violet atmosphere with crisp low-poly mountains on the horizon.
-- [x] **Task 21.3**: Compile, test, and verify the aesthetic upgrade.
+## Phase 22: Full Gamepad / Controller Integration (Option C)
+- [x] **Task 22.1**: Implement GLFW Gamepad Polling & Deadzone Processing in `Input` (Left stick analog flight, triggers, bumpers, face buttons, d-pad).
+- [x] **Task 22.2**: Integrate Analog Flight Steering & Triggers in `PlayerStarfighter` (smooth analog pitch/yaw, RT boost, LT brake, LB/RB barrel roll).
+- [x] **Task 22.3**: Implement Windows XInput Controller Rumble & Haptic Feedback in `Input` (blaster fire, boost roar, damage impacts, bomb shockwave).
+- [x] **Task 22.4**: Update HUD & Menu Input Prompts for dynamic Gamepad / Keyboard prompt switching.
+- [x] **Task 22.5**: Compile, test, and verify gamepad controls and vibration.
 
-
-
+## Phase 23: Retro Arcade Visual FX & Ground Shadow Projection (Option D)
+- [x] **Task 23.1**: Implement Dynamic Ground Shadow Projection below starfighter and low-flying enemy drones in Sector 1.
+- [x] **Task 23.2**: Implement Water Ripple Rings and Enhanced Surface Spray Plume when skimming low over canyon water.
+- [x] **Task 23.3**: Implement Critical Hull Damage FX (billowing black smoke and flame sparks for critical shield < 25% and severed wings).
+- [x] **Task 23.4**: Implement Flat-Faceted Arcade Shading Mode in `default.frag` with Settings toggle (`[ARCADE FLAT]` vs `[SMOOTH]`).
+- [x] **Task 23.5**: Compile, test, and verify Phase 22 and Phase 23 in Release build.

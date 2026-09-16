@@ -87,6 +87,10 @@ private:
     int selectedSettingsIndex;
     bool invertPitchY;
     bool defaultCockpitMode;
+    bool flatShading;
+
+    // Visual FX
+    Mesh shadowMesh;
 
     // Route & Warp
     float warpTransitionTimer;

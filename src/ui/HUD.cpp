@@ -1,4 +1,5 @@
 #include "HUD.h"
+#include "Input.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <algorithm>
@@ -918,7 +919,9 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
 
         // Prompt with gentle pulse
         float pulse = std::sin(curTime * 4.0f) * 0.2f + 0.8f;
-        std::string promptStr = "PRESS [R] OR [SPACE] TO PLAY AGAIN";
+        std::string promptStr = Input::IsLastInputGamepad()
+            ? "PRESS [A] OR [START] TO PLAY AGAIN"
+            : "PRESS [R] OR [SPACE] TO PLAY AGAIN";
         float promptW = promptStr.length() * 6.0f * 1.4f;
         DrawText(shader, promptStr, (vw - promptW) * 0.5f + slant * 0.5f, vy + 138.0f, 1.4f, glm::vec3(1.0f, 1.0f, 1.0f) * pulse, 0.95f);
     }
@@ -954,7 +957,9 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
         DrawText(shader, finalScoreBuf, (vw - scoreW) * 0.5f + slant * 0.5f, gy + 98.0f, 2.0f, glm::vec3(1.0f, 0.85f, 0.25f), 1.0f);
 
         float pulse = std::sin(curTime * 4.0f) * 0.2f + 0.8f;
-        std::string promptStr = "PRESS [R] OR [SPACE] TO RETRY SORTIE";
+        std::string promptStr = Input::IsLastInputGamepad()
+            ? "PRESS [A] OR [START] TO RETRY SORTIE"
+            : "PRESS [R] OR [SPACE] TO RETRY SORTIE";
         float promptW = promptStr.length() * 6.0f * 1.4f;
         DrawText(shader, promptStr, (vw - promptW) * 0.5f + slant * 0.5f, gy + 136.0f, 1.4f, glm::vec3(1.0f, 1.0f, 1.0f) * pulse, 0.95f);
     }
@@ -1098,12 +1103,20 @@ void HUD::DrawTitleScreen(const Shader& shader, int screenWidth, int screenHeigh
                     glm::vec3(1.0f, 1.0f, 1.0f),     // Solid white border
                     3.0f, 0.95f);
 
-    const char* menuItems[] = {
+    bool isGP = Input::IsLastInputGamepad();
+    const char* menuItemsKbd[] = {
         "1. LAUNCH SORTIE      [ENTER]",
         "2. FLIGHT SETTINGS    [S]",
         "3. HALL OF FAME       [L]",
         "4. CRT MONITOR SHADER [F1]"
     };
+    const char* menuItemsPad[] = {
+        "1. LAUNCH SORTIE      [A]",
+        "2. FLIGHT SETTINGS    [D-PAD]",
+        "3. HALL OF FAME       [X]",
+        "4. CRT MONITOR SHADER [Y]"
+    };
+    const char** menuItems = isGP ? menuItemsPad : menuItemsKbd;
 
     for (int i = 0; i < 4; ++i) {
         float itemY = my + 24.0f + i * 42.0f;
@@ -1137,7 +1150,8 @@ void HUD::DrawTitleScreen(const Shader& shader, int screenWidth, int screenHeigh
 void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeight,
                           int selectedIndex, float masterVol, float musicVol, float sfxVol,
                           float currentHudScale,
-                          bool invertY, bool crtFilter, bool cockpitDefault) const {
+                          bool invertY, bool crtFilter, bool cockpitDefault,
+                          bool flatShading) const {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1154,7 +1168,7 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     shader.SetInt("uUseColorOverride", 1);
 
     float boxW = 760.0f;
-    float boxH = 510.0f;
+    float boxH = 530.0f;
     float slant = 26.0f;
     float bx = (vw - boxW) * 0.5f;
     float by = (vh - boxH) * 0.5f;
@@ -1168,8 +1182,8 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
 
     std::string headerStr = "★ FLIGHT CONFIGURATION & AUDIO ★";
     float headW = headerStr.length() * 6.0f * 2.3f;
-    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 22.0f, 2.3f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
-    DrawSlantedRect(shader, bx + 28.0f, by + 58.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
+    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 20.0f, 2.3f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
+    DrawSlantedRect(shader, bx + 28.0f, by + 54.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
 
     struct SettingRow {
         std::string label;
@@ -1188,24 +1202,25 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     else if (std::abs(currentHudScale - 1.25f) < 0.05f) hudScaleStr = "LARGE [125%]";
     else if (std::abs(currentHudScale - 1.50f) < 0.05f) hudScaleStr = "MAXIMUM [150%]";
 
-    SettingRow rows[7] = {
+    SettingRow rows[8] = {
         {"MASTER VOLUME", mBuf, masterVol, true},
         {"MUSIC VOLUME", bgmBuf, musicVol, true},
         {"SFX VOLUME", sfxBuf, sfxVol, true},
         {"HUD DISPLAY SCALE", hudScaleStr, 0.0f, false},
         {"INVERT PITCH (Y)", invertY ? "INVERTED [PUSH UP]" : "NORMAL [PULL UP]", 0.0f, false},
         {"RETRO CRT SHADER", crtFilter ? "ENABLED [SCANLINES ON]" : "DISABLED [CLEAN HD]", 0.0f, false},
-        {"DEFAULT CAMERA", cockpitDefault ? "1ST-PERSON COCKPIT" : "3RD-PERSON CHASE", 0.0f, false}
+        {"DEFAULT CAMERA", cockpitDefault ? "1ST-PERSON COCKPIT" : "3RD-PERSON CHASE", 0.0f, false},
+        {"SHADING MODE", flatShading ? "ARCADE FLAT [FACETED]" : "SMOOTH 3D [INTERPOLATED]", 0.0f, false}
     };
 
-    for (int i = 0; i < 7; ++i) {
-        float rowY = by + 76.0f + i * 48.0f;
+    for (int i = 0; i < 8; ++i) {
+        float rowY = by + 68.0f + i * 44.0f;
         bool isSel = (i == selectedIndex);
 
         if (isSel) {
             float rowPillW = boxW - 54.0f;
-            DrawSlantedRect(shader, bx + 24.0f, rowY - 5.0f, rowPillW, 36.0f, 12.0f, glm::vec3(0.24f, 0.46f, 0.88f), 0.75f);
-            DrawSlantedRectOutline(shader, bx + 24.0f, rowY - 5.0f, rowPillW, 36.0f, 12.0f, 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
+            DrawSlantedRect(shader, bx + 24.0f, rowY - 4.0f, rowPillW, 34.0f, 12.0f, glm::vec3(0.24f, 0.46f, 0.88f), 0.75f);
+            DrawSlantedRectOutline(shader, bx + 24.0f, rowY - 4.0f, rowPillW, 34.0f, 12.0f, 2.0f, glm::vec3(1.0f, 1.0f, 1.0f), 1.0f);
             DrawDiamond(shader, bx + 38.0f, rowY + 12.0f, 6.0f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
         }
 
@@ -1223,7 +1238,9 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
         }
     }
 
-    std::string hintStr = "[UP/DOWN] SELECT  [LEFT/RIGHT] ADJUST  [ESC/ENTER] BACK";
+    std::string hintStr = Input::IsLastInputGamepad()
+        ? "[D-PAD] SELECT  [LEFT/RIGHT] ADJUST  [B] BACK"
+        : "[UP/DOWN] SELECT  [LEFT/RIGHT] ADJUST  [ESC/ENTER] BACK";
     float hintW = hintStr.length() * 6.0f * 1.4f;
     DrawText(shader, hintStr, (vw - hintW) * 0.5f + slant * 0.5f, by + boxH - 28.0f, 1.4f, glm::vec3(0.85f, 0.92f, 1.0f), 0.90f);
 
@@ -1298,7 +1315,9 @@ void HUD::DrawLeaderboard(const Shader& shader, int screenWidth, int screenHeigh
         DrawText(shader, routeStr, bx + 545.0f, rowY + 4.0f, 1.4f, scores[i].missionComplete ? glm::vec3(1.0f, 0.85f, 0.2f) : glm::vec3(0.3f, 0.85f, 0.4f), 0.95f);
     }
 
-    std::string returnStr = "PRESS [ESC] OR [SPACE] TO RETURN TO HANGAR";
+    std::string returnStr = Input::IsLastInputGamepad()
+        ? "PRESS [B] OR [A] TO RETURN TO HANGAR"
+        : "PRESS [ESC] OR [SPACE] TO RETURN TO HANGAR";
     float retW = returnStr.length() * 6.0f * 1.4f;
     DrawText(shader, returnStr, (vw - retW) * 0.5f + slant * 0.5f, by + boxH - 28.0f, 1.4f, glm::vec3(0.85f, 0.92f, 1.0f), 0.90f);
 
@@ -1355,7 +1374,9 @@ void HUD::DrawMissionBriefing(const Shader& shader, int screenWidth, int screenH
     DrawText(shader, "- Keep both Echo wingmen intact to unlock Hyperspace Warp to SECTOR 2!", bx + 80.0f, by + 300.0f, 1.4f, glm::vec3(1.0f, 0.88f, 0.25f), 0.95f);
 
     float pulse = std::sin(time * 4.0f) * 0.25f + 0.75f;
-    std::string launchStr = "PRESS [ENTER] OR [SPACE] TO LAUNCH SORTIE";
+    std::string launchStr = Input::IsLastInputGamepad()
+        ? "PRESS [A] OR [START] TO LAUNCH SORTIE"
+        : "PRESS [ENTER] OR [SPACE] TO LAUNCH SORTIE";
     float launchW = launchStr.length() * 6.0f * 1.8f;
     DrawText(shader, launchStr, (vw - launchW) * 0.5f + slant * 0.5f, by + boxH - 36.0f, 1.8f, glm::vec3(0.3f, 1.0f, 0.6f) * pulse, 1.0f);
 

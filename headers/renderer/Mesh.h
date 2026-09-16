@@ -65,6 +65,7 @@ public:
     static Mesh CreateBossCore(const glm::vec3& coreColor);
     static Mesh CreateRadarRelay(float size, const glm::vec3& baseColor, const glm::vec3& dishColor, const glm::vec3& beaconColor);
     static Mesh CreateSpaceDebris(float length, float width, const glm::vec3& color);
+    static Mesh CreateShadowDisc(float radius, int segments = 16);
 };
 
 #endif

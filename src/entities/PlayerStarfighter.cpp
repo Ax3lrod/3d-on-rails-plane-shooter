@@ -103,6 +103,7 @@ void PlayerStarfighter::TakeDamage(float amount) {
 
     shield = std::max(0.0f, shield - amount);
     invulnerableTimer = 0.8f;
+    Input::SetRumble(0.65f, 0.75f, 0.28f);
 }
 
 void PlayerStarfighter::AddShield(float amount) {
@@ -203,6 +204,7 @@ bool PlayerStarfighter::DamageLeftWing(float amount) {
         leftWingHealth = 0.0f;
         wingAlertTimer = 3.0f;
         wingAlertMessage = "WARNING: LEFT WING DESTROYED";
+        Input::SetRumble(0.9f, 1.0f, 0.45f);
 
         // Spawn tumbling wing debris
         TumblingWing debris;
@@ -229,6 +231,7 @@ bool PlayerStarfighter::DamageRightWing(float amount) {
         rightWingHealth = 0.0f;
         wingAlertTimer = 3.0f;
         wingAlertMessage = "WARNING: RIGHT WING DESTROYED";
+        Input::SetRumble(0.9f, 1.0f, 0.45f);
 
         // Spawn tumbling wing debris
         TumblingWing debris;
@@ -285,42 +288,37 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
 
     if (allowInput) {
         float pitchMult = invertPitch ? -1.0f : 1.0f;
-        if (Input::IsKeyDown(GLFW_KEY_A) || Input::IsKeyDown(GLFW_KEY_LEFT)) inputX -= 1.0f;
-        if (Input::IsKeyDown(GLFW_KEY_D) || Input::IsKeyDown(GLFW_KEY_RIGHT)) inputX += 1.0f;
-        if (Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP)) inputY += pitchMult;
-        if (Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN)) inputY -= pitchMult;
+        inputX = Input::GetAxisHorizontal();
+        inputY = Input::GetAxisVertical() * pitchMult;
 
-        // Double tap barrel roll or dedicated buttons (Q/E or Z/C)
-        if (Input::IsDoubleTap(GLFW_KEY_A) || Input::IsDoubleTap(GLFW_KEY_LEFT) ||
-            Input::IsKeyPressed(GLFW_KEY_Q) || Input::IsKeyPressed(GLFW_KEY_Z)) {
+        // Double tap barrel roll, dedicated keys (Q/E, Z/C), or Gamepad Bumpers (LB/RB)
+        if (Input::IsRollLeftPressed()) {
             TriggerSpin(-1.0f);
+            Input::SetRumble(0.15f, 0.35f, 0.12f);
         }
-        if (Input::IsDoubleTap(GLFW_KEY_D) || Input::IsDoubleTap(GLFW_KEY_RIGHT) ||
-            Input::IsKeyPressed(GLFW_KEY_E) || Input::IsKeyPressed(GLFW_KEY_C)) {
+        if (Input::IsRollRightPressed()) {
             TriggerSpin(1.0f);
+            Input::SetRumble(0.15f, 0.35f, 0.12f);
         }
 
-        // Boost & Brake logic (Shift to Boost, Ctrl/Alt to Brake)
-        wantsBoost = Input::IsKeyDown(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyDown(GLFW_KEY_RIGHT_SHIFT);
-        justBoost = Input::IsKeyPressed(GLFW_KEY_LEFT_SHIFT) || Input::IsKeyPressed(GLFW_KEY_RIGHT_SHIFT);
-        wantsBrake = Input::IsKeyDown(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyDown(GLFW_KEY_RIGHT_CONTROL) ||
-                     Input::IsKeyDown(GLFW_KEY_LEFT_ALT);
-        justBrake = Input::IsKeyPressed(GLFW_KEY_LEFT_CONTROL) || Input::IsKeyPressed(GLFW_KEY_RIGHT_CONTROL) ||
-                    Input::IsKeyPressed(GLFW_KEY_LEFT_ALT);
+        // Boost & Brake logic (Shift / RT to Boost, Ctrl / LT to Brake)
+        wantsBoost = Input::IsBoostDown();
+        justBoost = Input::IsBoostPressed();
+        wantsBrake = Input::IsBrakeDown();
+        justBrake = Input::IsBrakePressed();
 
-        bool pressS = Input::IsKeyDown(GLFW_KEY_S) || Input::IsKeyDown(GLFW_KEY_DOWN);
-        bool justS = Input::IsKeyPressed(GLFW_KEY_S) || Input::IsKeyPressed(GLFW_KEY_DOWN);
-        bool pressW = Input::IsKeyDown(GLFW_KEY_W) || Input::IsKeyDown(GLFW_KEY_UP);
-        bool justW = Input::IsKeyPressed(GLFW_KEY_W) || Input::IsKeyPressed(GLFW_KEY_UP);
-
-        // Somersault: Dedicated key (X or F) OR Star Fox chords (S/Down + Boost, W/Up + Boost)
-        bool keySomersault = Input::IsKeyPressed(GLFW_KEY_X) || Input::IsKeyPressed(GLFW_KEY_F);
-        bool chordSomersault = ((pressS || pressW) && justBoost) || ((justS || justW) && wantsBoost);
+        // Somersault: Dedicated button (X/F or Gamepad Y) OR chord (S/Down + Boost)
+        bool keySomersault = Input::IsSomersaultPressed();
+        bool pressDown = (inputY * pitchMult < -0.45f);
+        bool justDown = pressDown && (justBoost || Input::IsMenuDownPressed());
+        bool chordSomersault = (pressDown && justBoost) || (justDown && wantsBoost);
 
         if (keySomersault || chordSomersault) {
             TriggerSomersault();
-        } else if ((pressS && justBrake) || (justS && wantsBrake)) {
+            Input::SetRumble(0.25f, 0.50f, 0.20f);
+        } else if ((pressDown && justBrake) || (justDown && wantsBrake)) {
             TriggerUTurn();
+            Input::SetRumble(0.30f, 0.40f, 0.18f);
         }
     } else {
         // Cruise smoothly towards corridor center when input is disabled (e.g. cinematic intro)
