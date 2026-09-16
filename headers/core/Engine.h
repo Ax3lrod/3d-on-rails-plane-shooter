@@ -90,7 +90,7 @@ private:
     bool flatShading;
 
     // Visual FX
-    Mesh shadowMesh;
+    std::unique_ptr<Mesh> shadowMesh;
 
     // Route & Warp
     float warpTransitionTimer;

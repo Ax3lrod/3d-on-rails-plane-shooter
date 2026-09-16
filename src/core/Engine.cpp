@@ -51,6 +51,7 @@ Engine::~Engine() {
     postProcessor.reset();
     hangarFloorMesh.reset();
     turntableMesh.reset();
+    shadowMesh.reset();
     shader.Delete();
 
     if (window) {
@@ -179,7 +180,7 @@ bool Engine::Init() {
 
     hangarFloorMesh = std::make_unique<Mesh>(Mesh::CreateCube(glm::vec3(40.0f, 0.4f, 40.0f), glm::vec3(0.08f, 0.11f, 0.16f)));
     turntableMesh = std::make_unique<Mesh>(Mesh::CreateRing(7.2f, 8.2f, 24, glm::vec3(0.2f, 0.85f, 1.0f)));
-    shadowMesh = Mesh::CreateShadowDisc(1.8f, 16);
+    shadowMesh = std::make_unique<Mesh>(Mesh::CreateShadowDisc(1.8f, 16));
 
     LoadHighScores();
 
@@ -1378,7 +1379,7 @@ void Engine::Render() {
             sm = glm::scale(sm, glm::vec3(shadowScaleX, 1.0f, shadowScaleZ));
             shader.SetMat4("uModel", sm);
             shader.SetFloat("uAlpha", shadowAlpha);
-            shadowMesh.Draw(shader);
+            if (shadowMesh) shadowMesh->Draw(shader);
         }
 
         // Low-flying Enemy Drone Shadows
@@ -1393,7 +1394,7 @@ void Engine::Render() {
                 em = glm::scale(em, glm::vec3(eScale, 1.0f, eScale * 1.3f));
                 shader.SetMat4("uModel", em);
                 shader.SetFloat("uAlpha", eAlpha);
-                shadowMesh.Draw(shader);
+                if (shadowMesh) shadowMesh->Draw(shader);
             }
         }
 
