@@ -77,6 +77,18 @@ public:
     static Mesh CreateGroundTank(const glm::vec3& treadCol, const glm::vec3& hullCol, const glm::vec3& turretCol);
     static Mesh CreateFlakTurret(const glm::vec3& bunkerCol, const glm::vec3& barrelCol);
     static Mesh CreateEliteInterceptor(const glm::vec3& hullCol, const glm::vec3& accentCol, const glm::vec3& cockpitCol);
+    // Phase 33 & 34: Train & Boss Meshes
+    static Mesh CreateTrainLocomotive(const glm::vec3& bodyCol, const glm::vec3& trimCol);
+    static Mesh CreateTrainCargoCar(const glm::vec3& carCol, const glm::vec3& containerCol);
+    static Mesh CreateRailTracks(float length, float gauge, const glm::vec3& railCol, const glm::vec3& tieCol);
+    static Mesh CreateHelicopterFuselage(const glm::vec3& bodyCol, const glm::vec3& canopyCol);
+    static Mesh CreateHelicopterMainRotor(float radius, const glm::vec3& bladeCol);
+    static Mesh CreateHelicopterTailRotor(float radius, const glm::vec3& bladeCol);
+    static Mesh CreateMegaTankChassis(const glm::vec3& treadCol, const glm::vec3& armorCol);
+    static Mesh CreateMegaTankTurret(const glm::vec3& turretCol, const glm::vec3& barrelCol);
+    static Mesh CreateMegaTankCore(const glm::vec3& coreCol);
+    static Mesh CreateWormHead(const glm::vec3& headCol, const glm::vec3& mandibleCol, const glm::vec3& eyeCol);
+    static Mesh CreateWormSegment(float radius, const glm::vec3& armorCol, const glm::vec3& coreCol);
 };
 
 #endif

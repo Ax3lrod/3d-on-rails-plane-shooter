@@ -1,11 +1,16 @@
 #include "HUD.h"
 #include "Input.h"
+#include "LevelTimeline.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <GLFW/glfw3.h>
+
+#ifdef DrawText
+#undef DrawText
+#endif
 
 static Mesh CreateScreenQuad() {
     std::vector<Vertex> verts;
@@ -1469,3 +1474,107 @@ void HUD::DrawMissionBriefing(const Shader& shader, int screenWidth, int screenH
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 }
+
+void HUD::DrawStageSelect(const Shader& shader, int screenWidth, int screenHeight,
+                          const std::vector<StageDefinition>& stages, int selectedIndex, float time) const {
+    if (stages.empty()) return;
+
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    float vw = GetVirtualWidth(screenWidth, screenHeight);
+    float vh = GetVirtualHeight(screenWidth, screenHeight);
+
+    shader.Activate();
+    glm::mat4 ortho = glm::ortho(0.0f, vw, vh, 0.0f, -1.0f, 1.0f);
+    shader.SetMat4("uProjection", ortho);
+    shader.SetMat4("uView", glm::mat4(1.0f));
+    shader.SetInt("uUseLighting", 0);
+    shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
+    shader.SetInt("uUseColorOverride", 1);
+
+    const auto& stage = stages[selectedIndex];
+
+    float boxW = 820.0f;
+    float boxH = 460.0f;
+    float slant = 26.0f;
+    float bx = (vw - boxW) * 0.5f;
+    float by = (vh - boxH) * 0.5f - 15.0f;
+
+    // Outer Slanted Bezel Card with stage theme color
+    DrawSlantedCard(shader, bx, by, boxW, boxH, slant,
+                    glm::vec3(0.06f, 0.14f, 0.22f),
+                    glm::vec3(0.12f, 0.08f, 0.22f),
+                    stage.themeColor,
+                    3.5f, 0.96f);
+
+    // Header Title
+    std::string headerStr = "MISSION SELECT // TACTICAL THEATER";
+    float headW = headerStr.length() * 6.0f * 2.2f;
+    DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 22.0f, 2.2f, glm::vec3(0.2f, 0.9f, 1.0f), 1.0f);
+    DrawSlantedRect(shader, bx + 30.0f, by + 56.0f, boxW - 60.0f, 2.0f, slant * 0.1f, stage.themeColor, 0.8f);
+
+    // Stage Title
+    float titleW = stage.title.length() * 6.0f * 2.3f;
+    DrawText(shader, stage.title, (vw - titleW) * 0.5f + slant * 0.5f, by + 78.0f, 2.3f, stage.themeColor, 1.0f);
+
+    // Subtitle
+    float subW = stage.subtitle.length() * 6.0f * 1.5f;
+    DrawText(shader, stage.subtitle, (vw - subW) * 0.5f + slant * 0.5f, by + 110.0f, 1.5f, glm::vec3(0.85f, 0.95f, 1.0f), 0.9f);
+
+    // Sector Pips / Tabs: Sector 1 to 5
+    float tabW = 88.0f;
+    float tabH = 32.0f;
+    float tabSpacing = 16.0f;
+    float totalTabsW = stages.size() * tabW + (stages.size() - 1) * tabSpacing;
+    float tabsStartX = (vw - totalTabsW) * 0.5f + slant * 0.4f;
+    float tabY = by + 145.0f;
+
+    for (size_t i = 0; i < stages.size(); ++i) {
+        float tx = tabsStartX + i * (tabW + tabSpacing);
+        bool isSel = (static_cast<int>(i) == selectedIndex);
+        glm::vec3 tabBorder = isSel ? glm::vec3(1.0f, 1.0f, 1.0f) : glm::vec3(0.35f, 0.40f, 0.48f);
+        float tabSlant = 12.0f;
+        DrawSlantedCard(shader, tx, tabY, tabW, tabH, tabSlant,
+                        isSel ? stages[i].themeColor * 0.65f : glm::vec3(0.08f, 0.10f, 0.14f),
+                        isSel ? stages[i].themeColor * 0.35f : glm::vec3(0.05f, 0.06f, 0.09f),
+                        tabBorder, isSel ? 2.5f : 1.5f, 0.9f);
+
+        std::string tabLabel = "SEC 0" + std::to_string(i + 1);
+        DrawText(shader, tabLabel, tx + 14.0f, tabY + 8.0f, 1.3f, isSel ? glm::vec3(1.0f) : glm::vec3(0.6f, 0.65f, 0.7f), 1.0f);
+    }
+
+    // Details Box Inside Card
+    float detY = by + 198.0f;
+    DrawSlantedCard(shader, bx + 45.0f, detY, boxW - 90.0f, 160.0f, slant * 0.15f,
+                    glm::vec3(0.04f, 0.06f, 0.10f), glm::vec3(0.05f, 0.07f, 0.12f),
+                    stage.themeColor * 0.6f, 1.5f, 0.9f);
+
+    // Details Readouts
+    DrawDiamond(shader, bx + 70.0f, detY + 30.0f, 5.5f, glm::vec3(1.0f, 0.4f, 0.2f), 1.0f);
+    DrawText(shader, "PRIMARY THREAT (BOSS):", bx + 85.0f, detY + 23.0f, 1.6f, glm::vec3(1.0f, 0.4f, 0.2f), 1.0f);
+    DrawText(shader, stage.bossName, bx + 360.0f, detY + 23.0f, 1.6f, glm::vec3(1.0f, 0.95f, 0.9f), 1.0f);
+
+    DrawDiamond(shader, bx + 70.0f, detY + 70.0f, 5.5f, glm::vec3(0.3f, 0.9f, 0.6f), 1.0f);
+    DrawText(shader, "TERRAIN ENVIRONMENT:", bx + 85.0f, detY + 63.0f, 1.6f, glm::vec3(0.3f, 0.9f, 0.6f), 1.0f);
+    DrawText(shader, stage.terrainTheme, bx + 360.0f, detY + 63.0f, 1.6f, glm::vec3(0.85f, 0.95f, 1.0f), 1.0f);
+
+    DrawDiamond(shader, bx + 70.0f, detY + 110.0f, 5.5f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
+    DrawText(shader, "THREAT CLASSIFICATION:", bx + 85.0f, detY + 103.0f, 1.6f, glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
+    DrawText(shader, stage.difficulty, bx + 360.0f, detY + 103.0f, 1.6f,
+             stage.difficulty == "EXPERT" ? glm::vec3(1.0f, 0.3f, 0.3f) : glm::vec3(1.0f, 0.85f, 0.2f), 1.0f);
+
+    // Bottom Navigation Prompts
+    float pulse = std::sin(time * 5.0f) * 0.25f + 0.75f;
+    std::string promptStr = Input::IsLastInputGamepad()
+        ? "[D-PAD] SELECT STAGE   |   [A] DEPLOY   |   [B] BACK"
+        : "[A / D] SELECT STAGE   |   [ENTER] DEPLOY   |   [ESC] BACK";
+    float promptW = promptStr.length() * 6.0f * 1.8f;
+    DrawText(shader, promptStr, (vw - promptW) * 0.5f + slant * 0.5f, by + boxH - 30.0f, 1.8f, glm::vec3(0.3f, 1.0f, 0.6f) * pulse, 1.0f);
+
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+}
+

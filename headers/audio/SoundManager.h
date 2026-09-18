@@ -11,6 +11,9 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <mmsystem.h>
+#ifdef DrawText
+#undef DrawText
+#endif
 #endif
 
 enum class SoundID {

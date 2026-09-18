@@ -9,6 +9,7 @@
 #include "shaderClass.h"
 #include "CombatSystem.h"
 #include "Camera.h"
+#include "IBoss.h"
 
 enum class BossState {
     Inactive,
@@ -34,9 +35,8 @@ struct BossWeakpoint {
 
 class SoundManager;
 
-class BossDreadnought {
+class BossDreadnought : public IBoss {
 public:
-    Transform transform;
     BossState state;
 
     // Procedural Meshes
@@ -71,27 +71,33 @@ public:
 
     BossDreadnought();
 
-    void Spawn(float playerZ);
+    void Spawn(float playerZ) override;
     void Update(float dt, float playerZ, const glm::vec3& playerPos,
                 ProjectileManager& projectiles, ParticleSystem& particles, Camera& camera,
-                SoundManager* audio = nullptr);
-    void Draw(const Shader& shader) const;
-    void Reset();
+                SoundManager* audio = nullptr) override;
+    void Draw(const Shader& shader) const override;
+    void Reset() override;
 
     // Combat queries and interactions
-    int FindLockTarget(const glm::vec3& playerPos, const glm::vec3& aimPos, glm::vec3& outLockPos) const;
+    int FindLockTarget(const glm::vec3& playerPos, const glm::vec3& aimPos, glm::vec3& outLockPos) const override;
     bool CheckLaserHit(const glm::vec3& laserPos, float laserRadius, float damage,
-                       ParticleSystem& particles, Camera& camera, int& outScoreGained);
+                       ParticleSystem& particles, Camera& camera, int& outScoreGained) override;
     void ApplyShockwaveDamage(const glm::vec3& shockPos, float radius, float damage,
-                              ParticleSystem& particles, Camera& camera, int& outScoreGained);
+                              ParticleSystem& particles, Camera& camera, int& outScoreGained) override;
 
     // Health and state helpers
     float GetTotalHealth() const;
     float GetMaxHealth() const;
-    float GetHealthRatio() const;
-    bool IsActive() const { return state != BossState::Inactive && state != BossState::Defeated; }
-    bool IsWarning() const { return state == BossState::Approaching; }
-    bool IsDefeated() const { return state == BossState::Defeated; }
+    float GetHealthRatio() const override;
+    bool IsActive() const override { return state != BossState::Inactive && state != BossState::Defeated; }
+    bool IsWarning() const override { return state == BossState::Approaching; }
+    bool IsDefeated() const override { return state == BossState::Defeated; }
+    std::string GetBossName() const override { return "COLOSSAL DREADNOUGHT"; }
+
+    bool IsSubsystem1Down() const override { return leftTurret.destroyed; }
+    bool IsSubsystem2Down() const override { return rightTurret.destroyed; }
+    bool IsShieldDown() const override { return shieldGen.destroyed; }
+    bool IsCoreExposed() const override { return state == BossState::Phase2_ExposedCore; }
 
 private:
     void UpdateSubsystemsWorldPos();

@@ -36,6 +36,43 @@ void WorldEnvironment::SetSector(SectorStage sector) {
     Clear();
 }
 
+void WorldEnvironment::SetTerrainTheme(const std::string& theme) {
+    terrainTheme = theme;
+    if (theme == "railway_canyon") {
+        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                                  glm::vec3(0.65f, 0.28f, 0.16f),
+                                                  glm::vec3(0.55f, 0.22f, 0.12f));
+        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
+                                                glm::vec3(0.85f, 0.42f, 0.18f),
+                                                glm::vec3(0.98f, 0.65f, 0.35f),
+                                                glm::vec3(0.68f, 0.22f, 0.14f));
+    } else if (theme == "iron_fortress") {
+        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                                  glm::vec3(0.18f, 0.20f, 0.24f),
+                                                  glm::vec3(0.25f, 0.27f, 0.32f));
+        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
+                                                glm::vec3(0.20f, 0.15f, 0.22f),
+                                                glm::vec3(0.85f, 0.25f, 0.18f),
+                                                glm::vec3(0.35f, 0.15f, 0.20f));
+    } else if (theme == "dune_pass") {
+        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                                  glm::vec3(0.84f, 0.65f, 0.32f),
+                                                  glm::vec3(0.76f, 0.58f, 0.26f));
+        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
+                                                glm::vec3(0.85f, 0.72f, 0.40f),
+                                                glm::vec3(0.98f, 0.88f, 0.55f),
+                                                glm::vec3(0.75f, 0.52f, 0.24f));
+    } else {
+        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                                  glm::vec3(0.18f, 0.58f, 0.28f),
+                                                  glm::vec3(0.24f, 0.68f, 0.35f));
+        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
+                                                glm::vec3(0.16f, 0.46f, 0.92f),
+                                                glm::vec3(0.75f, 0.90f, 0.98f),
+                                                glm::vec3(0.58f, 0.66f, 0.86f));
+    }
+}
+
 int WorldEnvironment::GetDestroyedRelayCount() const {
     int count = 0;
     for (const auto& r : secretRelays) {

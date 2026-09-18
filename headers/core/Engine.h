@@ -13,7 +13,12 @@
 #include "CombatSystem.h"
 #include "WorldEnvironment.h"
 #include "EnemyManager.h"
+#include "IBoss.h"
 #include "BossDreadnought.h"
+#include "BossTwinHelicopters.h"
+#include "BossMegaTank.h"
+#include "BossMechaWorm.h"
+#include "TrainConvoy.h"
 #include "HUD.h"
 #include "SoundManager.h"
 #include "WingmanSquadron.h"
@@ -22,6 +27,7 @@
 
 enum class GameState {
     TitleHangar,
+    StageSelect,
     SettingsMenu,
     MissionBriefing,
     Playing,
@@ -50,7 +56,7 @@ private:
     void SaveHighScores();
     void CheckNewHighScore(int score, int stage, bool complete);
 
-    void StartMission();
+    void StartMission(int stageIndex = 0);
     void TriggerHyperspaceWarp();
     void CompleteHyperspaceWarp();
     void ReturnToTitle();
@@ -74,12 +80,17 @@ private:
     std::unique_ptr<TargetingReticle> reticle;
     std::unique_ptr<WorldEnvironment> environment;
     std::unique_ptr<EnemyManager> enemies;
-    std::unique_ptr<BossDreadnought> boss;
+    std::unique_ptr<IBoss> boss;
+    std::unique_ptr<TrainConvoy> trainConvoy;
     std::unique_ptr<HUD> hud;
     std::unique_ptr<SoundManager> audio;
     std::unique_ptr<WingmanSquadron> wingmen;
     std::unique_ptr<PostProcessor> postProcessor;
     std::unique_ptr<LevelTimeline> levelTimeline;
+
+    // Stage Selection
+    int selectedStageIndex;
+    std::vector<StageDefinition> availableStages;
 
     // Hangar & Menu
     std::unique_ptr<Mesh> hangarFloorMesh;

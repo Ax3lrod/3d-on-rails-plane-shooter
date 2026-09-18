@@ -1649,3 +1649,557 @@ Mesh Mesh::CreateEliteInterceptor(const glm::vec3& hullCol, const glm::vec3& acc
 
     return Mesh(verts, inds);
 }
+
+// -------------------------------------------------------------
+// Phase 33 & 34: Train & Boss Procedural Meshes
+// -------------------------------------------------------------
+
+Mesh Mesh::CreateTrainLocomotive(const glm::vec3& bodyCol, const glm::vec3& trimCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Wheelbase & Under-chassis
+    float len = 9.0f;
+    float w = 2.4f;
+    float h = 0.6f;
+    glm::vec3 c0(-w*0.5f, 0.2f, -len*0.5f);
+    glm::vec3 c1( w*0.5f, 0.2f, -len*0.5f);
+    glm::vec3 c2( w*0.5f, 0.2f + h, -len*0.5f);
+    glm::vec3 c3(-w*0.5f, 0.2f + h, -len*0.5f);
+    glm::vec3 cf0(-w*0.5f, 0.2f, len*0.5f);
+    glm::vec3 cf1( w*0.5f, 0.2f, len*0.5f);
+    glm::vec3 cf2( w*0.5f, 0.2f + h, len*0.5f);
+    glm::vec3 cf3(-w*0.5f, 0.2f + h, len*0.5f);
+
+    AddQuad(verts, inds, c0, c1, c2, c3, bodyCol * 0.7f);
+    AddQuad(verts, inds, cf1, cf0, cf3, cf2, bodyCol * 0.9f);
+    AddQuad(verts, inds, c1, cf1, cf2, c2, bodyCol * 0.8f);
+    AddQuad(verts, inds, cf0, c0, c3, cf3, bodyCol * 0.75f);
+    AddQuad(verts, inds, c3, c2, cf2, cf3, bodyCol);
+
+    // 2. Cowcatcher / Wedge Plow in Front (+Z)
+    float plowLen = 1.4f;
+    glm::vec3 pTip(0.0f, 0.15f, len*0.5f + plowLen);
+    glm::vec3 pL(-w*0.55f, 0.15f, len*0.5f);
+    glm::vec3 pR( w*0.55f, 0.15f, len*0.5f);
+    glm::vec3 pTop(0.0f, 0.2f + h*1.4f, len*0.5f);
+    AddTriangle(verts, inds, pTip, pR, pTop, trimCol * 1.1f);
+    AddTriangle(verts, inds, pTip, pTop, pL, trimCol * 0.9f);
+    AddTriangle(verts, inds, pL, pTop, cf3, trimCol * 0.8f);
+    AddTriangle(verts, inds, pTop, pR, cf2, trimCol * 1.0f);
+
+    // 3. Engine Boiler / Hood
+    float bW = 1.8f;
+    float bH = 1.6f;
+    float bL = 5.2f;
+    glm::vec3 b0(-bW*0.5f, 0.2f + h, 0.0f);
+    glm::vec3 b1( bW*0.5f, 0.2f + h, 0.0f);
+    glm::vec3 b2( bW*0.5f, 0.2f + h + bH, 0.0f);
+    glm::vec3 b3(-bW*0.5f, 0.2f + h + bH, 0.0f);
+    glm::vec3 bf0(-bW*0.5f, 0.2f + h, bL);
+    glm::vec3 bf1( bW*0.5f, 0.2f + h, bL);
+    glm::vec3 bf2( bW*0.5f, 0.2f + h + bH, bL);
+    glm::vec3 bf3(-bW*0.5f, 0.2f + h + bH, bL);
+
+    AddQuad(verts, inds, bf1, bf0, bf3, bf2, bodyCol * 1.15f); // Front
+    AddQuad(verts, inds, b1, bf1, bf2, b2, bodyCol * 0.95f);   // Right
+    AddQuad(verts, inds, bf0, b0, b3, bf3, bodyCol * 0.85f);   // Left
+    AddQuad(verts, inds, b3, b2, bf2, bf3, bodyCol * 1.25f);   // Top
+
+    // Glowing front headlight
+    glm::vec3 hl(0.0f, 0.2f + h + bH*0.5f, bL + 0.1f);
+    float hlR = 0.35f;
+    AddQuad(verts, inds,
+            hl + glm::vec3(-hlR, -hlR, 0.0f),
+            hl + glm::vec3( hlR, -hlR, 0.0f),
+            hl + glm::vec3( hlR,  hlR, 0.0f),
+            hl + glm::vec3(-hlR,  hlR, 0.0f),
+            glm::vec3(1.0f, 0.92f, 0.4f)); // Radiant gold light
+
+    // 4. Operator Cabin at Rear (-Z)
+    float cW = 2.2f;
+    float cH = 2.4f;
+    float cL = 3.6f;
+    glm::vec3 r0(-cW*0.5f, 0.2f + h, -len*0.5f);
+    glm::vec3 r1( cW*0.5f, 0.2f + h, -len*0.5f);
+    glm::vec3 r2( cW*0.5f, 0.2f + h + cH, -len*0.5f);
+    glm::vec3 r3(-cW*0.5f, 0.2f + h + cH, -len*0.5f);
+    glm::vec3 rf0(-cW*0.5f, 0.2f + h, 0.0f);
+    glm::vec3 rf1( cW*0.5f, 0.2f + h, 0.0f);
+    glm::vec3 rf2( cW*0.5f, 0.2f + h + cH, 0.0f);
+    glm::vec3 rf3(-cW*0.5f, 0.2f + h + cH, 0.0f);
+
+    AddQuad(verts, inds, r0, r1, r2, r3, trimCol * 0.8f);    // Back
+    AddQuad(verts, inds, rf1, rf0, rf3, rf2, trimCol * 1.0f); // Forward
+    AddQuad(verts, inds, r1, rf1, rf2, r2, trimCol * 0.9f);   // Right
+    AddQuad(verts, inds, rf0, r0, r3, rf3, trimCol * 0.85f);  // Left
+    AddQuad(verts, inds, r3, r2, rf2, rf3, trimCol * 1.15f);  // Roof
+
+    // Cabin Windows
+    glm::vec3 winCol(0.2f, 0.85f, 1.0f);
+    AddQuad(verts, inds,
+            glm::vec3(-cW*0.4f, 0.2f + h + cH*0.6f, 0.02f),
+            glm::vec3( cW*0.4f, 0.2f + h + cH*0.6f, 0.02f),
+            glm::vec3( cW*0.4f, 0.2f + h + cH*0.85f, 0.02f),
+            glm::vec3(-cW*0.4f, 0.2f + h + cH*0.85f, 0.02f),
+            winCol);
+
+    // 5. Smokestack Exhaust Pipe
+    float sY = 0.2f + h + bH;
+    float sH = 0.85f;
+    float sR = 0.25f;
+    glm::vec3 sPos(0.0f, sY, bL * 0.7f);
+    for (int i = 0; i < 6; ++i) {
+        float a0 = (float)i / 6.0f * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+        glm::vec3 t0 = sPos + glm::vec3(std::cos(a0)*sR, 0.0f, std::sin(a0)*sR);
+        glm::vec3 t1 = sPos + glm::vec3(std::cos(a1)*sR, 0.0f, std::sin(a1)*sR);
+        glm::vec3 u0 = t0 + glm::vec3(0.0f, sH, 0.0f);
+        glm::vec3 u1 = t1 + glm::vec3(0.0f, sH, 0.0f);
+        AddQuad(verts, inds, t0, t1, u1, u0, glm::vec3(0.2f, 0.22f, 0.25f));
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateTrainCargoCar(const glm::vec3& carCol, const glm::vec3& containerCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float len = 8.5f;
+    float w = 2.4f;
+    float baseH = 0.5f;
+
+    // Flatbed Base
+    glm::vec3 b0(-w*0.5f, 0.2f, -len*0.5f);
+    glm::vec3 b1( w*0.5f, 0.2f, -len*0.5f);
+    glm::vec3 b2( w*0.5f, 0.2f + baseH, -len*0.5f);
+    glm::vec3 b3(-w*0.5f, 0.2f + baseH, -len*0.5f);
+    glm::vec3 f0(-w*0.5f, 0.2f,  len*0.5f);
+    glm::vec3 f1( w*0.5f, 0.2f,  len*0.5f);
+    glm::vec3 f2( w*0.5f, 0.2f + baseH,  len*0.5f);
+    glm::vec3 f3(-w*0.5f, 0.2f + baseH,  len*0.5f);
+
+    AddQuad(verts, inds, b0, b1, b2, b3, carCol * 0.7f);
+    AddQuad(verts, inds, f1, f0, f3, f2, carCol * 0.9f);
+    AddQuad(verts, inds, b1, f1, f2, b2, carCol * 0.8f);
+    AddQuad(verts, inds, f0, b0, b3, f3, carCol * 0.75f);
+    AddQuad(verts, inds, b3, b2, f2, f3, carCol);
+
+    // Armored Shipping Container Box
+    float cW = 2.2f;
+    float cH = 2.2f;
+    float cL = 7.8f;
+    float y0 = 0.2f + baseH;
+    float y1 = y0 + cH;
+
+    glm::vec3 c0(-cW*0.5f, y0, -cL*0.5f);
+    glm::vec3 c1( cW*0.5f, y0, -cL*0.5f);
+    glm::vec3 c2( cW*0.5f, y1, -cL*0.5f);
+    glm::vec3 c3(-cW*0.5f, y1, -cL*0.5f);
+    glm::vec3 cf0(-cW*0.5f, y0, cL*0.5f);
+    glm::vec3 cf1( cW*0.5f, y0, cL*0.5f);
+    glm::vec3 cf2( cW*0.5f, y1, cL*0.5f);
+    glm::vec3 cf3(-cW*0.5f, y1, cL*0.5f);
+
+    AddQuad(verts, inds, c0, c1, c2, c3, containerCol * 0.85f);
+    AddQuad(verts, inds, cf1, cf0, cf3, cf2, containerCol * 1.05f);
+    AddQuad(verts, inds, c1, cf1, cf2, c2, containerCol * 0.95f);
+    AddQuad(verts, inds, cf0, c0, c3, cf3, containerCol * 0.80f);
+    AddQuad(verts, inds, c3, c2, cf2, cf3, containerCol * 1.15f);
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateRailTracks(float length, float gauge, const glm::vec3& railCol, const glm::vec3& tieCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float halfLen = length * 0.5f;
+    float railW = 0.12f;
+    float railH = 0.15f;
+    float halfG = gauge * 0.5f;
+
+    // 1. Two continuous steel rails
+    for (float rx : {-halfG, halfG}) {
+        glm::vec3 r0(rx - railW*0.5f, 0.12f, -halfLen);
+        glm::vec3 r1(rx + railW*0.5f, 0.12f, -halfLen);
+        glm::vec3 r2(rx + railW*0.5f, 0.12f + railH, -halfLen);
+        glm::vec3 r3(rx - railW*0.5f, 0.12f + railH, -halfLen);
+
+        glm::vec3 f0(rx - railW*0.5f, 0.12f, halfLen);
+        glm::vec3 f1(rx + railW*0.5f, 0.12f, halfLen);
+        glm::vec3 f2(rx + railW*0.5f, 0.12f + railH, halfLen);
+        glm::vec3 f3(rx - railW*0.5f, 0.12f + railH, halfLen);
+
+        AddQuad(verts, inds, r3, r2, f2, f3, railCol * 1.25f); // Top surface
+        AddQuad(verts, inds, r1, f1, f2, r2, railCol * 0.95f); // Outer
+        AddQuad(verts, inds, f0, r0, r3, f3, railCol * 0.85f); // Inner
+    }
+
+    // 2. Cross ties spaced every 2.4m
+    float tieSpacing = 2.4f;
+    int tieCount = static_cast<int>(length / tieSpacing);
+    float tieW = gauge * 1.4f;
+    float tieLen = 0.5f;
+    float tieH = 0.12f;
+
+    for (int i = 0; i < tieCount; ++i) {
+        float tz = -halfLen + i * tieSpacing;
+        glm::vec3 t0(-tieW*0.5f, 0.0f, tz - tieLen*0.5f);
+        glm::vec3 t1( tieW*0.5f, 0.0f, tz - tieLen*0.5f);
+        glm::vec3 t2( tieW*0.5f, tieH, tz - tieLen*0.5f);
+        glm::vec3 t3(-tieW*0.5f, tieH, tz - tieLen*0.5f);
+
+        glm::vec3 tf0(-tieW*0.5f, 0.0f, tz + tieLen*0.5f);
+        glm::vec3 tf1( tieW*0.5f, 0.0f, tz + tieLen*0.5f);
+        glm::vec3 tf2( tieW*0.5f, tieH, tz + tieLen*0.5f);
+        glm::vec3 tf3(-tieW*0.5f, tieH, tz + tieLen*0.5f);
+
+        AddQuad(verts, inds, t3, t2, tf2, tf3, tieCol * (0.85f + 0.15f * (i % 2)));
+        AddQuad(verts, inds, tf1, tf0, tf3, tf2, tieCol * 0.7f);
+        AddQuad(verts, inds, t0, t1, t2, t3, tieCol * 0.7f);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateHelicopterFuselage(const glm::vec3& bodyCol, const glm::vec3& canopyCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Sleek Attack Helicopter Fuselage
+    glm::vec3 nose(0.0f, -0.2f, 3.2f);
+    glm::vec3 midTop(0.0f, 0.9f, 0.4f);
+    glm::vec3 midBot(0.0f, -0.7f, 0.4f);
+    glm::vec3 midL(-1.1f, 0.0f, 0.4f);
+    glm::vec3 midR( 1.1f, 0.0f, 0.4f);
+
+    glm::vec3 tailRootTop(0.0f, 0.4f, -2.5f);
+    glm::vec3 tailRootBot(0.0f, -0.3f, -2.5f);
+    glm::vec3 tailRootL(-0.5f, 0.0f, -2.5f);
+    glm::vec3 tailRootR( 0.5f, 0.0f, -2.5f);
+
+    // Nose facets
+    AddTriangle(verts, inds, nose, midTop, midR, bodyCol * 1.15f);
+    AddTriangle(verts, inds, nose, midL, midTop, bodyCol * 0.95f);
+    AddTriangle(verts, inds, nose, midR, midBot, bodyCol * 0.85f);
+    AddTriangle(verts, inds, nose, midBot, midL, bodyCol * 0.75f);
+
+    // Mid section
+    AddQuad(verts, inds, midTop, midR, tailRootR, tailRootTop, bodyCol * 1.05f);
+    AddQuad(verts, inds, midL, midTop, tailRootTop, tailRootL, bodyCol * 0.90f);
+    AddQuad(verts, inds, midR, midBot, tailRootBot, tailRootR, bodyCol * 0.70f);
+    AddQuad(verts, inds, midBot, midL, tailRootL, tailRootBot, bodyCol * 0.60f);
+
+    // 2. Long Tail Boom & Vertical Fin (-Z)
+    float boomLen = 4.2f;
+    glm::vec3 tailTip(0.0f, 0.2f, -2.5f - boomLen);
+    glm::vec3 finTop(0.0f, 1.6f, -2.5f - boomLen * 0.9f);
+    glm::vec3 finBot(0.0f, -0.4f, -2.5f - boomLen);
+
+    AddTriangle(verts, inds, tailRootTop, tailTip, finTop, bodyCol * 1.1f);
+    AddTriangle(verts, inds, tailRootBot, finBot, tailTip, bodyCol * 0.75f);
+    AddTriangle(verts, inds, tailRootL, tailTip, tailRootTop, bodyCol * 0.85f);
+    AddTriangle(verts, inds, tailRootR, tailRootTop, tailTip, bodyCol * 1.0f);
+
+    // 3. Stub Weapon Wings with Dual Rocket Pods
+    float wingSpan = 2.4f;
+    for (float side : {-1.0f, 1.0f}) {
+        glm::vec3 wRoot(side * 0.9f, 0.0f, 0.8f);
+        glm::vec3 wTip(side * wingSpan, -0.1f, 0.6f);
+        glm::vec3 wRootR(side * 0.9f, 0.0f, -0.2f);
+        glm::vec3 wTipR(side * wingSpan, -0.1f, -0.3f);
+
+        AddQuad(verts, inds, wRoot, wTip, wTipR, wRootR, bodyCol * 0.95f);
+
+        // Rocket Pod Cylinder
+        glm::vec3 podCenter = (wTip + wTipR) * 0.5f + glm::vec3(0.0f, -0.3f, 0.0f);
+        for (int i = 0; i < 6; ++i) {
+            float a0 = (float)i / 6.0f * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+            glm::vec3 p0 = podCenter + glm::vec3(std::cos(a0)*0.25f, std::sin(a0)*0.25f, -0.8f);
+            glm::vec3 p1 = podCenter + glm::vec3(std::cos(a1)*0.25f, std::sin(a1)*0.25f, -0.8f);
+            glm::vec3 q0 = podCenter + glm::vec3(std::cos(a0)*0.25f, std::sin(a0)*0.25f,  0.8f);
+            glm::vec3 q1 = podCenter + glm::vec3(std::cos(a1)*0.25f, std::sin(a1)*0.25f,  0.8f);
+            AddQuad(verts, inds, p0, p1, q1, q0, glm::vec3(0.22f, 0.24f, 0.28f));
+            // Red missile tips
+            AddTriangle(verts, inds, podCenter + glm::vec3(0.0f, 0.0f, 0.95f), q0, q1, glm::vec3(0.95f, 0.2f, 0.15f));
+        }
+    }
+
+    // 4. Tandem Cockpit Glass Canopy
+    glm::vec3 cpNose(0.0f, 0.1f, 2.2f);
+    glm::vec3 cpMid(0.0f, 0.75f, 1.1f);
+    glm::vec3 cpRear(0.0f, 0.65f, 0.0f);
+    glm::vec3 cpL(-0.55f, 0.35f, 1.0f);
+    glm::vec3 cpR( 0.55f, 0.35f, 1.0f);
+
+    AddTriangle(verts, inds, cpMid, cpNose, cpR, canopyCol * 1.25f);
+    AddTriangle(verts, inds, cpMid, cpL, cpNose, canopyCol * 1.05f);
+    AddTriangle(verts, inds, cpMid, cpR, cpRear, canopyCol * 0.95f);
+    AddTriangle(verts, inds, cpMid, cpRear, cpL, canopyCol * 0.85f);
+
+    // 5. Chin Gatling Minigun
+    glm::vec3 chinGun(0.0f, -0.85f, 2.4f);
+    glm::vec3 gunTip(0.0f, -0.85f, 3.4f);
+    AddQuad(verts, inds,
+            chinGun + glm::vec3(-0.08f, -0.08f, 0.0f),
+            chinGun + glm::vec3( 0.08f, -0.08f, 0.0f),
+            gunTip  + glm::vec3( 0.08f,  0.08f, 0.0f),
+            gunTip  + glm::vec3(-0.08f,  0.08f, 0.0f),
+            glm::vec3(0.18f, 0.20f, 0.22f));
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateHelicopterMainRotor(float radius, const glm::vec3& bladeCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // Central hub
+    float hubR = 0.45f;
+    for (int i = 0; i < 6; ++i) {
+        float a0 = (float)i / 6.0f * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+        AddTriangle(verts, inds,
+                    glm::vec3(0.0f, 0.15f, 0.0f),
+                    glm::vec3(std::cos(a0)*hubR, 0.0f, std::sin(a0)*hubR),
+                    glm::vec3(std::cos(a1)*hubR, 0.0f, std::sin(a1)*hubR),
+                    glm::vec3(0.2f, 0.22f, 0.26f));
+    }
+
+    // 4 Aerofoil Rotor Blades (spinning in XZ plane)
+    float bladeW = 0.42f;
+    for (int b = 0; b < 4; ++b) {
+        float angle = (float)b / 4.0f * glm::two_pi<float>();
+        glm::vec3 dir(std::cos(angle), 0.0f, std::sin(angle));
+        glm::vec3 perp(-std::sin(angle), 0.0f, std::cos(angle));
+
+        glm::vec3 r0 = dir * hubR - perp * (bladeW * 0.5f);
+        glm::vec3 r1 = dir * hubR + perp * (bladeW * 0.5f);
+        glm::vec3 t0 = dir * radius - perp * (bladeW * 0.35f);
+        glm::vec3 t1 = dir * radius + perp * (bladeW * 0.35f);
+
+        AddQuad(verts, inds, r0, r1, t1, t0, bladeCol);
+        // Yellow caution tip
+        AddQuad(verts, inds,
+                dir * (radius * 0.85f) - perp * (bladeW * 0.38f),
+                dir * (radius * 0.85f) + perp * (bladeW * 0.38f),
+                t1, t0, glm::vec3(1.0f, 0.85f, 0.1f));
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateHelicopterTailRotor(float radius, const glm::vec3& bladeCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float bladeW = 0.16f;
+    for (int b = 0; b < 2; ++b) {
+        float angle = (float)b / 2.0f * glm::pi<float>();
+        glm::vec3 dir(0.0f, std::cos(angle), std::sin(angle));
+        glm::vec3 perp(0.0f, -std::sin(angle), std::cos(angle));
+
+        glm::vec3 r0 = -dir * radius - perp * (bladeW * 0.5f);
+        glm::vec3 r1 = -dir * radius + perp * (bladeW * 0.5f);
+        glm::vec3 t0 =  dir * radius - perp * (bladeW * 0.5f);
+        glm::vec3 t1 =  dir * radius + perp * (bladeW * 0.5f);
+
+        AddQuad(verts, inds, r0, r1, t1, t0, bladeCol);
+    }
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateMegaTankChassis(const glm::vec3& treadCol, const glm::vec3& armorCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // Massive 18m long land fortress chassis
+    float len = 18.0f;
+    float hw = 5.5f;
+    float h = 3.2f;
+
+    // 1. Giant Quad Treads (Left Front, Left Rear, Right Front, Right Rear)
+    for (float side : {-1.0f, 1.0f}) {
+        float cx = side * (hw + 1.2f);
+        float tw = 2.2f;
+        glm::vec3 t0(cx - tw*0.5f, 0.0f, -len*0.48f);
+        glm::vec3 t1(cx + tw*0.5f, 0.0f, -len*0.48f);
+        glm::vec3 t2(cx + tw*0.5f, 2.2f, -len*0.44f);
+        glm::vec3 t3(cx - tw*0.5f, 2.2f, -len*0.44f);
+
+        glm::vec3 tf0(cx - tw*0.5f, 0.0f, len*0.48f);
+        glm::vec3 tf1(cx + tw*0.5f, 0.0f, len*0.48f);
+        glm::vec3 tf2(cx + tw*0.5f, 2.2f, len*0.44f);
+        glm::vec3 tf3(cx - tw*0.5f, 2.2f, len*0.44f);
+
+        AddQuad(verts, inds, t3, t2, tf2, tf3, treadCol * 0.85f);
+        AddQuad(verts, inds, tf0, tf1, t1, t0, treadCol * 0.55f);
+        AddQuad(verts, inds, t1, tf1, tf2, t2, treadCol * (side < 0 ? 0.8f : 1.1f));
+        AddQuad(verts, inds, tf0, t0, t3, tf3, treadCol * (side < 0 ? 1.1f : 0.8f));
+        AddQuad(verts, inds, tf3, tf2, tf1, tf0, treadCol * 0.95f);
+        AddQuad(verts, inds, t0, t1, t2, t3, treadCol * 0.75f);
+    }
+
+    // 2. Heavy Armored Citadel Hull
+    glm::vec3 b0(-hw, 1.2f, -len*0.5f);
+    glm::vec3 b1( hw, 1.2f, -len*0.5f);
+    glm::vec3 b2( hw, 1.2f + h, -len*0.42f);
+    glm::vec3 b3(-hw, 1.2f + h, -len*0.42f);
+
+    glm::vec3 f0(-hw, 1.2f,  len*0.5f);
+    glm::vec3 f1( hw, 1.2f,  len*0.5f);
+    glm::vec3 f2( hw, 1.2f + h,  len*0.42f);
+    glm::vec3 f3(-hw, 1.2f + h,  len*0.42f);
+
+    AddQuad(verts, inds, b3, b2, f2, f3, armorCol * 1.15f); // Deck
+    AddQuad(verts, inds, f0, f1, f2, f3, armorCol * 1.25f); // Glacis
+    AddQuad(verts, inds, b1, b0, b3, b2, armorCol * 0.75f); // Rear
+    AddQuad(verts, inds, b0, f0, f3, b3, armorCol * 0.85f); // Left
+    AddQuad(verts, inds, f1, b1, b2, f2, armorCol * 1.05f); // Right
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateMegaTankTurret(const glm::vec3& turretCol, const glm::vec3& barrelCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // Rotating heavy gun cupola
+    float r = 2.4f;
+    float h = 1.8f;
+    for (int i = 0; i < 8; ++i) {
+        float a0 = (float)i / 8.0f * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 8.0f * glm::two_pi<float>();
+        glm::vec3 b0(std::cos(a0)*r, 0.0f, std::sin(a0)*r);
+        glm::vec3 b1(std::cos(a1)*r, 0.0f, std::sin(a1)*r);
+        glm::vec3 t0(std::cos(a0)*r*0.8f, h, std::sin(a0)*r*0.8f);
+        glm::vec3 t1(std::cos(a1)*r*0.8f, h, std::sin(a1)*r*0.8f);
+        AddQuad(verts, inds, b0, b1, t1, t0, turretCol * (0.85f + 0.18f*(i%2)));
+        AddTriangle(verts, inds, glm::vec3(0.0f, h + 0.3f, 0.0f), t0, t1, turretCol * 1.2f);
+    }
+
+    // Dual Gigantic Barrels (+Z)
+    float bLen = 6.5f;
+    float bRad = 0.32f;
+    for (float bx : {-0.75f, 0.75f}) {
+        glm::vec3 root(bx, h * 0.6f, 1.2f);
+        glm::vec3 tip(bx, h * 0.6f + 0.5f, 1.2f + bLen);
+        for (int i = 0; i < 4; ++i) {
+            float a0 = (float)i / 4.0f * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / 4.0f * glm::two_pi<float>();
+            glm::vec3 r0 = root + glm::vec3(std::cos(a0)*bRad, std::sin(a0)*bRad, 0.0f);
+            glm::vec3 r1 = root + glm::vec3(std::cos(a1)*bRad, std::sin(a1)*bRad, 0.0f);
+            glm::vec3 t0 = tip  + glm::vec3(std::cos(a0)*bRad, std::sin(a0)*bRad, 0.0f);
+            glm::vec3 t1 = tip  + glm::vec3(std::cos(a1)*bRad, std::sin(a1)*bRad, 0.0f);
+            AddQuad(verts, inds, r0, r1, t1, t0, barrelCol * (0.8f + 0.2f*(i%2)));
+        }
+        // Glowing orange muzzle
+        AddQuad(verts, inds,
+                tip + glm::vec3(-bRad, -bRad, 0.0f),
+                tip + glm::vec3( bRad, -bRad, 0.0f),
+                tip + glm::vec3( bRad,  bRad, 0.0f),
+                tip + glm::vec3(-bRad,  bRad, 0.0f),
+                glm::vec3(1.0f, 0.45f, 0.1f));
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateMegaTankCore(const glm::vec3& coreCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float r = 1.6f;
+    glm::vec3 top(0.0f, r, 0.0f);
+    glm::vec3 bot(0.0f, -r, 0.0f);
+    const int segs = 8;
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+        glm::vec3 p0(std::cos(a0)*r, 0.0f, std::sin(a0)*r);
+        glm::vec3 p1(std::cos(a1)*r, 0.0f, std::sin(a1)*r);
+        AddTriangle(verts, inds, top, p0, p1, coreCol * 1.25f);
+        AddTriangle(verts, inds, bot, p1, p0, coreCol * 0.85f);
+    }
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateWormHead(const glm::vec3& headCol, const glm::vec3& mandibleCol, const glm::vec3& eyeCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Armored triangular head dome
+    float r = 2.6f;
+    glm::vec3 apex(0.0f, 0.2f, 3.4f);
+    glm::vec3 bTop(0.0f, 2.0f, 0.0f);
+    glm::vec3 bBot(0.0f, -1.8f, 0.0f);
+    glm::vec3 bL(-r, 0.0f, 0.0f);
+    glm::vec3 bR( r, 0.0f, 0.0f);
+
+    AddTriangle(verts, inds, apex, bTop, bR, headCol * 1.15f);
+    AddTriangle(verts, inds, apex, bL, bTop, headCol * 0.95f);
+    AddTriangle(verts, inds, apex, bR, bBot, headCol * 0.85f);
+    AddTriangle(verts, inds, apex, bBot, bL, headCol * 0.75f);
+
+    // 2. Left and Right Massive Curved Mandible Tusk Pincers
+    for (float side : {-1.0f, 1.0f}) {
+        glm::vec3 mRoot(side * (r * 0.6f), -0.4f, 1.8f);
+        glm::vec3 mMid(side * (r * 1.3f), -0.2f, 3.2f);
+        glm::vec3 mTip(side * (r * 0.2f),  0.1f, 4.6f); // Curves inward!
+
+        AddTriangle(verts, inds, mRoot, mMid, mTip, mandibleCol * 1.1f);
+        AddTriangle(verts, inds, mRoot, mTip, mMid + glm::vec3(0.0f, -0.6f, 0.0f), mandibleCol * 0.85f);
+    }
+
+    // 3. Multi-cluster Optic Sensors
+    for (float ex : {-0.85f, 0.0f, 0.85f}) {
+        glm::vec3 eyePos(ex, 0.85f - std::abs(ex)*0.3f, 2.2f);
+        float eR = (ex == 0.0f) ? 0.38f : 0.28f;
+        AddQuad(verts, inds,
+                eyePos + glm::vec3(-eR, -eR, 0.0f),
+                eyePos + glm::vec3( eR, -eR, 0.0f),
+                eyePos + glm::vec3( eR,  eR, 0.0f),
+                eyePos + glm::vec3(-eR,  eR, 0.0f),
+                eyeCol);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateWormSegment(float radius, const glm::vec3& armorCol, const glm::vec3& coreCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float r = radius;
+    const int segs = 8;
+
+    // Overlapping armored ring plate
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 f0(std::cos(a0)*r, std::sin(a0)*r, 1.1f);
+        glm::vec3 f1(std::cos(a1)*r, std::sin(a1)*r, 1.1f);
+        glm::vec3 b0(std::cos(a0)*r*0.85f, std::sin(a0)*r*0.85f, -1.1f);
+        glm::vec3 b1(std::cos(a1)*r*0.85f, std::sin(a1)*r*0.85f, -1.1f);
+
+        float shade = 0.84f + 0.26f * (i % 2);
+        AddQuad(verts, inds, f0, f1, b1, b0, armorCol * shade);
+    }
+
+    // Glowing ventral underbelly power node
+    glm::vec3 nodePos(0.0f, -r * 0.82f, 0.0f);
+    float nodeR = r * 0.38f;
+    AddQuad(verts, inds,
+            nodePos + glm::vec3(-nodeR, 0.0f, -nodeR),
+            nodePos + glm::vec3( nodeR, 0.0f, -nodeR),
+            nodePos + glm::vec3( nodeR, 0.0f,  nodeR),
+            nodePos + glm::vec3(-nodeR, 0.0f,  nodeR),
+            coreCol);
+
+    return Mesh(verts, inds);
+}
+

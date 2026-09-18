@@ -8,9 +8,12 @@
 #include "WingmanSquadron.h"
 #include "SoundManager.h"
 
+class TrainConvoy;
+
 enum class TimelineEventType {
     SpawnWave,
     Transmission,
+    SpawnTrain,
     BossTrigger,
     ClearEnemies
 };
@@ -26,9 +29,12 @@ struct TimelineEvent {
     int count = 1;
     float spawnX = 0.0f;
     float spawnY = 0.0f;
-    float spawnZ = 0.0f; // 0.0f = auto-project 220 units ahead of player
+    float spawnZ = 0.0f; // 0.0f = auto-project ahead of player
     float spacingX = 4.5f;
     float spacingZ = 12.0f;
+
+    // Train spawn fields
+    float trackX = 22.0f;
 
     // Radio comms fields
     WingmanID speaker = WingmanID::Striker;
@@ -37,10 +43,23 @@ struct TimelineEvent {
     float duration = 4.0f;
 };
 
+struct StageDefinition {
+    std::string id;
+    std::string title;
+    std::string subtitle;
+    std::string scriptPath;
+    std::string bossName;
+    std::string bossType; // "dreadnought", "twin_helicopters", "mega_tank", "sandworm"
+    std::string terrainTheme; // "coastline", "railway_canyon", "iron_fortress", "dune_pass", "cosmic_debris"
+    std::string difficulty; // "NORMAL", "HARD", "EXPERT"
+    glm::vec3 themeColor;
+};
+
 class LevelTimeline {
 public:
     std::string stageName;
     std::string musicTrack;
+    std::string bossType;
     std::vector<TimelineEvent> events;
     bool isLoaded;
     bool bossTriggered;
@@ -49,7 +68,10 @@ public:
 
     bool LoadFromFile(const std::string& filepath);
     void Reset();
-    void Update(float playerZ, EnemyManager& enemies, WingmanSquadron* wingmen, SoundManager* audio);
+    void Update(float playerZ, EnemyManager& enemies, WingmanSquadron* wingmen,
+                TrainConvoy* train, SoundManager* audio);
+
+    static std::vector<StageDefinition> GetStandardCampaignStages();
 };
 
 #endif

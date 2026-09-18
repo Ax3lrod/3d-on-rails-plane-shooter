@@ -1,0 +1,90 @@
+{
+  "stage_name": "Sector 4: Forbidden Dunes",
+  "music_track": "stage1",
+  "boss_type": "sandworm",
+  "events": [
+    {
+      "trigger_z": -20.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: ENTERING THE FORBIDDEN DUNES!",
+      "line2": "HEAVY SEISMIC DISTURBANCES DETECTED UNDER THE SANDS!",
+      "duration": 4.5
+    },
+    {
+      "trigger_z": -60.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "staggered",
+      "count": 4,
+      "spawn_x": 0.0,
+      "spawn_y": 3.5,
+      "spacing_x": 7.0,
+      "spacing_z": 12.0
+    },
+    {
+      "trigger_z": -150.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "v_formation",
+      "count": 3,
+      "spawn_x": 0.0,
+      "spawn_y": 5.0,
+      "spacing_x": 7.0,
+      "spacing_z": 14.0
+    },
+    {
+      "trigger_z": -240.0,
+      "type": "transmission",
+      "speaker": "Echo2",
+      "line1": "AEGIS: HOSTILE DUNE SCOUTS TRACKING OUR ELEVATION!",
+      "line2": "STAY HIGH ABOVE THE DUST PLUMES!",
+      "duration": 4.0
+    },
+    {
+      "trigger_z": -320.0,
+      "type": "spawn_wave",
+      "enemy_type": "tank",
+      "formation": "staggered",
+      "count": 3,
+      "spawn_x": 4.0,
+      "spawn_y": -7.5,
+      "spacing_x": 12.0,
+      "spacing_z": 18.0
+    },
+    {
+      "trigger_z": -450.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "line",
+      "count": 2,
+      "spawn_x": 0.0,
+      "spawn_y": -7.5,
+      "spacing_x": 22.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -580.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "line",
+      "count": 4,
+      "spawn_x": 0.0,
+      "spawn_y": 6.5,
+      "spacing_x": 8.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -720.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: THE GROUND IS COLLAPSING BENEATH US!",
+      "line2": "CYBERNETIC SANDWORM LEVIATHAN BREACHING FROM THE DEPTHS!",
+      "duration": 5.0
+    },
+    {
+      "trigger_z": -820.0,
+      "type": "boss_trigger"
+    }
+  ]
+}

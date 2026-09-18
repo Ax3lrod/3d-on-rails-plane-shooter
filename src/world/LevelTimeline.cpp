@@ -1,4 +1,5 @@
 #include "LevelTimeline.h"
+#include "TrainConvoy.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -199,6 +200,7 @@ namespace {
 LevelTimeline::LevelTimeline()
     : stageName("Sector 1"),
       musicTrack("stage1"),
+      bossType("dreadnought"),
       isLoaded(false),
       bossTriggered(false) {}
 
@@ -222,6 +224,7 @@ bool LevelTimeline::LoadFromFile(const std::string& filepath) {
 
     stageName = root["stage_name"].asString("Sector 1");
     musicTrack = root["music_track"].asString("stage1");
+    bossType = root["boss_type"].asString("dreadnought");
 
     events.clear();
     const JsonValue& evArr = root["events"];
@@ -247,6 +250,9 @@ bool LevelTimeline::LoadFromFile(const std::string& filepath) {
                 ev.spawnZ = evObj["spawn_z"].asFloat(0.0f);
                 ev.spacingX = evObj["spacing_x"].asFloat(4.5f);
                 ev.spacingZ = evObj["spacing_z"].asFloat(12.0f);
+            } else if (typeStr == "spawn_train") {
+                ev.type = TimelineEventType::SpawnTrain;
+                ev.trackX = evObj["track_x"].asFloat(22.0f);
             } else if (typeStr == "transmission") {
                 ev.type = TimelineEventType::Transmission;
                 std::string spk = evObj["speaker"].asString("Echo1");
@@ -266,7 +272,7 @@ bool LevelTimeline::LoadFromFile(const std::string& filepath) {
 
     isLoaded = true;
     std::cout << "[LevelTimeline] Successfully loaded stage: " << stageName
-              << " (" << events.size() << " scripted events)" << std::endl;
+              << " (" << events.size() << " scripted events, Boss: " << bossType << ")" << std::endl;
     return true;
 }
 
@@ -277,7 +283,8 @@ void LevelTimeline::Reset() {
     }
 }
 
-void LevelTimeline::Update(float playerZ, EnemyManager& enemies, WingmanSquadron* wingmen, SoundManager* audio) {
+void LevelTimeline::Update(float playerZ, EnemyManager& enemies, WingmanSquadron* wingmen,
+                           TrainConvoy* train, SoundManager* audio) {
     if (!isLoaded) return;
 
     for (auto& ev : events) {
@@ -290,6 +297,13 @@ void LevelTimeline::Update(float playerZ, EnemyManager& enemies, WingmanSquadron
                     enemies.SpawnCustomWave(ev.enemyType, ev.formation, ev.count,
                                            ev.spawnX, ev.spawnY, sZ,
                                            ev.spacingX, ev.spacingZ);
+                    break;
+                }
+
+                case TimelineEventType::SpawnTrain: {
+                    if (train) {
+                        train->Spawn(playerZ, ev.trackX);
+                    }
                     break;
                 }
 
@@ -313,3 +327,64 @@ void LevelTimeline::Update(float playerZ, EnemyManager& enemies, WingmanSquadron
         }
     }
 }
+
+std::vector<StageDefinition> LevelTimeline::GetStandardCampaignStages() {
+    return {
+        {
+            "sector_1",
+            "SECTOR 1: EMERALD COASTLINE",
+            "Verdant Archipelago & Sea Cliffs",
+            "resource/stages/stage1.json",
+            "COLOSSAL DREADNOUGHT",
+            "dreadnought",
+            "coastline",
+            "NORMAL",
+            glm::vec3(0.2f, 0.9f, 0.45f)
+        },
+        {
+            "sector_2",
+            "SECTOR 2: CANYON RAILWAY",
+            "Red Rock Gorges & Armored Train Convoy",
+            "resource/stages/stage2.json",
+            "TWIN VIPER GUNSHIPS",
+            "twin_helicopters",
+            "railway_canyon",
+            "HARD",
+            glm::vec3(1.0f, 0.55f, 0.18f)
+        },
+        {
+            "sector_3",
+            "SECTOR 3: IRON FORTRESS",
+            "Fortified Ground Citadel & Heavy Armor",
+            "resource/stages/stage3.json",
+            "GOLIATH MEGA-TANK",
+            "mega_tank",
+            "iron_fortress",
+            "HARD",
+            glm::vec3(0.95f, 0.28f, 0.25f)
+        },
+        {
+            "sector_4",
+            "SECTOR 4: FORBIDDEN DUNES",
+            "Shifting Sands & Subterranean Leviathans",
+            "resource/stages/stage4.json",
+            "CYBERNETIC SANDWORM",
+            "sandworm",
+            "dune_pass",
+            "EXPERT",
+            glm::vec3(0.95f, 0.82f, 0.20f)
+        },
+        {
+            "sector_5",
+            "SECTOR 5: COSMIC DEBRIS",
+            "Deep Space Asteroids & Elite Wings",
+            "resource/stages/stage5.json",
+            "STEALTH DREADNOUGHT",
+            "dreadnought",
+            "cosmic_debris",
+            "EXPERT",
+            glm::vec3(0.35f, 0.65f, 1.0f)
+        }
+    };
+}
+

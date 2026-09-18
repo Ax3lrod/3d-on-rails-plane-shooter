@@ -1,0 +1,112 @@
+{
+  "stage_name": "Sector 3: Iron Fortress",
+  "music_track": "stage1",
+  "boss_type": "mega_tank",
+  "events": [
+    {
+      "trigger_z": -20.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: ENTERING ENEMY CITADEL PERIMETER!",
+      "line2": "GROUND ARMOR CONVOYS ADVANCING ACROSS THE ENTIRE FRONT!",
+      "duration": 4.5
+    },
+    {
+      "trigger_z": -60.0,
+      "type": "spawn_wave",
+      "enemy_type": "tank",
+      "formation": "line",
+      "count": 3,
+      "spawn_x": 0.0,
+      "spawn_y": -7.5,
+      "spacing_x": 10.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -140.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "line",
+      "count": 2,
+      "spawn_x": 0.0,
+      "spawn_y": -7.5,
+      "spacing_x": 20.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -210.0,
+      "type": "transmission",
+      "speaker": "Echo2",
+      "line1": "AEGIS: DEFENSE GRID FLAK IS INTENSE!",
+      "line2": "USE CHARGED LOCK-ON SHOTS TO WIPE OUT MULTIPLE TARGETS!",
+      "duration": 4.0
+    },
+    {
+      "trigger_z": -270.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "v_formation",
+      "count": 5,
+      "spawn_x": 0.0,
+      "spawn_y": 4.0,
+      "spacing_x": 5.0,
+      "spacing_z": 12.0
+    },
+    {
+      "trigger_z": -380.0,
+      "type": "spawn_wave",
+      "enemy_type": "tank",
+      "formation": "column",
+      "count": 3,
+      "spawn_x": -8.0,
+      "spawn_y": -7.5,
+      "spacing_x": 0.0,
+      "spacing_z": 18.0
+    },
+    {
+      "trigger_z": -500.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "staggered",
+      "count": 3,
+      "spawn_x": 0.0,
+      "spawn_y": 6.0,
+      "spacing_x": 9.0,
+      "spacing_z": 15.0
+    },
+    {
+      "trigger_z": -620.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "single",
+      "count": 1,
+      "spawn_x": 12.0,
+      "spawn_y": -7.5,
+      "spacing_x": 0.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -640.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "single",
+      "count": 1,
+      "spawn_x": -12.0,
+      "spawn_y": -7.5,
+      "spacing_x": 0.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -760.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: MASSIVE SEISMIC SHOCKWAVES AHEAD!",
+      "line2": "THE GOLIATH LAND DREADNOUGHT HAS DEPLOYED TO THE FIELD!",
+      "duration": 5.0
+    },
+    {
+      "trigger_z": -860.0,
+      "type": "boss_trigger"
+    }
+  ]
+}

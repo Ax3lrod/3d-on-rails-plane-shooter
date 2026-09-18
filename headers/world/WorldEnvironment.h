@@ -115,8 +115,11 @@ public:
     WorldEnvironment();
 
     void SetSector(SectorStage sector);
+    void SetTerrainTheme(const std::string& theme);
     int GetDestroyedRelayCount() const;
     int GetTotalRelayCount() const { return 3; }
+
+    std::string terrainTheme;
 
     void Update(float playerZ, float dt);
     void Draw(const Shader& shader) const;

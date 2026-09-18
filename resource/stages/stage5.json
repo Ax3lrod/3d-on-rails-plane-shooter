@@ -1,0 +1,79 @@
+{
+  "stage_name": "Sector 5: Cosmic Debris Field",
+  "music_track": "sector2",
+  "boss_type": "dreadnought",
+  "events": [
+    {
+      "trigger_z": -20.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: ENTERING SECTOR 5 COSMIC DEBRIS FIELD!",
+      "line2": "NAVIGATE THROUGH THE ASTEROID STORM!",
+      "duration": 4.5
+    },
+    {
+      "trigger_z": -60.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "v_formation",
+      "count": 3,
+      "spawn_x": 0.0,
+      "spawn_y": 2.0,
+      "spacing_x": 8.0,
+      "spacing_z": 12.0
+    },
+    {
+      "trigger_z": -180.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "line",
+      "count": 4,
+      "spawn_x": 0.0,
+      "spawn_y": 0.0,
+      "spacing_x": 7.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -300.0,
+      "type": "transmission",
+      "speaker": "Echo2",
+      "line1": "AEGIS: HEAVY ASTEROID CLUSTER AHEAD!",
+      "line2": "USE BARREL ROLLS OR BLASTERS TO CLEAR A PATH!",
+      "duration": 4.0
+    },
+    {
+      "trigger_z": -440.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "staggered",
+      "count": 4,
+      "spawn_x": 0.0,
+      "spawn_y": 4.0,
+      "spacing_x": 9.0,
+      "spacing_z": 14.0
+    },
+    {
+      "trigger_z": -600.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "v_formation",
+      "count": 5,
+      "spawn_x": 0.0,
+      "spawn_y": 0.0,
+      "spacing_x": 6.0,
+      "spacing_z": 10.0
+    },
+    {
+      "trigger_z": -750.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: SECTOR COMMAND SHIP ON COLLISION COURSE!",
+      "line2": "ALL FIGHTERS ENGAGE COMBAT PROTOCOL!",
+      "duration": 4.5
+    },
+    {
+      "trigger_z": -860.0,
+      "type": "boss_trigger"
+    }
+  ]
+}

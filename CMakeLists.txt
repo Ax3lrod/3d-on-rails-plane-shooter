@@ -45,8 +45,12 @@ set(SOURCES
     src/entities/PlayerStarfighter.cpp
     src/entities/EnemyManager.cpp
     src/entities/BossDreadnought.cpp
+    src/entities/BossTwinHelicopters.cpp
+    src/entities/BossMegaTank.cpp
+    src/entities/BossMechaWorm.cpp
     src/combat/CombatSystem.cpp
     src/world/WorldEnvironment.cpp
+    src/world/TrainConvoy.cpp
     src/ui/HUD.cpp
     src/audio/SoundManager.cpp
     src/entities/WingmanSquadron.cpp

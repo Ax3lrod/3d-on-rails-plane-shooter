@@ -194,3 +194,22 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 31.4**: Engine & Combat Integration: Wire `LevelTimeline` into `Engine` game loop to drive Stage 1 pacing, enemy encounters, and seamless boss battle trigger.
 - [x] **Task 31.5**: Compilation, Playtest Verification & GitHub Sync: Verify gameplay in Release build and push changes to remote repository.
 
+## Phase 32: Level Select System & Multi-Stage Architecture
+- [x] **Task 32.1**: Implement `GameState::StageSelect` in `Engine`, `Input`, and `HUD` with sleek interactive holographic mission cards, briefing text, and boss previews.
+- [x] **Task 32.2**: Implement `StageDefinition` registry with metadata (Sector 1 Coastline, Sector 2 Railway Canyon, Sector 3 Iron Fortress, Sector 4 Dune Pass, Sector 5 Cosmic Debris).
+- [x] **Task 32.3**: Update `Engine::StartMission(int stageIndex)` to dynamically load stage timeline JSON and configure sector environments.
+
+## Phase 33: Armored Railway Train & Rich World Environment Decorators
+- [x] **Task 33.1**: Create procedural 3D meshes for Armored Train Locomotive (`CreateTrainLocomotive`), Cargo Container Car (`CreateTrainCargoCar`), and Railway Tracks (`CreateRailTracks`) in `Mesh.h` & `Mesh.cpp`.
+- [x] **Task 33.2**: Implement `TrainConvoy` class in `WorldEnvironment`: track-following convoy at $X \approx 24.0\text{m}, Y = -7.5\text{m}$, chugging smoke puffs, and destructible cargo.
+- [x] **Task 33.3**: Implement stage JSON scripts: `stage2.json` (Railway Canyon), `stage3.json` (Iron Fortress), `stage4.json` (Dune Pass).
+- [x] **Task 33.4**: Integrate Desert / Canyon Railway terrain themes and multi-tiered horizon mountains in `WorldEnvironment`.
+
+## Phase 34: Polymorphic Boss Interface & 3 New Boss Archetypes
+- [x] **Task 34.1**: Create `IBoss` polymorphic interface (`headers/entities/IBoss.h`) and refactor `BossDreadnought` to implement `IBoss`.
+- [x] **Task 34.2**: Implement **Boss 1: Twin Attack Helicopters** (`BossTwinHelicopters`) with spinning dual rotors, pincer strafing, missile salvos, and enrage mode.
+- [x] **Task 34.3**: Implement **Boss 2: Giant Armored Mega-Tank** (`BossMegaTank`) with destructible tread sets, dual heavy artillery turrets, and exposed core weakpoints.
+- [x] **Task 34.4**: Implement **Boss 3: Giant Mechanical Burrowing Sandworm** (`BossMechaWorm`) with IK-segmented body, subterranean burrowing dust geysers, and aerial breach loops.
+- [x] **Task 34.5**: Full Release compilation, verification of all stages and bosses, and push to GitHub remote repository.
+
+

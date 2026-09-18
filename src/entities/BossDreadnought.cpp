@@ -10,8 +10,7 @@ static float RandomBipolar() {
 }
 
 BossDreadnought::BossDreadnought()
-    : transform(glm::vec3(0.0f, 15.0f, -600.0f)),
-      state(BossState::Inactive),
+    : state(BossState::Inactive),
       hullMesh(Mesh::CreateBossHull(glm::vec3(0.18f, 0.20f, 0.25f), glm::vec3(0.85f, 0.20f, 0.12f))),
       turretMesh(Mesh::CreateBossTurret(glm::vec3(0.32f, 0.34f, 0.38f))),
       shieldMesh(Mesh::CreateSphere(3.2f, 10, 14, glm::vec3(0.2f, 0.7f, 1.0f))),
@@ -30,6 +29,8 @@ BossDreadnought::BossDreadnought()
       currentTurretYaw(0.0f),
       corePulseTime(0.0f),
       maceRotAngle(0.0f) {
+
+    transform.position = glm::vec3(0.0f, 15.0f, -600.0f);
 
     // Initialize Subsystems
     leftTurret = {

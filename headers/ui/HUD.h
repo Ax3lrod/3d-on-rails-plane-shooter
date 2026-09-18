@@ -7,12 +7,18 @@
 #include "Mesh.h"
 #include "shaderClass.h"
 
+#ifdef DrawText
+#undef DrawText
+#endif
+
 struct HighScoreEntry {
     char name[16];
     int score;
     int stageReached;
     bool missionComplete;
 };
+
+struct StageDefinition;
 
 class HUD {
 public:
@@ -93,6 +99,8 @@ public:
     void DrawLeaderboard(const Shader& shader, int screenWidth, int screenHeight,
                          const std::vector<HighScoreEntry>& scores) const;
     void DrawMissionBriefing(const Shader& shader, int screenWidth, int screenHeight, float time) const;
+    void DrawStageSelect(const Shader& shader, int screenWidth, int screenHeight,
+                         const std::vector<StageDefinition>& stages, int selectedIndex, float time) const;
     void DrawSecretRelaysHUD(const Shader& shader, int screenWidth, int screenHeight,
                             int destroyedCount, int totalCount) const;
     void DrawWarpHUD(const Shader& shader, int screenWidth, int screenHeight,

@@ -176,7 +176,9 @@ bool Engine::Init() {
     audio->Init();
     wingmen = std::make_unique<WingmanSquadron>();
     postProcessor = std::make_unique<PostProcessor>();
-    postProcessor->Init(windowWidth, windowHeight);
+    trainConvoy = std::make_unique<TrainConvoy>(22.0f);
+    availableStages = LevelTimeline::GetStandardCampaignStages();
+    selectedStageIndex = 0;
     levelTimeline = std::make_unique<LevelTimeline>();
     if (!levelTimeline->LoadFromFile("resource/stages/stage1.json")) {
         levelTimeline->LoadFromFile("../resource/stages/stage1.json");
@@ -213,9 +215,22 @@ bool Engine::Init() {
     return true;
 }
 
-void Engine::StartMission() {
+void Engine::StartMission(int stageIndex) {
+    if (availableStages.empty()) {
+        availableStages = LevelTimeline::GetStandardCampaignStages();
+    }
+    selectedStageIndex = std::clamp(stageIndex, 0, static_cast<int>(availableStages.size()) - 1);
+    const auto& stageDef = availableStages[selectedStageIndex];
+
     state = GameState::Playing;
-    environment->SetSector(SectorStage::Sector1_Canyon);
+
+    if (stageDef.id == "sector_5") {
+        environment->SetSector(SectorStage::Sector2_DeepSpace);
+    } else {
+        environment->SetSector(SectorStage::Sector1_Canyon);
+        environment->SetTerrainTheme(stageDef.terrainTheme);
+    }
+
     player = std::make_unique<PlayerStarfighter>();
     player->invertPitch = invertPitchY;
     if (defaultCockpitMode) {
@@ -229,15 +244,30 @@ void Engine::StartMission() {
     particles->Clear();
     enemies->Clear();
     if (wingmen) wingmen->Reset();
-    if (boss) boss->Reset();
-    if (levelTimeline) {
-        if (!levelTimeline->isLoaded) {
-            if (!levelTimeline->LoadFromFile("resource/stages/stage1.json")) {
-                levelTimeline->LoadFromFile("../resource/stages/stage1.json");
-            }
-        }
-        levelTimeline->Reset();
+
+    // Dynamically instantiate the boss for this stage
+    if (stageDef.bossType == "twin_helicopters") {
+        boss = std::make_unique<BossTwinHelicopters>();
+    } else if (stageDef.bossType == "mega_tank") {
+        boss = std::make_unique<BossMegaTank>();
+    } else if (stageDef.bossType == "sandworm") {
+        boss = std::make_unique<BossMechaWorm>();
+    } else {
+        boss = std::make_unique<BossDreadnought>();
     }
+    boss->Reset();
+
+    if (trainConvoy) trainConvoy->Reset();
+
+    if (!levelTimeline) {
+        levelTimeline = std::make_unique<LevelTimeline>();
+    }
+    if (!levelTimeline->LoadFromFile(stageDef.scriptPath)) {
+        std::string fallbackPath = "../" + stageDef.scriptPath;
+        levelTimeline->LoadFromFile(fallbackPath);
+    }
+    levelTimeline->Reset();
+
     bossSpawned = false;
     victoryTimer = 0.0f;
     wasChargingAudio = false;
@@ -254,7 +284,11 @@ void Engine::StartMission() {
     comboAnimScale = 1.0f;
 
     if (audio) {
-        audio->PlayBGM(BGMTrack::Stage1, 0.65f);
+        if (stageDef.id == "sector_5") {
+            audio->PlayBGM(BGMTrack::Sector2, 0.70f);
+        } else {
+            audio->PlayBGM(BGMTrack::Stage1, 0.65f);
+        }
     }
 }
 
@@ -288,7 +322,7 @@ void Engine::ReturnToTitle() {
 }
 
 void Engine::RestartGame() {
-    StartMission();
+    StartMission(selectedStageIndex);
 }
 
 void Engine::TriggerHyperspaceWarp() {
@@ -341,7 +375,7 @@ void Engine::ProcessInput(float) {
         }
         if (Input::IsMenuConfirmPressed()) {
             if (selectedTitleMenu == 0) {
-                state = GameState::MissionBriefing;
+                state = GameState::StageSelect;
                 if (audio) audio->Play(SoundID::RingCollect, 0.85f);
             } else if (selectedTitleMenu == 1) {
                 state = GameState::SettingsMenu;
@@ -362,6 +396,32 @@ void Engine::ProcessInput(float) {
         }
         if (Input::IsKeyPressed(GLFW_KEY_F1)) {
             if (postProcessor) postProcessor->ToggleCRT();
+        }
+        return;
+    }
+
+    if (state == GameState::StageSelect) {
+        if (Input::IsMenuLeftPressed() || Input::IsMenuUpPressed()) {
+            selectedStageIndex = (selectedStageIndex + availableStages.size() - 1) % availableStages.size();
+            if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
+        }
+        if (Input::IsMenuRightPressed() || Input::IsMenuDownPressed()) {
+            selectedStageIndex = (selectedStageIndex + 1) % availableStages.size();
+            if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 1.2f);
+        }
+        for (int k = 0; k < 5 && k < static_cast<int>(availableStages.size()); ++k) {
+            if (Input::IsKeyPressed(GLFW_KEY_1 + k)) {
+                selectedStageIndex = k;
+                if (audio) audio->Play(SoundID::LockOnPing, 0.7f, 1.3f);
+            }
+        }
+        if (Input::IsMenuConfirmPressed()) {
+            if (audio) audio->Play(SoundID::RingCollect, 0.85f);
+            StartMission(selectedStageIndex);
+        }
+        if (Input::IsKeyPressed(GLFW_KEY_ESCAPE) || Input::IsKeyPressed(GLFW_KEY_BACKSPACE)) {
+            state = GameState::TitleHangar;
+            if (audio) audio->Play(SoundID::LockOnPing, 0.6f, 0.9f);
         }
         return;
     }
@@ -639,6 +699,18 @@ void Engine::HandleCollisions() {
             }
         }
 
+        // Check vs Train Convoy
+        if (trainConvoy && trainConvoy->active) {
+            int scoreGained = 0;
+            if (trainConvoy->CheckLaserHit(p.position, p.radius, 25.0f, *particles, scoreGained)) {
+                p.active = false;
+                if (scoreGained > 0) {
+                    RegisterHitCombo(p.position, scoreGained);
+                }
+                continue;
+            }
+        }
+
         for (auto& e : enemies->enemies) {
             if (!e.active) continue;
 
@@ -687,6 +759,21 @@ void Engine::HandleCollisions() {
             }
         }
 
+        if (trainConvoy && trainConvoy->active) {
+            int scoreGained = 0;
+            if (trainConvoy->CheckLaserHit(cs.position, cs.radius, 110.0f, *particles, scoreGained)) {
+                cs.active = false;
+                if (scoreGained > 0) {
+                    RegisterHitCombo(cs.position, scoreGained);
+                }
+                ordnance->TriggerShockwave(cs.position, cs.aoeRadius, 110.0f);
+                particles->SpawnExplosion(cs.position, 40, glm::vec3(0.2f, 1.0f, 0.8f));
+                camera.TriggerShake(0.85f, 0.4f);
+                if (audio) audio->Play(SoundID::BombExplosion, 0.85f);
+                continue;
+            }
+        }
+
         for (auto& e : enemies->enemies) {
             if (!e.active) continue;
 
@@ -725,6 +812,19 @@ void Engine::HandleCollisions() {
                 if (audio) {
                     audio->Play(SoundID::BombExplosion, 1.0f);
                 }
+                break;
+            }
+        }
+
+        if (trainConvoy && trainConvoy->active) {
+            int scoreGained = 0;
+            if (trainConvoy->CheckLaserHit(b.position, b.radius, 160.0f, *particles, scoreGained)) {
+                ordnance->DetonateBomb(i);
+                if (scoreGained > 0) {
+                    RegisterHitCombo(b.position, scoreGained);
+                }
+                camera.TriggerShake(1.3f, 0.6f);
+                if (audio) audio->Play(SoundID::BombExplosion, 1.0f);
                 break;
             }
         }
@@ -780,6 +880,15 @@ void Engine::HandleCollisions() {
         if (boss && boss->IsActive()) {
             int scoreGained = 0;
             boss->ApplyShockwaveDamage(sw.position, sw.currentRadius, sw.damage * 0.7f, *particles, camera, scoreGained);
+            if (scoreGained > 0) {
+                RegisterHitCombo(sw.position, scoreGained);
+            }
+        }
+
+        // Damage Train Convoy
+        if (trainConvoy && trainConvoy->active) {
+            int scoreGained = 0;
+            trainConvoy->CheckLaserHit(sw.position, sw.currentRadius, sw.damage * 0.7f, *particles, scoreGained);
             if (scoreGained > 0) {
                 RegisterHitCombo(sw.position, scoreGained);
             }
@@ -924,7 +1033,8 @@ void Engine::Update(float dt) {
     ProcessInput(dt);
 
     if (state == GameState::TitleHangar || state == GameState::SettingsMenu ||
-        state == GameState::Leaderboard || state == GameState::MissionBriefing) {
+        state == GameState::Leaderboard || state == GameState::MissionBriefing ||
+        state == GameState::StageSelect) {
         hangarRotAngle += 35.0f * dt;
         if (hangarRotAngle > 360.0f) hangarRotAngle -= 360.0f;
         return;
@@ -1166,9 +1276,13 @@ void Engine::Update(float dt) {
         particles->Update(dt);
         environment->Update(player->transform.position.z, dt);
 
+        if (trainConvoy && trainConvoy->active) {
+            trainConvoy->Update(dt, player->transform.position.z, player->transform.position, *projectiles, *particles, audio.get());
+        }
+
         if (levelTimeline && levelTimeline->isLoaded && environment->currentSector == SectorStage::Sector1_Canyon) {
             enemies->spawnTimer = 0.0f; // Scripted level timeline drives waves
-            levelTimeline->Update(player->transform.position.z, *enemies, wingmen.get(), audio.get());
+            levelTimeline->Update(player->transform.position.z, *enemies, wingmen.get(), trainConvoy.get(), audio.get());
         } else {
             if (boss && boss->IsActive()) {
                 enemies->spawnTimer = 0.0f;
@@ -1246,7 +1360,8 @@ void Engine::Render() {
 
     // 1. RENDER 3D HANGAR BAY & MENUS
     if (state == GameState::TitleHangar || state == GameState::SettingsMenu ||
-        state == GameState::Leaderboard || state == GameState::MissionBriefing) {
+        state == GameState::Leaderboard || state == GameState::MissionBriefing ||
+        state == GameState::StageSelect) {
         if (postProcessor) {
             postProcessor->BeginRender();
         }
@@ -1329,6 +1444,8 @@ void Engine::Render() {
             hud->DrawLeaderboard(shader, windowWidth, windowHeight, highScores);
         } else if (state == GameState::MissionBriefing) {
             hud->DrawMissionBriefing(shader, windowWidth, windowHeight, currentTime);
+        } else if (state == GameState::StageSelect) {
+            hud->DrawStageSelect(shader, windowWidth, windowHeight, availableStages, selectedStageIndex, currentTime);
         }
 
         glfwSwapBuffers(window);
@@ -1378,6 +1495,9 @@ void Engine::Render() {
     shader.SetInt("uUseDithering", (postProcessor && postProcessor->IsRetroPixelMode()) ? 1 : 0);
 
     environment->Draw(shader);
+    if (trainConvoy && environment->currentSector == SectorStage::Sector1_Canyon) {
+        trainConvoy->Draw(shader, player->transform.position.z);
+    }
     enemies->Draw(shader);
     if (boss && environment->currentSector == SectorStage::Sector1_Canyon) {
         boss->Draw(shader);
@@ -1458,10 +1578,10 @@ void Engine::Render() {
         bool bActive = boss && boss->IsActive();
         bool bWarn = boss && boss->IsWarning();
         float bHealthRatio = boss ? boss->GetHealthRatio() : 0.0f;
-        bool bLDown = boss ? boss->leftTurret.destroyed : false;
-        bool bRDown = boss ? boss->rightTurret.destroyed : false;
-        bool bSDown = boss ? boss->shieldGen.destroyed : false;
-        bool bCoreExp = boss ? (boss->state == BossState::Phase2_ExposedCore) : false;
+        bool bLDown = boss ? boss->IsSubsystem1Down() : false;
+        bool bRDown = boss ? boss->IsSubsystem2Down() : false;
+        bool bSDown = boss ? boss->IsShieldDown() : false;
+        bool bCoreExp = boss ? boss->IsCoreExposed() : false;
 
         std::vector<glm::vec3> enemyPositions;
         for (const auto& e : enemies->enemies) {
