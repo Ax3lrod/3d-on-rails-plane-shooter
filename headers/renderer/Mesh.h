@@ -94,6 +94,13 @@ public:
     static Mesh CreateIceCrystal(float height, float radius, const glm::vec3& iceCol, const glm::vec3& coreCol);
     static Mesh CreateCactus(float trunkHeight, float trunkRadius, float armHeight, const glm::vec3& cactusCol);
     static Mesh CreateDesertPyramid(float baseSize, float height, const glm::vec3& stoneCol, const glm::vec3& shadowCol);
+    static Mesh CreateBuilding(float w, float h, float d,
+                               const glm::vec3& wallCol, const glm::vec3& windowCol,
+                               const glm::vec3& roofCol, int windowRows = 4, int windowCols = 3);
+    static Mesh CreateRubblePile(float radius, const glm::vec3& concreteCol, const glm::vec3& dirtCol);
+    static Mesh CreateCityRoad(float length, float width);
+    static Mesh CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol, const glm::vec3& legCol,
+                                        const glm::vec3& coreCol);
     static Mesh CreateBiomeHorizon(const std::string& biome, float radius, float height,
                                    const glm::vec3& skyTopCol, const glm::vec3& horizonCol);
 };

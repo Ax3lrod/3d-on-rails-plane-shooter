@@ -1106,10 +1106,27 @@ void Engine::Update(float dt) {
 
         // Spawn Boss when threshold reached or triggered by timeline in Sector 1
         if (environment->currentSector == SectorStage::Sector1_Canyon) {
-            bool shouldTriggerBoss = (levelTimeline && levelTimeline->bossTriggered) || (player->transform.position.z <= -1100.0f);
+            bool shouldTriggerBoss = (levelTimeline && levelTimeline->bossTriggered) || (player->transform.position.z <= -13000.0f);
             if (!bossSpawned && shouldTriggerBoss) {
                 bossSpawned = true;
+                if (levelTimeline && levelTimeline->bossType == "walking_robot") {
+                    boss = std::make_unique<BossWalkingRobot>();
+                } else if (levelTimeline && levelTimeline->bossType == "twin_helicopters") {
+                    boss = std::make_unique<BossTwinHelicopters>();
+                } else if (levelTimeline && levelTimeline->bossType == "mega_tank") {
+                    boss = std::make_unique<BossMegaTank>();
+                } else if (levelTimeline && levelTimeline->bossType == "sandworm") {
+                    boss = std::make_unique<BossMechaWorm>();
+                } else {
+                    boss = std::make_unique<BossDreadnought>();
+                }
+                
                 boss->Spawn(player->transform.position.z);
+                
+                if (levelTimeline && levelTimeline->bossType == "walking_robot") {
+                    player->SetAllRangeMode(true, dynamic_cast<BossWalkingRobot*>(boss.get())->GetArenaCenter(), dynamic_cast<BossWalkingRobot*>(boss.get())->GetArenaRadius());
+                }
+                
                 camera.StartBossIntro(boss->transform.position, player->transform.position);
                 if (audio) {
                     audio->PlayBGM(BGMTrack::Boss, 0.70f);

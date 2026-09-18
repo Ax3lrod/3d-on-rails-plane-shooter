@@ -18,6 +18,7 @@
 #include "BossTwinHelicopters.h"
 #include "BossMegaTank.h"
 #include "BossMechaWorm.h"
+#include "BossWalkingRobot.h"
 #include "TrainConvoy.h"
 #include "HUD.h"
 #include "SoundManager.h"

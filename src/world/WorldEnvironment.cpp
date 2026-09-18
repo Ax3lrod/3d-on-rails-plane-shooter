@@ -30,9 +30,16 @@ WorldEnvironment::WorldEnvironment()
       iceCrystalMesh(Mesh::CreateIceCrystal(14.0f, 2.5f, glm::vec3(0.70f, 0.90f, 1.0f), glm::vec3(0.85f, 0.96f, 1.0f))),
       cactusMesh(Mesh::CreateCactus(9.0f, 0.8f, 4.0f, glm::vec3(0.28f, 0.62f, 0.22f))),
       desertPyramidMesh(Mesh::CreateDesertPyramid(22.0f, 18.0f, glm::vec3(0.85f, 0.72f, 0.46f), glm::vec3(0.58f, 0.46f, 0.26f))),
+      roadMesh(Mesh::CreateCityRoad(60.0f, 68.0f)),
+      rubbleMesh(Mesh::CreateRubblePile(4.5f, glm::vec3(0.35f,0.33f,0.30f), glm::vec3(0.22f,0.20f,0.18f))),
       nextSpawnZ(0.0f),
       despawnDistBehind(60.0f),
       lastPlayerZ(0.0f) {
+    buildingMeshes[0] = Mesh::CreateBuilding(18.0f, 35.0f, 14.0f, glm::vec3(0.22f,0.24f,0.28f), glm::vec3(0.15f,0.60f,0.85f), glm::vec3(0.18f,0.20f,0.24f), 5, 3);
+    buildingMeshes[1] = Mesh::CreateBuilding(24.0f, 55.0f, 18.0f, glm::vec3(0.20f,0.22f,0.26f), glm::vec3(0.90f,0.25f,0.55f), glm::vec3(0.15f,0.17f,0.20f), 7, 4);
+    buildingMeshes[2] = Mesh::CreateBuilding(14.0f, 28.0f, 12.0f, glm::vec3(0.25f,0.26f,0.30f), glm::vec3(0.20f,0.75f,0.50f), glm::vec3(0.20f,0.22f,0.25f), 4, 2);
+    buildingMeshes[3] = Mesh::CreateBuilding(30.0f, 75.0f, 22.0f, glm::vec3(0.18f,0.20f,0.24f), glm::vec3(0.85f,0.62f,0.15f), glm::vec3(0.14f,0.16f,0.20f), 9, 5);
+    buildingMeshes[4] = Mesh::CreateBuilding(10.0f, 18.0f, 10.0f, glm::vec3(0.28f,0.28f,0.32f), glm::vec3(0.40f,0.80f,0.95f), glm::vec3(0.22f,0.22f,0.25f), 3, 2);
     Clear();
 }
 
@@ -71,6 +78,12 @@ void WorldEnvironment::SetTerrainTheme(const std::string& theme) {
         horizonMesh = Mesh::CreateBiomeHorizon("glacial", 700.0f, 260.0f,
                                                glm::vec3(0.22f, 0.45f, 0.72f),
                                                glm::vec3(0.82f, 0.92f, 1.0f));
+    } else if (theme == "city") {
+        canyonMesh    = Mesh::CreateCityRoad(60.0f, 68.0f);
+        canyonMeshOdd = Mesh::CreateCityRoad(60.0f, 68.0f);
+        horizonMesh = Mesh::CreateBiomeHorizon("city", 700.0f, 260.0f,
+                                               glm::vec3(0.06f, 0.06f, 0.10f),
+                                               glm::vec3(0.12f, 0.10f, 0.18f));
     } else {
         glm::vec3 cA(0.18f, 0.58f, 0.28f), cB(0.24f, 0.68f, 0.35f);
         canyonMesh    = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 0);
@@ -205,6 +218,17 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
                 float px = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 80.0f;
                 float sc = 1.0f + (float)rand()/RAND_MAX * 0.8f;
                 desertPyramids.push_back({glm::vec3(px, 0.0f, z), sc});
+            }
+        } else if (terrainTheme == "city") {
+            for (float z = startZ - 10.0f; z >= endZ; z -= 45.0f) {
+                // Left buildings
+                float lx = -45.0f - (float)rand()/RAND_MAX * 75.0f;
+                buildings.push_back({glm::vec3(lx, -7.5f, z + ((float)rand()/RAND_MAX*10.0f - 5.0f)),
+                                     0.0f, 0.0f, 0.0f, (float)rand()/RAND_MAX * 360.0f});
+                // Right buildings
+                float rx = 45.0f + (float)rand()/RAND_MAX * 75.0f;
+                buildings.push_back({glm::vec3(rx, -7.5f, z + ((float)rand()/RAND_MAX*10.0f - 5.0f)),
+                                     0.0f, 0.0f, 0.0f, (float)rand()/RAND_MAX * 360.0f});
             }
         }
     } else {
@@ -366,6 +390,12 @@ void WorldEnvironment::Update(float playerZ, float dt) {
                        [cullZ](const DesertPyramidObstacle& d) { return d.position.z > cullZ; }),
         desertPyramids.end()
     );
+
+    buildings.erase(
+        std::remove_if(buildings.begin(), buildings.end(),
+                       [cullZ](const BuildingObstacle& b) { return b.position.z > cullZ; }),
+        buildings.end()
+    );
 }
 
 void WorldEnvironment::Draw(const Shader& shader) const {
@@ -478,6 +508,24 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             desertPyramidMesh.Draw(shader);
         }
 
+        // 9e. Draw Buildings and Rubble
+        int bIdx = 0;
+        for (const auto& b : buildings) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, b.position);
+            model = glm::rotate(model, glm::radians(b.rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+            shader.SetMat4("uModel", model);
+            buildingMeshes[bIdx % 5].Draw(shader);
+            
+            // Draw rubble near the building
+            glm::mat4 rubbleModel = glm::mat4(1.0f);
+            rubbleModel = glm::translate(rubbleModel, b.position + glm::vec3(15.0f, 0.0f, 10.0f));
+            shader.SetMat4("uModel", rubbleModel);
+            rubbleMesh.Draw(shader);
+            
+            bIdx++;
+        }
+
         // 6. Draw Secret Planetary Radar Relays
         for (const auto& rel : secretRelays) {
             if (rel.destroyed) continue;
@@ -551,6 +599,7 @@ void WorldEnvironment::Clear() {
     iceCrystals.clear();
     cacti.clear();
     desertPyramids.clear();
+    buildings.clear();
     nextSpawnZ = 0.0f;
     lastPlayerZ = 0.0f;
 

@@ -332,14 +332,14 @@ std::vector<StageDefinition> LevelTimeline::GetStandardCampaignStages() {
     return {
         {
             "sector_1",
-            "SECTOR 1: EMERALD COASTLINE",
-            "Verdant Archipelago & Sea Cliffs",
+            "SECTOR 1: FALLEN CITY",
+            "War-Torn Urban Ruins & Bipedal Walker Arena",
             "resource/stages/stage1.json",
-            "COLOSSAL DREADNOUGHT",
-            "dreadnought",
-            "coastline",
+            "IRON COLOSSUS",
+            "walking_robot",
+            "city",
             "NORMAL",
-            glm::vec3(0.2f, 0.9f, 0.45f)
+            glm::vec3(0.25f, 0.65f, 0.95f)
         },
         {
             "sector_2",

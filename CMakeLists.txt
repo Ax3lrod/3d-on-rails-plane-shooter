@@ -48,6 +48,7 @@ set(SOURCES
     src/entities/BossTwinHelicopters.cpp
     src/entities/BossMegaTank.cpp
     src/entities/BossMechaWorm.cpp
+    src/entities/BossWalkingRobot.cpp
     src/combat/CombatSystem.cpp
     src/world/WorldEnvironment.cpp
     src/world/TrainConvoy.cpp

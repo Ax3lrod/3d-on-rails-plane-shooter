@@ -2425,6 +2425,41 @@ Mesh Mesh::CreateBiomeHorizon(const std::string& biome, float radius, float heig
             glm::vec3 lt2(std::sin(a1)*(sRadius*0.99f), baseY+6.0f, -std::cos(a1)*(sRadius*0.99f));
             AddQuad(verts, inds, lb, lb2, lt2, lt, lavaC);
         }
+    } else if (biome == "city") {
+        // Urban skyline: irregular building silhouettes on the horizon
+        glm::vec3 skylineCol(0.08f, 0.08f, 0.12f); // near-black buildings
+        glm::vec3 neonCol(0.25f, 0.60f, 0.95f);    // blue neon glow
+        glm::vec3 neonPink(0.85f, 0.15f, 0.55f);   // pink neon accent
+        // 10 building silhouettes of varied width/height at different horizon angles
+        float bA[10]  = {-1.35f,-1.10f,-0.82f,-0.55f,-0.28f, 0.05f, 0.32f, 0.60f, 0.88f, 1.18f};
+        float bW[10]  = {0.12f, 0.08f, 0.15f, 0.10f, 0.18f, 0.09f, 0.14f, 0.11f, 0.16f, 0.10f};
+        float bH[10]  = {70.0f,45.0f,90.0f,55.0f,110.0f,40.0f,80.0f,60.0f,95.0f,50.0f};
+        for (int b = 0; b < 10; ++b) {
+            float aL = bA[b]-bW[b], aR = bA[b]+bW[b];
+            glm::vec3 bBL(std::sin(aL)*sRadius, baseY, -std::cos(aL)*sRadius);
+            glm::vec3 bBR(std::sin(aR)*sRadius, baseY, -std::cos(aR)*sRadius);
+            glm::vec3 bTL(std::sin(aL)*(sRadius*0.97f), baseY+bH[b], -std::cos(aL)*(sRadius*0.97f));
+            glm::vec3 bTR(std::sin(aR)*(sRadius*0.97f), baseY+bH[b], -std::cos(aR)*(sRadius*0.97f));
+            AddQuad(verts, inds, bBL, bBR, bTR, bTL, skylineCol);
+            // Neon window strip near top of tall buildings
+            if (bH[b] > 60.0f) {
+                glm::vec3 nL(std::sin(aL-0.01f)*(sRadius*0.97f), baseY+bH[b]-8.0f, -std::cos(aL-0.01f)*(sRadius*0.97f));
+                glm::vec3 nR(std::sin(aR+0.01f)*(sRadius*0.97f), baseY+bH[b]-8.0f, -std::cos(aR+0.01f)*(sRadius*0.97f));
+                glm::vec3 nTL(std::sin(aL-0.01f)*(sRadius*0.97f), baseY+bH[b]-2.0f, -std::cos(aL-0.01f)*(sRadius*0.97f));
+                glm::vec3 nTR(std::sin(aR+0.01f)*(sRadius*0.97f), baseY+bH[b]-2.0f, -std::cos(aR+0.01f)*(sRadius*0.97f));
+                glm::vec3 nc = (b % 2 == 0) ? neonCol : neonPink;
+                AddQuad(verts, inds, nL, nR, nTR, nTL, nc);
+            }
+        }
+        // Neon ground glow strip
+        for (int l = 0; l < hSegs; ++l) {
+            float a0 = startAngle + l*dAngle, a1 = a0+dAngle;
+            glm::vec3 lb(std::sin(a0)*sRadius, baseY-1.0f, -std::cos(a0)*sRadius);
+            glm::vec3 lb2(std::sin(a1)*sRadius, baseY-1.0f, -std::cos(a1)*sRadius);
+            glm::vec3 lt(std::sin(a0)*(sRadius*0.99f), baseY+5.0f, -std::cos(a0)*(sRadius*0.99f));
+            glm::vec3 lt2(std::sin(a1)*(sRadius*0.99f), baseY+5.0f, -std::cos(a1)*(sRadius*0.99f));
+            AddQuad(verts, inds, lb, lb2, lt2, lt, (l%2==0) ? neonCol*0.4f : neonPink*0.3f);
+        }
     } else {
         // Canyon / default: stepped flat-topped mesa cliffs
         glm::vec3 mesaC(0.78f, 0.52f, 0.38f), grassT(0.42f, 0.72f, 0.35f);
@@ -2445,6 +2480,194 @@ Mesh Mesh::CreateBiomeHorizon(const std::string& biome, float radius, float heig
             AddTriangle(verts, inds, mL, sR2, mR,  mesaC * 0.78f);
         }
     }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateBuilding(float w, float h, float d,
+                          const glm::vec3& wallCol, const glm::vec3& windowCol,
+                          const glm::vec3& roofCol, int windowRows, int windowCols) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = w * 0.5f, hd = d * 0.5f;
+
+    // Main 6 box faces
+    // Front (Z+)
+    AddQuad(verts, inds, {-hw,0,hd}, {hw,0,hd}, {hw,h,hd}, {-hw,h,hd}, wallCol * 0.92f);
+    // Back (Z-)
+    AddQuad(verts, inds, {hw,0,-hd}, {-hw,0,-hd}, {-hw,h,-hd}, {hw,h,-hd}, wallCol * 0.70f);
+    // Left (X-)
+    AddQuad(verts, inds, {-hw,0,-hd}, {-hw,0,hd}, {-hw,h,hd}, {-hw,h,-hd}, wallCol * 0.80f);
+    // Right (X+)
+    AddQuad(verts, inds, {hw,0,hd}, {hw,0,-hd}, {hw,h,-hd}, {hw,h,hd}, wallCol * 0.76f);
+    // Roof
+    AddQuad(verts, inds, {-hw,h,-hd}, {hw,h,-hd}, {hw,h,hd}, {-hw,h,hd}, roofCol);
+    // Bottom
+    AddQuad(verts, inds, {-hw,0,hd}, {hw,0,hd}, {hw,0,-hd}, {-hw,0,-hd}, wallCol * 0.4f);
+
+    // Neon window quads on front and back faces
+    float ww = (w / windowCols) * 0.32f;
+    float wh = (h / windowRows) * 0.28f;
+    float eps = 0.06f;
+    for (int r = 0; r < windowRows; ++r) {
+        float wy = (h / windowRows) * (r + 0.5f);
+        for (int c = 0; c < windowCols; ++c) {
+            float wx = -hw + (w / windowCols) * (c + 0.5f);
+            // Front windows
+            AddQuad(verts, inds,
+                {wx-ww,wy-wh,hd+eps}, {wx+ww,wy-wh,hd+eps},
+                {wx+ww,wy+wh,hd+eps}, {wx-ww,wy+wh,hd+eps},
+                windowCol);
+            // Back windows
+            AddQuad(verts, inds,
+                {wx+ww,wy-wh,-hd-eps}, {wx-ww,wy-wh,-hd-eps},
+                {wx-ww,wy+wh,-hd-eps}, {wx+ww,wy+wh,-hd-eps},
+                windowCol * 0.7f);
+        }
+    }
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateRubblePile(float radius, const glm::vec3& concreteCol, const glm::vec3& dirtCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    // 8 random-ish angular slabs arranged in a pile
+    float slabs[8][4] = { // {x,z,angle,size}
+        {0.0f,0.0f,15.0f,1.0f}, {radius*0.4f,radius*0.3f,45.0f,0.7f},
+        {-radius*0.5f,radius*0.2f,80.0f,0.8f}, {radius*0.2f,-radius*0.4f,120.0f,0.6f},
+        {-radius*0.3f,-radius*0.3f,200.0f,0.9f}, {radius*0.6f,0.0f,30.0f,0.5f},
+        {0.0f,radius*0.5f,165.0f,0.75f}, {-radius*0.6f,radius*0.1f,70.0f,0.65f}
+    };
+    for (auto& s : slabs) {
+        float cx = s[0], cz = s[1], a = glm::radians(s[2]), sz = s[3] * radius;
+        float ca = std::cos(a), sa = std::sin(a);
+        float hw2 = sz * 0.6f, hd2 = sz * 0.3f;
+        float baseY = -0.2f, topY = sz * 0.35f;
+        glm::vec3 col = (int(s[2]) % 2 == 0) ? concreteCol : dirtCol;
+        // 4 verts of rotated slab
+        glm::vec3 bl(cx + (-hw2*ca - (-hd2)*sa), baseY, cz + (-hw2*sa + (-hd2)*ca));
+        glm::vec3 br(cx + ( hw2*ca - (-hd2)*sa), baseY, cz + ( hw2*sa + (-hd2)*ca));
+        glm::vec3 tr(cx + ( hw2*ca - hd2*sa), topY, cz + ( hw2*sa + hd2*ca));
+        glm::vec3 tl(cx + (-hw2*ca - hd2*sa), topY, cz + (-hw2*sa + hd2*ca));
+        AddQuad(verts, inds, bl, br, tr, tl, col);
+        AddQuad(verts, inds, br, bl, tl, tr, col * 0.7f);
+    }
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateCityRoad(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    float hw = width * 0.5f, hl = length * 0.5f;
+    float roadY = -7.5f;
+    glm::vec3 asphaltCol(0.18f, 0.18f, 0.20f);
+    glm::vec3 laneCol(0.85f, 0.78f, 0.25f); // yellow lane markings
+    glm::vec3 sidewalkCol(0.32f, 0.30f, 0.28f);
+
+    // Main asphalt
+    AddQuad(verts, inds, {-hw,roadY,-hl},{hw,roadY,-hl},{hw,roadY,hl},{-hw,roadY,hl}, asphaltCol);
+
+    // Lane markings: dashed center line every 40 units
+    float dashLen = 12.0f, dashGap = 16.0f, period = dashLen + dashGap;
+    float markW = 0.6f, laneY = roadY + 0.05f;
+    for (float z = -hl; z < hl; z += period) {
+        float z1 = std::min(z + dashLen, hl);
+        AddQuad(verts, inds, {-markW,laneY,z},{markW,laneY,z},{markW,laneY,z1},{-markW,laneY,z1}, laneCol);
+    }
+
+    // Sidewalks (raised strips on each edge)
+    float swW = 12.0f, swH = 1.2f;
+    glm::vec3 swTop = sidewalkCol * 1.1f;
+    // Left sidewalk
+    AddQuad(verts, inds, {-hw-swW,roadY,-hl},{-hw,roadY,-hl},{-hw,roadY,hl},{-hw-swW,roadY,hl}, sidewalkCol);
+    AddQuad(verts, inds, {-hw-swW,roadY+swH,-hl},{-hw,roadY+swH,-hl},{-hw,roadY+swH,hl},{-hw-swW,roadY+swH,hl}, swTop);
+    AddQuad(verts, inds, {-hw,roadY,-hl},{-hw,roadY+swH,-hl},{-hw,roadY+swH,hl},{-hw,roadY,hl}, sidewalkCol * 0.8f);
+    // Right sidewalk
+    AddQuad(verts, inds, {hw,roadY,-hl},{hw+swW,roadY,-hl},{hw+swW,roadY,hl},{hw,roadY,hl}, sidewalkCol);
+    AddQuad(verts, inds, {hw,roadY+swH,-hl},{hw+swW,roadY+swH,-hl},{hw+swW,roadY+swH,hl},{hw,roadY+swH,hl}, swTop);
+    AddQuad(verts, inds, {hw,roadY+swH,-hl},{hw,roadY,-hl},{hw,roadY,hl},{hw,roadY+swH,hl}, sidewalkCol * 0.8f);
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol,
+                                    const glm::vec3& legCol, const glm::vec3& coreCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float s = scale;
+    glm::vec3 darkBody = bodyCol * 0.85f;
+    glm::vec3 lightBody = bodyCol * 1.05f;
+    glm::vec3 accentCol = bodyCol * 0.6f;
+
+    // Helper: add box at position with half-extents
+    auto addBox = [&](glm::vec3 pos, float hw, float hh, float hd, glm::vec3 col) {
+        glm::vec3 p = pos;
+        AddQuad(verts, inds, p+glm::vec3(-hw,-hh,hd), p+glm::vec3(hw,-hh,hd), p+glm::vec3(hw,hh,hd), p+glm::vec3(-hw,hh,hd), col);
+        AddQuad(verts, inds, p+glm::vec3(hw,-hh,-hd), p+glm::vec3(-hw,-hh,-hd), p+glm::vec3(-hw,hh,-hd), p+glm::vec3(hw,hh,-hd), col*0.7f);
+        AddQuad(verts, inds, p+glm::vec3(-hw,-hh,-hd), p+glm::vec3(-hw,-hh,hd), p+glm::vec3(-hw,hh,hd), p+glm::vec3(-hw,hh,-hd), col*0.8f);
+        AddQuad(verts, inds, p+glm::vec3(hw,-hh,hd), p+glm::vec3(hw,-hh,-hd), p+glm::vec3(hw,hh,-hd), p+glm::vec3(hw,hh,hd), col*0.75f);
+        AddQuad(verts, inds, p+glm::vec3(-hw,hh,-hd), p+glm::vec3(hw,hh,-hd), p+glm::vec3(hw,hh,hd), p+glm::vec3(-hw,hh,hd), col*1.1f);
+        AddQuad(verts, inds, p+glm::vec3(-hw,-hh,hd), p+glm::vec3(hw,-hh,hd), p+glm::vec3(hw,-hh,-hd), p+glm::vec3(-hw,-hh,-hd), col*0.5f);
+    };
+
+    float bodyTopY = s * 4.5f; // top of body from ground
+
+    // Body
+    addBox({0.0f, bodyTopY - s*1.5f, 0.0f}, s*2.2f, s*1.5f, s*1.1f, darkBody);
+
+    // Left shoulder
+    addBox({-(s*2.2f + s*0.8f), bodyTopY - s*0.8f, 0.0f}, s*0.8f, s*0.7f, s*0.7f, bodyCol);
+    // Left cannon: 6-sided cylinder pointing forward
+    for (int seg = 0; seg < 6; ++seg) {
+        float a0 = glm::radians(seg * 60.0f), a1 = glm::radians((seg+1) * 60.0f);
+        float cr = s * 0.22f;
+        glm::vec3 c(-s*3.2f, bodyTopY - s*0.8f, 0.0f);
+        glm::vec3 b0 = c + glm::vec3(std::cos(a0)*cr, std::sin(a0)*cr, 0.0f);
+        glm::vec3 b1 = c + glm::vec3(std::cos(a1)*cr, std::sin(a1)*cr, 0.0f);
+        glm::vec3 t0 = c + glm::vec3(std::cos(a0)*cr, std::sin(a0)*cr, s*2.2f);
+        glm::vec3 t1 = c + glm::vec3(std::cos(a1)*cr, std::sin(a1)*cr, s*2.2f);
+        AddQuad(verts, inds, b0, b1, t1, t0, accentCol);
+    }
+    // Right shoulder
+    addBox({s*2.2f + s*0.8f, bodyTopY - s*0.8f, 0.0f}, s*0.8f, s*0.7f, s*0.7f, bodyCol);
+    for (int seg = 0; seg < 6; ++seg) {
+        float a0 = glm::radians(seg * 60.0f), a1 = glm::radians((seg+1) * 60.0f);
+        float cr = s * 0.22f;
+        glm::vec3 c(s*3.2f, bodyTopY - s*0.8f, 0.0f);
+        glm::vec3 b0 = c + glm::vec3(std::cos(a0)*cr, std::sin(a0)*cr, 0.0f);
+        glm::vec3 b1 = c + glm::vec3(std::cos(a1)*cr, std::sin(a1)*cr, 0.0f);
+        glm::vec3 t0 = c + glm::vec3(std::cos(a0)*cr, std::sin(a0)*cr, s*2.2f);
+        glm::vec3 t1 = c + glm::vec3(std::cos(a1)*cr, std::sin(a1)*cr, s*2.2f);
+        AddQuad(verts, inds, b0, b1, t1, t0, accentCol);
+    }
+
+    // Neck
+    addBox({0.0f, bodyTopY + s*0.4f, 0.0f}, s*0.5f, s*0.4f, s*0.5f, darkBody * 0.9f);
+    // Head
+    addBox({0.0f, bodyTopY + s*1.5f, 0.0f}, s*1.2f, s*0.8f, s*0.9f, bodyCol);
+    // Glowing eye/core on head front (the weak point)
+    AddQuad(verts, inds,
+        {-s*0.35f, bodyTopY + s*0.85f, s*0.91f},
+        { s*0.35f, bodyTopY + s*0.85f, s*0.91f},
+        { s*0.35f, bodyTopY + s*1.32f, s*0.91f},
+        {-s*0.35f, bodyTopY + s*1.32f, s*0.91f},
+        coreCol * 2.5f);
+
+    // Left upper leg
+    addBox({-s*1.2f, s*1.8f, 0.0f}, s*0.55f, s*1.8f, s*0.55f, legCol);
+    // Left lower leg (angled slightly forward)
+    addBox({-s*1.1f, s*0.55f - s*0.1f, s*0.15f}, s*0.45f, s*0.8f, s*0.45f, legCol * 0.9f);
+    // Left foot
+    addBox({-s*1.1f, -s*7.5f + s*0.15f, s*0.2f}, s*0.8f, s*0.15f, s*1.0f, legCol * 0.8f);
+
+    // Right upper leg
+    addBox({s*1.2f, s*1.8f, 0.0f}, s*0.55f, s*1.8f, s*0.55f, legCol);
+    // Right lower leg
+    addBox({s*1.1f, s*0.55f - s*0.1f, s*0.15f}, s*0.45f, s*0.8f, s*0.45f, legCol * 0.9f);
+    // Right foot
+    addBox({s*1.1f, -s*7.5f + s*0.15f, s*0.2f}, s*0.8f, s*0.15f, s*1.0f, legCol * 0.8f);
 
     return Mesh(verts, inds);
 }

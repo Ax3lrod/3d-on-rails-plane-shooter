@@ -95,6 +95,12 @@ struct DesertPyramidObstacle {
     float scale;
 };
 
+struct BuildingObstacle {
+    glm::vec3 position;
+    float width, height, depth;
+    float rotation; // degrees around Y
+};
+
 class WorldEnvironment {
 public:
     SectorStage currentSector;
@@ -113,6 +119,7 @@ public:
     std::vector<IceCrystalSpire> iceCrystals;
     std::vector<CactusObstacle> cacti;
     std::vector<DesertPyramidObstacle> desertPyramids;
+    std::vector<BuildingObstacle> buildings;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -132,6 +139,9 @@ public:
     Mesh iceCrystalMesh;
     Mesh cactusMesh;
     Mesh desertPyramidMesh;
+    Mesh buildingMeshes[5];
+    Mesh roadMesh;
+    Mesh rubbleMesh;
     // Odd-parity terrain mesh: same geometry but rowOffset=1 so adjacent slabs tile seamlessly
     Mesh canyonMeshOdd;
 
