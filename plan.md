@@ -212,4 +212,11 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 34.4**: Implement **Boss 3: Giant Mechanical Burrowing Sandworm** (`BossMechaWorm`) with IK-segmented body, subterranean burrowing dust geysers, and aerial breach loops.
 - [x] **Task 34.5**: Full Release compilation, verification of all stages and bosses, and push to GitHub remote repository.
 
+## Phase 35: Visual & Gameplay Overhaul — Biomes, Pixel-Art Horizon, Worm Fix & Per-Stage Music
+- [x] **Task 35.1 — Biome Terrain Props**: Added `CreateIceCrystal`, `CreateCactus`, `CreateDesertPyramid` to `Mesh.h/cpp`. Added `glacial` theme. Upgraded `desert` and `railway_canyon` with distinct scatter props per biome (ice crystals for glacial, cacti+pyramids for desert).
+- [x] **Task 35.2 — Pixel-Art Style Horizon per Biome**: Added `CreateBiomeHorizon(biome, ...)` — coarse 16-segment flat-shaded chunky silhouettes. Desert=pyramid outlines+dunes, Glacial=ice spires+snow, Canyon=mesa cliffs, Fortress=basalt towers+lava+curtain walls. Replaced all `CreateArcadeHorizon` calls.
+- [x] **Task 35.3 — Sandworm Visibility Fix**: Worm now tracks `playerZ - 120` during underground phase and breach erupts at `playerZ - 50` (clearly in front of player). Fixed both Approaching and SubterraneanBurrow states.
+- [x] **Task 35.4 — Per-Stage Unique BGM**: Added `BGMTrack::Stage2`, `Stage3`, `Stage4` enum values. Implemented 3 new synth tracks (145BPM A major, 120BPM E minor industrial, 138BPM Phrygian desert). Wired in `Engine::StartMission()` by stage ID.
+- [x] **Task 35.5 — Level Design Variety**: WorldEnvironment now spawns biome-specific props per terrain theme in `GenerateChunk()`. Each biome has distinct environmental identity.
+- [ ] **Task 35.6**: Build, verify 0 errors, push to GitHub.
 

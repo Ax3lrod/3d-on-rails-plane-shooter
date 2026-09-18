@@ -59,7 +59,10 @@ enum class BGMTrack {
     Title,
     Stage1,
     Boss,
-    Sector2
+    Sector2,
+    Stage2,   // Canyon Railway — upbeat action groove
+    Stage3,   // Iron Fortress — heavy industrial march
+    Stage4    // Dune Pass — tense desert tension
 };
 
 class SoundManager {
@@ -112,6 +115,9 @@ private:
     void GenerateStage1BGM();
     void GenerateBossBGM();
     void GenerateSector2BGM();
+    void GenerateStage2BGM(); // Canyon Railway — upbeat 145 BPM A major action groove
+    void GenerateStage3BGM(); // Iron Fortress — heavy 120 BPM industrial march
+    void GenerateStage4BGM(); // Dune Pass — tense 138 BPM desert drive
 
     void AudioThreadFunc();
 

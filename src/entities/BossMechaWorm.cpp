@@ -79,9 +79,11 @@ void BossMechaWorm::Update(float dt, float playerZ, const glm::vec3& playerPos,
 
     if (state == WormBossState::Approaching) {
         warningTimer -= dt;
-        approachProgress = std::min(1.0f, approachProgress + dt * 0.4f);
-        float targetZ = playerZ - 100.0f;
-        transform.position.z = glm::mix(playerZ - 180.0f, targetZ, approachProgress);
+        approachProgress = std::min(1.0f, approachProgress + dt * 0.5f);
+        // Approach position AHEAD (in front) of the player
+        float targetZ = playerZ - 120.0f;
+        transform.position.z = glm::mix(transform.position.z, targetZ, dt * 4.0f);
+        transform.position.y = -13.5f; // Stay underground during approach
 
         dustSpawnTimer -= dt;
         if (dustSpawnTimer <= 0.0f) {
@@ -128,11 +130,13 @@ void BossMechaWorm::Update(float dt, float playerZ, const glm::vec3& playerPos,
     // Kinematic Behavior State Machine
     if (state == WormBossState::SubterraneanBurrow) {
         breachTimer -= dt;
-        transform.position.y = -13.0f;
-        transform.position.z += 25.0f * dt;
-        transform.position.x = std::sin(stateTime * 1.2f) * 12.0f;
+        // Track ahead of player while underground — move to playerZ - 120 (in front of player)
+        float targetZ = playerZ - 120.0f;
+        transform.position.z = glm::mix(transform.position.z, targetZ, dt * 3.5f);
+        transform.position.y = -13.5f; // Hidden fully underground
+        transform.position.x = std::sin(stateTime * 0.8f) * 14.0f; // Side-to-side underground drift
 
-        // Erupting sand geysers on ground surface
+        // Erupting sand geysers on ground surface ahead of player
         dustSpawnTimer -= dt;
         if (dustSpawnTimer <= 0.0f) {
             dustSpawnTimer = 0.12f;
@@ -143,9 +147,12 @@ void BossMechaWorm::Update(float dt, float playerZ, const glm::vec3& playerPos,
             state = WormBossState::BreachAscent;
             breachTimer = 0.0f;
             breachDuration = 4.2f;
+            // Breach AHEAD of the player — head erupts right in front of them
             breachStartPos = transform.position;
-            breachApexPos = glm::vec3(-transform.position.x * 0.8f, 22.0f, playerZ - 40.0f);
-            breachEndPos = glm::vec3(transform.position.x * 0.5f, -14.0f, playerZ + 60.0f);
+            // Apex: directly in front of player at eye level (playerZ - 50 = just ahead)
+            breachApexPos = glm::vec3(transform.position.x * 0.3f, 20.0f, playerZ - 50.0f);
+            // End position: dips back underground, slightly further ahead of player
+            breachEndPos = glm::vec3(-transform.position.x * 0.4f, -13.5f, playerZ - 160.0f);
 
             camera.TriggerShake(0.8f, 0.4f);
             particles.SpawnExplosion(glm::vec3(transform.position.x, -7.3f, transform.position.z), 40, glm::vec3(0.9f, 0.75f, 0.5f));

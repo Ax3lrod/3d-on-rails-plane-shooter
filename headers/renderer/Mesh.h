@@ -4,6 +4,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <vector>
+#include <string>
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
@@ -89,6 +90,12 @@ public:
     static Mesh CreateMegaTankCore(const glm::vec3& coreCol);
     static Mesh CreateWormHead(const glm::vec3& headCol, const glm::vec3& mandibleCol, const glm::vec3& eyeCol);
     static Mesh CreateWormSegment(float radius, const glm::vec3& armorCol, const glm::vec3& coreCol);
+    // Phase 35: Biome prop meshes & chunky pixel-art horizon
+    static Mesh CreateIceCrystal(float height, float radius, const glm::vec3& iceCol, const glm::vec3& coreCol);
+    static Mesh CreateCactus(float trunkHeight, float trunkRadius, float armHeight, const glm::vec3& cactusCol);
+    static Mesh CreateDesertPyramid(float baseSize, float height, const glm::vec3& stoneCol, const glm::vec3& shadowCol);
+    static Mesh CreateBiomeHorizon(const std::string& biome, float radius, float height,
+                                   const glm::vec3& skyTopCol, const glm::vec3& horizonCol);
 };
 
 #endif

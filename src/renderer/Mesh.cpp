@@ -2203,3 +2203,224 @@ Mesh Mesh::CreateWormSegment(float radius, const glm::vec3& armorCol, const glm:
     return Mesh(verts, inds);
 }
 
+// ============================================================
+// Phase 35: Biome Prop & Horizon Mesh Factories
+// ============================================================
+
+// CreateIceCrystal: cluster of 5 hexagonal spire prisms arranged in a pentagon
+Mesh Mesh::CreateIceCrystal(float height, float radius, const glm::vec3& iceCol, const glm::vec3& coreCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float angles[5]  = { 0.0f, 72.0f, 144.0f, 216.0f, 288.0f };
+    float heights[5] = { height, height*0.55f, height*0.85f, height*0.45f, height*0.70f };
+    float offsets[5] = { 0.0f, radius*0.55f, radius*0.35f, radius*0.65f, radius*0.25f };
+    float baseY = -7.5f;
+
+    for (int c = 0; c < 5; ++c) {
+        float a  = glm::radians(angles[c]);
+        float cx = std::cos(a) * offsets[c];
+        float cz = std::sin(a) * offsets[c];
+        float h  = heights[c];
+        float r  = radius * 0.22f;
+
+        for (int s = 0; s < 6; ++s) {
+            float a0 = glm::radians(s * 60.0f);
+            float a1 = glm::radians((s + 1) * 60.0f);
+            glm::vec3 b0(cx + std::cos(a0)*r, baseY,   cz + std::sin(a0)*r);
+            glm::vec3 b1(cx + std::cos(a1)*r, baseY,   cz + std::sin(a1)*r);
+            glm::vec3 apex(cx, baseY + h, cz);
+            glm::vec3 faceCol = (s % 2 == 0) ? iceCol : glm::mix(iceCol, coreCol, 0.45f);
+            AddTriangle(verts, inds, b0, b1, apex, faceCol);
+            // Floor cap
+            AddTriangle(verts, inds, glm::vec3(cx, baseY, cz), b1, b0, iceCol * 0.45f);
+        }
+    }
+    return Mesh(verts, inds);
+}
+
+// CreateCactus: 6-sided cylinder trunk with two branching arms
+Mesh Mesh::CreateCactus(float trunkHeight, float trunkRadius, float armHeight, const glm::vec3& cactusCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float baseY = -7.5f;
+    const int segs = 6;
+
+    auto addCylinder = [&](glm::vec3 bot, glm::vec3 top, float r, glm::vec3 col) {
+        for (int s = 0; s < segs; ++s) {
+            float a0 = glm::radians(s * 360.0f / segs);
+            float a1 = glm::radians((s + 1) * 360.0f / segs);
+            glm::vec3 b0v = bot + glm::vec3(std::cos(a0)*r, 0.0f, std::sin(a0)*r);
+            glm::vec3 b1v = bot + glm::vec3(std::cos(a1)*r, 0.0f, std::sin(a1)*r);
+            glm::vec3 t0v = top + glm::vec3(std::cos(a0)*r, 0.0f, std::sin(a0)*r);
+            glm::vec3 t1v = top + glm::vec3(std::cos(a1)*r, 0.0f, std::sin(a1)*r);
+            float shade = 0.82f + 0.18f * (float)s / segs;
+            AddQuad(verts, inds, b0v, b1v, t1v, t0v, col * shade);
+            AddTriangle(verts, inds, top, t0v, t1v, col * 0.70f);
+        }
+    };
+
+    addCylinder(glm::vec3(0.0f, baseY, 0.0f), glm::vec3(0.0f, baseY + trunkHeight, 0.0f), trunkRadius, cactusCol);
+
+    float branchY = baseY + trunkHeight * 0.60f;
+    // Left arm
+    addCylinder(glm::vec3(-trunkRadius*0.5f, branchY, 0.0f), glm::vec3(-trunkHeight*0.35f, branchY, 0.0f),         trunkRadius*0.65f, cactusCol * 0.88f);
+    addCylinder(glm::vec3(-trunkHeight*0.35f, branchY, 0.0f), glm::vec3(-trunkHeight*0.35f, branchY+armHeight, 0.0f), trunkRadius*0.55f, cactusCol * 0.88f);
+    // Right arm (offset slightly higher)
+    float rOY = armHeight * 0.15f;
+    addCylinder(glm::vec3(trunkRadius*0.5f, branchY+rOY, 0.0f), glm::vec3(trunkHeight*0.35f, branchY+rOY, 0.0f),           trunkRadius*0.65f, cactusCol * 0.88f);
+    addCylinder(glm::vec3(trunkHeight*0.35f, branchY+rOY, 0.0f), glm::vec3(trunkHeight*0.35f, branchY+rOY+armHeight*0.70f, 0.0f), trunkRadius*0.55f, cactusCol * 0.88f);
+
+    return Mesh(verts, inds);
+}
+
+// CreateDesertPyramid: 4-sided pyramid with directional sun/shadow shading
+Mesh Mesh::CreateDesertPyramid(float baseSize, float height, const glm::vec3& stoneCol, const glm::vec3& shadowCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float h = baseSize * 0.5f;
+    float baseY = -7.5f;
+    glm::vec3 apex(0.0f, baseY + height, 0.0f);
+    glm::vec3 bl(-h, baseY, -h), br( h, baseY, -h);
+    glm::vec3 fr( h, baseY,  h), fl(-h, baseY,  h);
+
+    AddTriangle(verts, inds, fl, fr, apex, stoneCol);                          // Front (sunlit)
+    AddTriangle(verts, inds, fr, br, apex, glm::mix(stoneCol, shadowCol, 0.40f)); // Right
+    AddTriangle(verts, inds, br, bl, apex, shadowCol);                         // Back (shadow)
+    AddTriangle(verts, inds, bl, fl, apex, glm::mix(stoneCol, shadowCol, 0.28f)); // Left
+    AddQuad(verts, inds, fl, bl, br, fr, stoneCol * 0.35f);                   // Base
+
+    return Mesh(verts, inds);
+}
+
+// CreateBiomeHorizon: coarse flat-shaded pixel-art style horizon per biome theme
+Mesh Mesh::CreateBiomeHorizon(const std::string& biome, float radius, float height,
+                               const glm::vec3& skyTopCol, const glm::vec3& horizonCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 16 segments for chunky look (half the resolution of the old ArcadeHorizon)
+    const int hSegs = 16;
+    float startAngle = -glm::radians(88.0f);
+    float endAngle   =  glm::radians(88.0f);
+    float dAngle = (endAngle - startAngle) / hSegs;
+
+    float yBot = -30.0f, yMid = 40.0f, yTop = height;
+    glm::vec3 colBot = horizonCol;
+    glm::vec3 colMid = glm::mix(horizonCol, skyTopCol, 0.5f);
+
+    for (int i = 0; i < hSegs; ++i) {
+        float a0 = startAngle + i * dAngle, a1 = a0 + dAngle;
+        float s0 = std::sin(a0), c0 = std::cos(a0);
+        float s1 = std::sin(a1), c1 = std::cos(a1);
+        glm::vec3 p0b(s0*radius, yBot, -c0*radius), p1b(s1*radius, yBot, -c1*radius);
+        glm::vec3 p0m(s0*radius, yMid, -c0*radius), p1m(s1*radius, yMid, -c1*radius);
+        glm::vec3 p0t(s0*radius, yTop, -c0*radius), p1t(s1*radius, yTop, -c1*radius);
+        AddQuad(verts, inds, p0b, p1b, p1m, p0m, colBot);
+        AddQuad(verts, inds, p0m, p1m, p1t, p0t, colMid);
+    }
+
+    float sRadius = radius * 0.92f, baseY = -8.0f;
+
+    if (biome == "dune_pass") {
+        glm::vec3 pyrCol(0.75f, 0.62f, 0.35f), pyrShd(0.55f, 0.42f, 0.22f), duneCol(0.82f, 0.68f, 0.42f);
+        float pyA[3] = {-0.6f, 0.1f, 0.75f}, pyW[3] = {0.38f, 0.50f, 0.30f}, pyH[3] = {60.0f, 90.0f, 45.0f};
+        for (int p = 0; p < 3; ++p) {
+            float aL = pyA[p]-pyW[p], aR = pyA[p]+pyW[p], am = (aL+aR)*0.5f;
+            glm::vec3 bL(std::sin(aL)*sRadius, baseY, -std::cos(aL)*sRadius);
+            glm::vec3 bR(std::sin(aR)*sRadius, baseY, -std::cos(aR)*sRadius);
+            glm::vec3 pyApex(std::sin(am)*sRadius, baseY+pyH[p], -std::cos(am)*sRadius);
+            glm::vec3 midP = (bL+bR)*0.5f;
+            AddTriangle(verts, inds, bL, midP, pyApex, pyrCol);
+            AddTriangle(verts, inds, midP, bR, pyApex, pyrShd);
+        }
+        float dA[5] = {-1.1f, -0.3f, 0.35f, 0.9f, 1.3f};
+        for (int d = 0; d < 5; ++d) {
+            float hw = 0.28f, dh = 18.0f + (d%3)*8.0f;
+            glm::vec3 dL(std::sin(dA[d]-hw)*sRadius, baseY, -std::cos(dA[d]-hw)*sRadius);
+            glm::vec3 dR(std::sin(dA[d]+hw)*sRadius, baseY, -std::cos(dA[d]+hw)*sRadius);
+            glm::vec3 dApex(std::sin(dA[d])*(sRadius*0.97f), baseY+dh, -std::cos(dA[d])*(sRadius*0.97f));
+            AddTriangle(verts, inds, dL, dR, dApex, duneCol);
+        }
+    } else if (biome == "glacial") {
+        glm::vec3 iceC(0.75f, 0.90f, 1.0f), iceS(0.55f, 0.72f, 0.88f), snowC(0.96f, 0.98f, 1.0f);
+        for (int s = 0; s < 12; ++s) {
+            float ac = -1.4f + s*0.25f, hw = 0.08f + (s%3)*0.04f, sh = 35.0f + (s%4)*22.0f + (s%2)*15.0f;
+            glm::vec3 sL(std::sin(ac-hw)*sRadius, baseY, -std::cos(ac-hw)*sRadius);
+            glm::vec3 sR(std::sin(ac+hw)*sRadius, baseY, -std::cos(ac+hw)*sRadius);
+            glm::vec3 sA(std::sin(ac)*(sRadius*0.96f), baseY+sh, -std::cos(ac)*(sRadius*0.96f));
+            glm::vec3 midI = (sL+sR)*0.5f;
+            AddTriangle(verts, inds, sL, midI, sA, (s%2==0) ? iceC : iceS);
+            AddTriangle(verts, inds, midI, sR, sA, (s%2==0) ? iceS : iceC);
+            if (sh > 60.0f) {
+                glm::vec3 cL = glm::mix(sA, sL, 0.22f), cR = glm::mix(sA, sR, 0.22f);
+                AddTriangle(verts, inds, cL, sA, cR, snowC);
+            }
+        }
+        for (int s = 0; s < 8; ++s) {
+            float ac = -1.1f + s*0.32f;
+            glm::vec3 iL(std::sin(ac-0.18f)*sRadius, baseY, -std::cos(ac-0.18f)*sRadius);
+            glm::vec3 iR(std::sin(ac+0.18f)*sRadius, baseY, -std::cos(ac+0.18f)*sRadius);
+            glm::vec3 iT(std::sin(ac-0.12f)*(sRadius*0.97f), baseY+12.0f, -std::cos(ac-0.12f)*(sRadius*0.97f));
+            glm::vec3 iT2(std::sin(ac+0.12f)*(sRadius*0.97f), baseY+12.0f, -std::cos(ac+0.12f)*(sRadius*0.97f));
+            AddQuad(verts, inds, iL, iR, iT2, iT, iceS * 0.78f);
+        }
+    } else if (biome == "iron_fortress") {
+        glm::vec3 basaltC(0.22f, 0.24f, 0.28f), battleC(0.30f, 0.32f, 0.38f), lavaC(0.9f, 0.3f, 0.1f);
+        float tA[3] = {-0.8f, 0.0f, 0.85f}, tW[3] = {0.20f, 0.30f, 0.18f}, tH[3] = {55.0f, 80.0f, 48.0f};
+        for (int t = 0; t < 3; ++t) {
+            glm::vec3 ttL(std::sin(tA[t]-tW[t])*sRadius, baseY, -std::cos(tA[t]-tW[t])*sRadius);
+            glm::vec3 ttR(std::sin(tA[t]+tW[t])*sRadius, baseY, -std::cos(tA[t]+tW[t])*sRadius);
+            glm::vec3 ttTL(std::sin(tA[t]-tW[t])*(sRadius*0.97f), baseY+tH[t], -std::cos(tA[t]-tW[t])*(sRadius*0.97f));
+            glm::vec3 ttTR(std::sin(tA[t]+tW[t])*(sRadius*0.97f), baseY+tH[t], -std::cos(tA[t]+tW[t])*(sRadius*0.97f));
+            AddQuad(verts, inds, ttL, ttR, ttTR, ttTL, basaltC);
+            for (int n = 0; n < 3; ++n) {
+                float na = glm::mix(tA[t]-tW[t], tA[t]+tW[t], (n+0.5f)/3.0f), nw = tW[t]*0.12f;
+                glm::vec3 nL(std::sin(na-nw)*(sRadius*0.97f), baseY+tH[t], -std::cos(na-nw)*(sRadius*0.97f));
+                glm::vec3 nR(std::sin(na+nw)*(sRadius*0.97f), baseY+tH[t], -std::cos(na+nw)*(sRadius*0.97f));
+                glm::vec3 nTL(std::sin(na-nw)*(sRadius*0.96f), baseY+tH[t]+12.0f, -std::cos(na-nw)*(sRadius*0.96f));
+                glm::vec3 nTR(std::sin(na+nw)*(sRadius*0.96f), baseY+tH[t]+12.0f, -std::cos(na+nw)*(sRadius*0.96f));
+                AddQuad(verts, inds, nL, nR, nTR, nTL, battleC);
+            }
+        }
+        for (int w = 0; w < 2; ++w) {
+            float wA = tA[w]+tW[w], wB = tA[w+1]-tW[w+1];
+            glm::vec3 wL(std::sin(wA)*sRadius, baseY, -std::cos(wA)*sRadius);
+            glm::vec3 wR(std::sin(wB)*sRadius, baseY, -std::cos(wB)*sRadius);
+            glm::vec3 wTL(std::sin(wA)*(sRadius*0.97f), baseY+32.0f, -std::cos(wA)*(sRadius*0.97f));
+            glm::vec3 wTR(std::sin(wB)*(sRadius*0.97f), baseY+32.0f, -std::cos(wB)*(sRadius*0.97f));
+            AddQuad(verts, inds, wL, wR, wTR, wTL, basaltC * 0.85f);
+        }
+        for (int l = 0; l < hSegs; ++l) {
+            float a0 = startAngle + l*dAngle, a1 = a0+dAngle;
+            glm::vec3 lb(std::sin(a0)*sRadius, baseY-2.0f, -std::cos(a0)*sRadius);
+            glm::vec3 lb2(std::sin(a1)*sRadius, baseY-2.0f, -std::cos(a1)*sRadius);
+            glm::vec3 lt(std::sin(a0)*(sRadius*0.99f), baseY+6.0f, -std::cos(a0)*(sRadius*0.99f));
+            glm::vec3 lt2(std::sin(a1)*(sRadius*0.99f), baseY+6.0f, -std::cos(a1)*(sRadius*0.99f));
+            AddQuad(verts, inds, lb, lb2, lt2, lt, lavaC);
+        }
+    } else {
+        // Canyon / default: stepped flat-topped mesa cliffs
+        glm::vec3 mesaC(0.78f, 0.52f, 0.38f), grassT(0.42f, 0.72f, 0.35f);
+        float mA[4] = {-1.2f, -0.4f, 0.5f, 1.1f}, mW[4] = {0.32f, 0.45f, 0.38f, 0.28f}, mH[4] = {38.0f, 52.0f, 44.0f, 32.0f};
+        for (int m = 0; m < 4; ++m) {
+            glm::vec3 mL(std::sin(mA[m]-mW[m])*sRadius, baseY, -std::cos(mA[m]-mW[m])*sRadius);
+            glm::vec3 mR(std::sin(mA[m]+mW[m])*sRadius, baseY, -std::cos(mA[m]+mW[m])*sRadius);
+            glm::vec3 mTL(std::sin(mA[m]-mW[m])*(sRadius*0.97f), baseY+mH[m], -std::cos(mA[m]-mW[m])*(sRadius*0.97f));
+            glm::vec3 mTR(std::sin(mA[m]+mW[m])*(sRadius*0.97f), baseY+mH[m], -std::cos(mA[m]+mW[m])*(sRadius*0.97f));
+            AddQuad(verts, inds, mL, mR, mTR, mTL, mesaC * (0.85f + m*0.05f));
+            glm::vec3 cL(std::sin(mA[m]-mW[m]-0.04f)*(sRadius*0.97f), baseY+mH[m]+2.0f, -std::cos(mA[m]-mW[m]-0.04f)*(sRadius*0.97f));
+            glm::vec3 cR(std::sin(mA[m]+mW[m]+0.04f)*(sRadius*0.97f), baseY+mH[m]+2.0f, -std::cos(mA[m]+mW[m]+0.04f)*(sRadius*0.97f));
+            AddQuad(verts, inds, mTL, mTR, cR, cL, grassT);
+            float sh2 = mH[m]*0.58f;
+            glm::vec3 sL2(std::sin(mA[m]-mW[m]*1.18f)*sRadius, baseY+sh2, -std::cos(mA[m]-mW[m]*1.18f)*sRadius);
+            glm::vec3 sR2(std::sin(mA[m]+mW[m]*1.18f)*sRadius, baseY+sh2, -std::cos(mA[m]+mW[m]*1.18f)*sRadius);
+            AddTriangle(verts, inds, mL, sL2, sR2, mesaC * 0.72f);
+            AddTriangle(verts, inds, mL, sR2, mR,  mesaC * 0.78f);
+        }
+    }
+
+    return Mesh(verts, inds);
+}

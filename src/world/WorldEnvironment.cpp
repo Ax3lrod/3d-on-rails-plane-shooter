@@ -16,15 +16,17 @@ WorldEnvironment::WorldEnvironment()
       pillarMesh(Mesh::CreatePillar(1.8f, 16.0f, glm::vec3(0.90f, 0.75f, 0.78f))),
       relayMesh(Mesh::CreateRadarRelay(2.6f, glm::vec3(0.35f, 0.40f, 0.45f), glm::vec3(0.85f, 0.88f, 0.92f), glm::vec3(1.0f, 0.2f, 0.15f))),
       debrisMesh(Mesh::CreateSpaceDebris(14.0f, 2.0f, glm::vec3(0.45f, 0.48f, 0.52f))),
-      horizonMesh(Mesh::CreateArcadeHorizon(460.0f, 220.0f,
+      horizonMesh(Mesh::CreateBiomeHorizon("canyon", 460.0f, 220.0f,
                                             glm::vec3(0.16f, 0.46f, 0.92f),   // Sega blue skies
-                                            glm::vec3(0.75f, 0.90f, 0.98f),   // Radiant horizon light
-                                            glm::vec3(0.58f, 0.66f, 0.86f))), // Majestic distant mountain peaks
+                                            glm::vec3(0.75f, 0.90f, 0.98f))), // Radiant horizon light
       domeMesh(Mesh::CreateFloatingDome(6.5f, glm::vec3(0.92f, 0.95f, 1.0f), glm::vec3(0.25f, 0.95f, 1.0f))),
       turbineMesh(Mesh::CreateWindTurbineTower(26.0f, glm::vec3(0.92f, 0.94f, 0.96f), glm::vec3(0.20f, 0.22f, 0.28f))),
       turbineTowerMesh(Mesh::CreateWindTurbineTower(26.0f, glm::vec3(0.92f, 0.94f, 0.96f), glm::vec3(0.20f, 0.22f, 0.28f))),
       turbineBladesMesh(Mesh::CreateWindTurbineBlades(10.5f, glm::vec3(0.98f, 0.98f, 1.0f), glm::vec3(0.92f, 0.18f, 0.22f))),
       treeMesh(Mesh::CreateLowPolyTree(4.2f, 0.75f, 11.0f, 4.4f, glm::vec3(0.45f, 0.28f, 0.16f), glm::vec3(0.16f, 0.62f, 0.24f))),
+      iceCrystalMesh(Mesh::CreateIceCrystal(14.0f, 2.5f, glm::vec3(0.70f, 0.90f, 1.0f), glm::vec3(0.85f, 0.96f, 1.0f))),
+      cactusMesh(Mesh::CreateCactus(9.0f, 0.8f, 4.0f, glm::vec3(0.28f, 0.62f, 0.22f))),
+      desertPyramidMesh(Mesh::CreateDesertPyramid(22.0f, 18.0f, glm::vec3(0.85f, 0.72f, 0.46f), glm::vec3(0.58f, 0.46f, 0.26f))),
       nextSpawnZ(0.0f),
       despawnDistBehind(60.0f),
       lastPlayerZ(0.0f) {
@@ -42,34 +44,37 @@ void WorldEnvironment::SetTerrainTheme(const std::string& theme) {
         canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
                                                   glm::vec3(0.65f, 0.28f, 0.16f),
                                                   glm::vec3(0.55f, 0.22f, 0.12f));
-        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
-                                                glm::vec3(0.85f, 0.42f, 0.18f),
-                                                glm::vec3(0.98f, 0.65f, 0.35f),
-                                                glm::vec3(0.68f, 0.22f, 0.14f));
+        horizonMesh = Mesh::CreateBiomeHorizon("canyon", 700.0f, 260.0f,
+                                               glm::vec3(0.85f, 0.42f, 0.18f),
+                                               glm::vec3(0.98f, 0.65f, 0.35f));
     } else if (theme == "iron_fortress") {
         canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
                                                   glm::vec3(0.18f, 0.20f, 0.24f),
                                                   glm::vec3(0.25f, 0.27f, 0.32f));
-        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
-                                                glm::vec3(0.20f, 0.15f, 0.22f),
-                                                glm::vec3(0.85f, 0.25f, 0.18f),
-                                                glm::vec3(0.35f, 0.15f, 0.20f));
+        horizonMesh = Mesh::CreateBiomeHorizon("iron_fortress", 700.0f, 260.0f,
+                                               glm::vec3(0.12f, 0.10f, 0.16f),
+                                               glm::vec3(0.22f, 0.12f, 0.10f));
     } else if (theme == "dune_pass") {
         canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
                                                   glm::vec3(0.84f, 0.65f, 0.32f),
                                                   glm::vec3(0.76f, 0.58f, 0.26f));
-        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
-                                                glm::vec3(0.85f, 0.72f, 0.40f),
-                                                glm::vec3(0.98f, 0.88f, 0.55f),
-                                                glm::vec3(0.75f, 0.52f, 0.24f));
+        horizonMesh = Mesh::CreateBiomeHorizon("dune_pass", 700.0f, 260.0f,
+                                               glm::vec3(0.70f, 0.52f, 0.28f),
+                                               glm::vec3(0.98f, 0.82f, 0.50f));
+    } else if (theme == "glacial") {
+        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                                  glm::vec3(0.75f, 0.88f, 0.96f),
+                                                  glm::vec3(0.85f, 0.93f, 1.0f));
+        horizonMesh = Mesh::CreateBiomeHorizon("glacial", 700.0f, 260.0f,
+                                               glm::vec3(0.22f, 0.45f, 0.72f),
+                                               glm::vec3(0.82f, 0.92f, 1.0f));
     } else {
         canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
                                                   glm::vec3(0.18f, 0.58f, 0.28f),
                                                   glm::vec3(0.24f, 0.68f, 0.35f));
-        horizonMesh = Mesh::CreateArcadeHorizon(700.0f, 260.0f,
-                                                glm::vec3(0.16f, 0.46f, 0.92f),
-                                                glm::vec3(0.75f, 0.90f, 0.98f),
-                                                glm::vec3(0.58f, 0.66f, 0.86f));
+        horizonMesh = Mesh::CreateBiomeHorizon("canyon", 700.0f, 260.0f,
+                                               glm::vec3(0.16f, 0.46f, 0.92f),
+                                               glm::vec3(0.75f, 0.90f, 0.98f));
     }
 }
 
@@ -170,6 +175,34 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
                 glm::vec3(side * (36.0f + ((float)rand() / RAND_MAX) * 25.0f), 8.5f, z),
                 6.5f
             });
+        }
+
+        // 9. Biome-specific props
+        if (terrainTheme == "glacial") {
+            // Scatter ice crystal clusters on both flanks
+            for (float z = startZ - 15.0f; z >= endZ; z -= 30.0f) {
+                float lx = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 55.0f;
+                float sc = 0.7f + (float)rand()/RAND_MAX * 0.6f;
+                float rot = (float)rand()/RAND_MAX * 360.0f;
+                iceCrystals.push_back({glm::vec3(lx, 0.0f, z), sc, rot});
+                float rx = -lx * 0.7f + ((float)rand()/RAND_MAX - 0.5f) * 20.0f;
+                iceCrystals.push_back({glm::vec3(rx, 0.0f, z - 8.0f), sc*0.8f, rot+60.0f});
+            }
+        } else if (terrainTheme == "dune_pass") {
+            // Scatter cacti on both flanks
+            for (float z = startZ - 20.0f; z >= endZ; z -= 38.0f) {
+                float lx = -20.0f - (float)rand()/RAND_MAX * 60.0f;
+                float sc = 0.8f + (float)rand()/RAND_MAX * 0.4f;
+                cacti.push_back({glm::vec3(lx, 0.0f, z), sc, (float)rand()/RAND_MAX*360.0f});
+                float rx = 20.0f + (float)rand()/RAND_MAX * 60.0f;
+                cacti.push_back({glm::vec3(rx, 0.0f, z - 10.0f), sc*0.9f, (float)rand()/RAND_MAX*360.0f});
+            }
+            // Scatter distant pyramids at sparser interval
+            for (float z = startZ - 60.0f; z >= endZ; z -= 120.0f) {
+                float px = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 80.0f;
+                float sc = 1.0f + (float)rand()/RAND_MAX * 0.8f;
+                desertPyramids.push_back({glm::vec3(px, 0.0f, z), sc});
+            }
         }
     } else {
         // Sector 2: Deep Space Debris Field
@@ -312,6 +345,24 @@ void WorldEnvironment::Update(float playerZ, float dt) {
                        [cullZ](const TreeObstacle& t) { return t.position.z > cullZ; }),
         trees.end()
     );
+
+    iceCrystals.erase(
+        std::remove_if(iceCrystals.begin(), iceCrystals.end(),
+                       [cullZ](const IceCrystalSpire& c) { return c.position.z > cullZ; }),
+        iceCrystals.end()
+    );
+
+    cacti.erase(
+        std::remove_if(cacti.begin(), cacti.end(),
+                       [cullZ](const CactusObstacle& c) { return c.position.z > cullZ; }),
+        cacti.end()
+    );
+
+    desertPyramids.erase(
+        std::remove_if(desertPyramids.begin(), desertPyramids.end(),
+                       [cullZ](const DesertPyramidObstacle& d) { return d.position.z > cullZ; }),
+        desertPyramids.end()
+    );
 }
 
 void WorldEnvironment::Draw(const Shader& shader) const {
@@ -387,6 +438,35 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             treeMesh.Draw(shader);
         }
 
+        // 9b. Draw Glacial Ice Crystals
+        for (const auto& ic : iceCrystals) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, ic.position);
+            model = glm::rotate(model, glm::radians(ic.rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(ic.scale));
+            shader.SetMat4("uModel", model);
+            iceCrystalMesh.Draw(shader);
+        }
+
+        // 9c. Draw Desert Cacti
+        for (const auto& ca : cacti) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, ca.position);
+            model = glm::rotate(model, glm::radians(ca.rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(ca.scale));
+            shader.SetMat4("uModel", model);
+            cactusMesh.Draw(shader);
+        }
+
+        // 9d. Draw Desert Pyramids
+        for (const auto& dp : desertPyramids) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, dp.position);
+            model = glm::scale(model, glm::vec3(dp.scale));
+            shader.SetMat4("uModel", model);
+            desertPyramidMesh.Draw(shader);
+        }
+
         // 6. Draw Secret Planetary Radar Relays
         for (const auto& rel : secretRelays) {
             if (rel.destroyed) continue;
@@ -457,6 +537,9 @@ void WorldEnvironment::Clear() {
     floatingDomes.clear();
     windTurbines.clear();
     trees.clear();
+    iceCrystals.clear();
+    cacti.clear();
+    desertPyramids.clear();
     nextSpawnZ = 0.0f;
     lastPlayerZ = 0.0f;
 

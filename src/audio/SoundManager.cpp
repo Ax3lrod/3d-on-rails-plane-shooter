@@ -358,11 +358,14 @@ void SoundManager::PrebakeSounds() {
     GenerateRadioStaticSound();
     GenerateRadioChatterSound();
 
-    musicBank.resize(5);
+    musicBank.resize(8); // None=0, Title=1, Stage1=2, Boss=3, Sector2=4, Stage2=5, Stage3=6, Stage4=7
     GenerateTitleBGM();
     GenerateStage1BGM();
     GenerateBossBGM();
     GenerateSector2BGM();
+    GenerateStage2BGM();
+    GenerateStage3BGM();
+    GenerateStage4BGM();
 }
 
 // 1. Dual Laser Fire (Crisp Star Fox square/saw downward sweep)
@@ -1202,4 +1205,316 @@ void SoundManager::GenerateSector2BGM() {
     }
 }
 
+
+// 24. Stage 2 Canyon Railway BGM (Upbeat 145 BPM A major action groove)
+void SoundManager::GenerateStage2BGM() {
+    float bpm = 145.0f;
+    float stepDur = (60.0f / bpm) / 4.0f;
+    int totalSteps = 128;
+    float duration = totalSteps * stepDur;
+    size_t count = static_cast<size_t>(duration * SAMPLE_RATE);
+
+    std::vector<int16_t>& pcm = musicBank[static_cast<size_t>(BGMTrack::Stage2)].pcmData;
+    pcm.resize(count);
+
+    // A major chord progression: A - F#m - D - E (train-driving energy)
+    // MIDI: A2=45, E3=52, A3=57 | F#2=42, C#3=49, F#3=54 | D2=38, A2=45, D3=50 | E2=40, B2=47, E3=52
+    int bassNotes[128];
+    int aMajBass[8]  = { 45, 45, 52, 45, 57, 45, 52, 57 };
+    int fshBass[8]   = { 42, 42, 49, 42, 54, 42, 49, 54 };
+    int dMajBass[8]  = { 38, 38, 45, 38, 50, 38, 45, 50 };
+    int eMajBass[8]  = { 40, 40, 47, 40, 52, 40, 47, 52 };
+    for (int i = 0; i < 32; ++i) bassNotes[i] = aMajBass[i % 8];
+    for (int i = 32; i < 64; ++i) bassNotes[i] = fshBass[i % 8];
+    for (int i = 64; i < 96; ++i) bassNotes[i] = dMajBass[i % 8];
+    for (int i = 96; i < 128; ++i) bassNotes[i] = eMajBass[i % 8];
+
+    // Chiptune arpeggio
+    int arpNotes[128];
+    int aArp[4]   = { 57, 61, 64, 69 }; // A3, C#4, E4, A4
+    int fshArp[4] = { 54, 57, 61, 66 }; // F#3, A3, C#4, F#4
+    int dArp[4]   = { 50, 54, 57, 62 }; // D3, F#3, A3, D4
+    int eArp[4]   = { 52, 56, 59, 64 }; // E3, G#3, B3, E4
+    for (int i = 0; i < 32; ++i) arpNotes[i] = aArp[i % 4];
+    for (int i = 32; i < 64; ++i) arpNotes[i] = fshArp[i % 4];
+    for (int i = 64; i < 96; ++i) arpNotes[i] = dArp[i % 4];
+    for (int i = 96; i < 128; ++i) arpNotes[i] = eArp[i % 4];
+
+    // Heroic lead melody (upbeat A major)
+    int leadNotes[128];
+    std::fill_n(leadNotes, 128, 0);
+    for (int s = 0; s < 8; ++s) leadNotes[s]  = 69;  // A4
+    for (int s = 8; s < 12; ++s) leadNotes[s] = 71;  // B4
+    for (int s = 12; s < 16; ++s) leadNotes[s]= 73;  // C#5
+    for (int s = 16; s < 22; ++s) leadNotes[s]= 76;  // E5
+    for (int s = 22; s < 24; ++s) leadNotes[s]= 74;  // D5
+    for (int s = 24; s < 32; ++s) leadNotes[s]= 73;  // C#5
+    for (int s = 32; s < 40; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 40; s < 48; ++s) leadNotes[s]= 69;  // A4
+    for (int s = 48; s < 56; ++s) leadNotes[s]= 73;  // C#5
+    for (int s = 56; s < 64; ++s) leadNotes[s]= 78;  // F#5
+    for (int s = 64; s < 72; ++s) leadNotes[s]= 76;  // E5
+    for (int s = 72; s < 78; ++s) leadNotes[s]= 74;  // D5
+    for (int s = 78; s < 80; ++s) leadNotes[s]= 73;  // C#5
+    for (int s = 80; s < 88; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 88; s < 96; ++s) leadNotes[s]= 69;  // A4
+    for (int s = 96; s < 104; ++s) leadNotes[s]= 73; // C#5
+    for (int s = 104; s < 112; ++s) leadNotes[s]= 76;// E5
+    for (int s = 112; s < 120; ++s) leadNotes[s]= 73;// C#5
+    for (int s = 120; s < 128; ++s) leadNotes[s]= 69;// A4
+
+    float kickPhase = 0.0f, snarePhase = 0.0f, bassPhase = 0.0f, arpPhase = 0.0f, leadPhase = 0.0f;
+
+    for (size_t i = 0; i < count; ++i) {
+        float t = static_cast<float>(i) / SAMPLE_RATE;
+        int step = static_cast<int>(t / stepDur) % totalSteps;
+        float stepT = (t - step * stepDur) / stepDur;
+
+        // Fast kick on every beat (4 per bar) + extra offbeat kicks for energy
+        float kick = 0.0f;
+        if (step % 4 == 0 || step % 8 == 6) {
+            float kFreq = 55.0f + 130.0f * std::exp(-stepT * 30.0f);
+            kickPhase += 2.0f * PI * kFreq / SAMPLE_RATE;
+            kick = std::sin(kickPhase) * std::exp(-stepT * 18.0f) * 0.70f;
+        }
+
+        // Snare on 2 and 4 of each bar
+        float snare = 0.0f;
+        if (step % 8 == 2 || step % 8 == 6) {
+            snarePhase += 2.0f * PI * 200.0f / SAMPLE_RATE;
+            float rawNoise = ((rand() % 100) / 50.0f) - 1.0f;
+            snare = (std::sin(snarePhase) * 0.4f + rawNoise * 0.6f) * std::exp(-stepT * 14.0f) * 0.45f;
+        }
+
+        // Punchy FM bass
+        float bFreq = MidiHz(bassNotes[step]);
+        bassPhase += 2.0f * PI * bFreq / SAMPLE_RATE;
+        float fmMod = std::sin(bassPhase * 2.2f) * 0.8f;
+        float bass = std::sin(bassPhase + fmMod) * std::exp(-stepT * 6.0f) * 0.32f;
+
+        // Chiptune arpeggio (square wave)
+        float aFreq = MidiHz(arpNotes[step]);
+        arpPhase += 2.0f * PI * aFreq / SAMPLE_RATE;
+        float sqArp = (std::sin(arpPhase) >= 0.0f) ? 1.0f : -1.0f;
+        float arp = sqArp * std::exp(-stepT * 8.0f) * 0.18f;
+
+        // Lead melody (sawtooth + vibrato)
+        float lNote = leadNotes[step];
+        float lFreq = MidiHz(static_cast<int>(lNote)) * (1.0f + std::sin(t * 6.5f) * 0.004f);
+        leadPhase += 2.0f * PI * lFreq / SAMPLE_RATE;
+        float leadSaw = 2.0f * (leadPhase / (2.0f * PI) - std::floor(0.5f + leadPhase / (2.0f * PI)));
+        float lead = leadSaw * std::exp(-stepT * 3.5f) * 0.28f;
+
+        pcm[i] = ClampSample((kick + snare + bass + arp + lead) * 22000.0f);
+    }
+}
+
+// 25. Stage 3 Iron Fortress BGM (Heavy 120 BPM industrial march in E minor)
+void SoundManager::GenerateStage3BGM() {
+    float bpm = 120.0f;
+    float stepDur = (60.0f / bpm) / 4.0f;
+    int totalSteps = 128;
+    float duration = totalSteps * stepDur;
+    size_t count = static_cast<size_t>(duration * SAMPLE_RATE);
+
+    std::vector<int16_t>& pcm = musicBank[static_cast<size_t>(BGMTrack::Stage3)].pcmData;
+    pcm.resize(count);
+
+    // E minor progression: Em - C - G - D (dark industrial march)
+    int bassNotes[128];
+    int emBass[8] = { 40, 40, 43, 40, 47, 40, 43, 47 }; // E2, E2, G2, E2, B2...
+    int cBass2[8] = { 36, 36, 40, 36, 43, 36, 47, 48 }; // C2...
+    int gBass[8]  = { 43, 43, 47, 43, 50, 43, 55, 55 }; // G2...
+    int dBass2[8] = { 38, 38, 42, 38, 45, 38, 50, 50 }; // D2...
+    for (int i = 0; i < 32; ++i) bassNotes[i] = emBass[i % 8];
+    for (int i = 32; i < 64; ++i) bassNotes[i] = cBass2[i % 8];
+    for (int i = 64; i < 96; ++i) bassNotes[i] = gBass[i % 8];
+    for (int i = 96; i < 128; ++i) bassNotes[i] = dBass2[i % 8];
+
+    // Power chord arpeggio
+    int arpNotes[128];
+    int emArp[4] = { 52, 55, 59, 64 }; // E3, G3, B3, E4
+    int cArp2[4] = { 48, 52, 55, 60 }; // C3, E3, G3, C4
+    int gArp[4]  = { 55, 59, 62, 67 }; // G3, B3, D4, G4
+    int dArp2[4] = { 50, 54, 57, 62 }; // D3, F#3, A3, D4
+    for (int i = 0; i < 32; ++i) arpNotes[i] = emArp[i % 4];
+    for (int i = 32; i < 64; ++i) arpNotes[i] = cArp2[i % 4];
+    for (int i = 64; i < 96; ++i) arpNotes[i] = gArp[i % 4];
+    for (int i = 96; i < 128; ++i) arpNotes[i] = dArp2[i % 4];
+
+    // Dark industrial lead
+    int leadNotes[128];
+    std::fill_n(leadNotes, 128, 0);
+    for (int s = 0; s < 8; ++s) leadNotes[s]  = 64;  // E4
+    for (int s = 8; s < 16; ++s) leadNotes[s] = 67;  // G4
+    for (int s = 16; s < 24; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 24; s < 32; ++s) leadNotes[s]= 72;  // C5
+    for (int s = 32; s < 40; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 40; s < 48; ++s) leadNotes[s]= 69;  // A4
+    for (int s = 48; s < 56; ++s) leadNotes[s]= 67;  // G4
+    for (int s = 56; s < 64; ++s) leadNotes[s]= 64;  // E4
+    for (int s = 64; s < 72; ++s) leadNotes[s]= 67;  // G4
+    for (int s = 72; s < 80; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 80; s < 88; ++s) leadNotes[s]= 74;  // D5
+    for (int s = 88; s < 96; ++s) leadNotes[s]= 76;  // E5
+    for (int s = 96; s < 104; ++s) leadNotes[s]= 74; // D5
+    for (int s = 104; s < 112; ++s) leadNotes[s]= 71;// B4
+    for (int s = 112; s < 120; ++s) leadNotes[s]= 69;// A4
+    for (int s = 120; s < 128; ++s) leadNotes[s]= 64;// E4
+
+    float kickPhase = 0.0f, snarePhase = 0.0f, bassPhase = 0.0f, arpPhase = 0.0f, leadPhase = 0.0f;
+
+    for (size_t i = 0; i < count; ++i) {
+        float t = static_cast<float>(i) / SAMPLE_RATE;
+        int step = static_cast<int>(t / stepDur) % totalSteps;
+        float stepT = (t - step * stepDur) / stepDur;
+
+        // Heavy INDUSTRIAL kick — deep booming 4-on-the-floor
+        float kick = 0.0f;
+        if (step % 4 == 0) {
+            float kFreq = 40.0f + 160.0f * std::exp(-stepT * 20.0f);
+            kickPhase += 2.0f * PI * kFreq / SAMPLE_RATE;
+            kick = std::sin(kickPhase) * std::exp(-stepT * 10.0f) * 0.85f;
+        }
+
+        // Military snare (every 2 beats, accented)
+        float snare = 0.0f;
+        if (step % 8 == 4) {
+            snarePhase += 2.0f * PI * 160.0f / SAMPLE_RATE;
+            float rawNoise = ((rand() % 100) / 50.0f) - 1.0f;
+            snare = (std::sin(snarePhase) * 0.25f + rawNoise * 0.75f) * std::exp(-stepT * 9.0f) * 0.55f;
+        }
+        // Ghost snare on off-beats
+        float ghostSnare = 0.0f;
+        if (step % 4 == 2) {
+            float rawNoise = ((rand() % 100) / 50.0f) - 1.0f;
+            ghostSnare = rawNoise * std::exp(-stepT * 20.0f) * 0.15f;
+        }
+
+        // Distorted bass (heavily clipped sawtooth)
+        float bFreq = MidiHz(bassNotes[step]);
+        bassPhase += 2.0f * PI * bFreq / SAMPLE_RATE;
+        float rawBass = 2.0f * (bassPhase / (2.0f * PI) - std::floor(0.5f + bassPhase / (2.0f * PI)));
+        float distBass = std::tanh(rawBass * 3.5f) * std::exp(-stepT * 4.0f) * 0.38f;
+
+        // Power chord stabs (square wave arp)
+        float aFreq = MidiHz(arpNotes[step]);
+        arpPhase += 2.0f * PI * aFreq / SAMPLE_RATE;
+        float sqArp = (std::sin(arpPhase) >= 0.0f) ? 1.0f : -1.0f;
+        float arp = sqArp * std::exp(-stepT * 12.0f) * 0.22f;
+
+        // Dark lead (square wave + low-pass-like rolloff via envelope)
+        float lFreq = MidiHz(leadNotes[step]);
+        leadPhase += 2.0f * PI * lFreq / SAMPLE_RATE;
+        float sqLead = (std::sin(leadPhase) >= 0.0f) ? 1.0f : -1.0f;
+        float lead = sqLead * std::exp(-stepT * 4.0f) * 0.25f;
+
+        pcm[i] = ClampSample((kick + snare + ghostSnare + distBass + arp + lead) * 21000.0f);
+    }
+}
+
+// 26. Stage 4 Dune Pass BGM (Tense 138 BPM desert tension in Phrygian mode)
+void SoundManager::GenerateStage4BGM() {
+    float bpm = 138.0f;
+    float stepDur = (60.0f / bpm) / 4.0f;
+    int totalSteps = 128;
+    float duration = totalSteps * stepDur;
+    size_t count = static_cast<size_t>(duration * SAMPLE_RATE);
+
+    std::vector<int16_t>& pcm = musicBank[static_cast<size_t>(BGMTrack::Stage4)].pcmData;
+    pcm.resize(count);
+
+    // Phrygian mode on E: E-F-G-A-B-C-D (exotic, tense desert feel)
+    // Progression: Em7 - Fmaj7 - Em7 - Dm7
+    int bassNotes[128];
+    int em7Bass[8]  = { 40, 40, 43, 40, 47, 43, 40, 47 }; // E2, E2, G2...
+    int fMaj7Bass[8]= { 41, 41, 45, 41, 48, 41, 52, 48 }; // F2, F2, A2...
+    int dm7Bass[8]  = { 38, 38, 41, 38, 45, 41, 38, 45 }; // D2, D2, F2...
+    for (int i = 0; i < 32; ++i) bassNotes[i] = em7Bass[i % 8];
+    for (int i = 32; i < 64; ++i) bassNotes[i] = fMaj7Bass[i % 8];
+    for (int i = 64; i < 96; ++i) bassNotes[i] = em7Bass[i % 8];
+    for (int i = 96; i < 128; ++i) bassNotes[i] = dm7Bass[i % 8];
+
+    // Exotic scale arpeggio
+    int arpNotes[128];
+    int phrArp1[4] = { 52, 55, 59, 63 }; // E3, G3, B3, Eb4 (add tension)
+    int phrArp2[4] = { 53, 57, 60, 64 }; // F3, A3, C4, E4
+    int phrArp3[4] = { 50, 53, 57, 62 }; // D3, F3, A3, D4
+    for (int i = 0; i < 32; ++i) arpNotes[i] = phrArp1[i % 4];
+    for (int i = 32; i < 64; ++i) arpNotes[i] = phrArp2[i % 4];
+    for (int i = 64; i < 96; ++i) arpNotes[i] = phrArp1[i % 4];
+    for (int i = 96; i < 128; ++i) arpNotes[i] = phrArp3[i % 4];
+
+    // Exotic lead melody (Phrygian, sinuous and tense)
+    int leadNotes[128];
+    std::fill_n(leadNotes, 128, 0);
+    for (int s = 0; s < 4; ++s) leadNotes[s]  = 64;  // E4
+    for (int s = 4; s < 6; ++s) leadNotes[s]  = 65;  // F4 (Phrygian flat 2!)
+    for (int s = 6; s < 8; ++s) leadNotes[s]  = 64;  // E4
+    for (int s = 8; s < 16; ++s) leadNotes[s] = 67;  // G4
+    for (int s = 16; s < 20; ++s) leadNotes[s]= 69;  // A4
+    for (int s = 20; s < 24; ++s) leadNotes[s]= 67;  // G4
+    for (int s = 24; s < 28; ++s) leadNotes[s]= 65;  // F4
+    for (int s = 28; s < 32; ++s) leadNotes[s]= 64;  // E4
+    for (int s = 32; s < 40; ++s) leadNotes[s]= 65;  // F4
+    for (int s = 40; s < 44; ++s) leadNotes[s]= 67;  // G4
+    for (int s = 44; s < 48; ++s) leadNotes[s]= 65;  // F4
+    for (int s = 48; s < 56; ++s) leadNotes[s]= 69;  // A4
+    for (int s = 56; s < 60; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 60; s < 64; ++s) leadNotes[s]= 69;  // A4
+    for (int s = 64; s < 72; ++s) leadNotes[s]= 64;  // E4
+    for (int s = 72; s < 76; ++s) leadNotes[s]= 65;  // F4
+    for (int s = 76; s < 80; ++s) leadNotes[s]= 64;  // E4
+    for (int s = 80; s < 88; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 88; s < 92; ++s) leadNotes[s]= 72;  // C5
+    for (int s = 92; s < 96; ++s) leadNotes[s]= 71;  // B4
+    for (int s = 96; s < 104; ++s) leadNotes[s]= 69; // A4
+    for (int s = 104; s < 108; ++s) leadNotes[s]= 67;// G4
+    for (int s = 108; s < 112; ++s) leadNotes[s]= 65;// F4
+    for (int s = 112; s < 120; ++s) leadNotes[s]= 64;// E4
+    for (int s = 120; s < 128; ++s) leadNotes[s]= 62;// D4
+
+    float kickPhase = 0.0f, snarePhase = 0.0f, bassPhase = 0.0f, arpPhase = 0.0f, leadPhase = 0.0f;
+
+    for (size_t i = 0; i < count; ++i) {
+        float t = static_cast<float>(i) / SAMPLE_RATE;
+        int step = static_cast<int>(t / stepDur) % totalSteps;
+        float stepT = (t - step * stepDur) / stepDur;
+
+        // Desert hi-hat kick — slightly syncopated
+        float kick = 0.0f;
+        if (step % 8 == 0 || step % 8 == 5) {
+            float kFreq = 50.0f + 120.0f * std::exp(-stepT * 28.0f);
+            kickPhase += 2.0f * PI * kFreq / SAMPLE_RATE;
+            kick = std::sin(kickPhase) * std::exp(-stepT * 16.0f) * 0.65f;
+        }
+
+        // Dry snare with noise burst
+        float snare = 0.0f;
+        if (step % 8 == 4 || step % 16 == 9) {
+            snarePhase += 2.0f * PI * 220.0f / SAMPLE_RATE;
+            float rawNoise = ((rand() % 100) / 50.0f) - 1.0f;
+            snare = (std::sin(snarePhase) * 0.3f + rawNoise * 0.7f) * std::exp(-stepT * 16.0f) * 0.40f;
+        }
+
+        // Smooth FM bass (exotic sound)
+        float bFreq = MidiHz(bassNotes[step]);
+        bassPhase += 2.0f * PI * bFreq / SAMPLE_RATE;
+        float fmBass = std::sin(bassPhase + std::sin(bassPhase * 1.8f) * 1.2f) * std::exp(-stepT * 5.5f) * 0.35f;
+
+        // Sinuous arp (sine wave for exotic glassy feel)
+        float aFreq = MidiHz(arpNotes[step]);
+        arpPhase += 2.0f * PI * aFreq / SAMPLE_RATE;
+        float arpSine = std::sin(arpPhase) * std::exp(-stepT * 7.0f) * 0.20f;
+        float arpHarm = std::sin(arpPhase * 1.5f) * std::exp(-stepT * 9.0f) * 0.08f;
+
+        // Exotic lead with strong vibrato (desert twang)
+        float lFreq = MidiHz(leadNotes[step]) * (1.0f + std::sin(t * 9.0f + 0.5f) * 0.007f);
+        leadPhase += 2.0f * PI * lFreq / SAMPLE_RATE;
+        float leadSine = std::sin(leadPhase) * std::exp(-stepT * 2.8f) * 0.32f;
+        float leadOvr = std::sin(leadPhase * 2.0f) * std::exp(-stepT * 4.0f) * 0.12f;
+
+        pcm[i] = ClampSample((kick + snare + fmBass + arpSine + arpHarm + leadSine + leadOvr) * 22000.0f);
+    }
+}
 

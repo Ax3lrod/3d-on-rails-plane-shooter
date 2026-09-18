@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <string>
 #include "Mesh.h"
 #include "shaderClass.h"
 
@@ -78,6 +79,22 @@ struct TreeObstacle {
     float rotation;
 };
 
+// Phase 35: Biome-specific prop structs
+struct IceCrystalSpire {
+    glm::vec3 position;
+    float scale;
+    float rotation;
+};
+struct CactusObstacle {
+    glm::vec3 position;
+    float scale;
+    float rotation;
+};
+struct DesertPyramidObstacle {
+    glm::vec3 position;
+    float scale;
+};
+
 class WorldEnvironment {
 public:
     SectorStage currentSector;
@@ -92,6 +109,10 @@ public:
     std::vector<FloatingDomeObstacle> floatingDomes;
     std::vector<WindTurbineObstacle> windTurbines;
     std::vector<TreeObstacle> trees;
+    // Phase 35: biome-specific prop instance lists
+    std::vector<IceCrystalSpire> iceCrystals;
+    std::vector<CactusObstacle> cacti;
+    std::vector<DesertPyramidObstacle> desertPyramids;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -107,6 +128,10 @@ public:
     Mesh turbineTowerMesh;
     Mesh turbineBladesMesh;
     Mesh treeMesh;
+    // Phase 35: biome prop meshes
+    Mesh iceCrystalMesh;
+    Mesh cactusMesh;
+    Mesh desertPyramidMesh;
 
     float nextSpawnZ;
     float despawnDistBehind;

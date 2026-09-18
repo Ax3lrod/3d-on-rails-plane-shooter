@@ -286,6 +286,12 @@ void Engine::StartMission(int stageIndex) {
     if (audio) {
         if (stageDef.id == "sector_5") {
             audio->PlayBGM(BGMTrack::Sector2, 0.70f);
+        } else if (stageDef.id == "sector_2") {
+            audio->PlayBGM(BGMTrack::Stage2, 0.68f);
+        } else if (stageDef.id == "sector_3") {
+            audio->PlayBGM(BGMTrack::Stage3, 0.68f);
+        } else if (stageDef.id == "sector_4") {
+            audio->PlayBGM(BGMTrack::Stage4, 0.68f);
         } else {
             audio->PlayBGM(BGMTrack::Stage1, 0.65f);
         }
