@@ -218,5 +218,5 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 35.3 — Sandworm Visibility Fix**: Worm now tracks `playerZ - 120` during underground phase and breach erupts at `playerZ - 50` (clearly in front of player). Fixed both Approaching and SubterraneanBurrow states.
 - [x] **Task 35.4 — Per-Stage Unique BGM**: Added `BGMTrack::Stage2`, `Stage3`, `Stage4` enum values. Implemented 3 new synth tracks (145BPM A major, 120BPM E minor industrial, 138BPM Phrygian desert). Wired in `Engine::StartMission()` by stage ID.
 - [x] **Task 35.5 — Level Design Variety**: WorldEnvironment now spawns biome-specific props per terrain theme in `GenerateChunk()`. Each biome has distinct environmental identity.
-- [ ] **Task 35.6**: Build, verify 0 errors, push to GitHub.
+- [x] **Task 35.6**: Build verified (exit 0, 0 errors). Committed `b2322a5` and pushed to GitHub remote.
 

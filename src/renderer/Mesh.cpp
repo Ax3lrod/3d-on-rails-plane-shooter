@@ -1199,19 +1199,28 @@ Mesh Mesh::CreateWindTurbineBlades(float bladeRadius, const glm::vec3& bladeColo
 }
 
 Mesh Mesh::CreateOpenFieldTerrain(float length, float width,
-                                 const glm::vec3& floorColA, const glm::vec3& floorColB) {
+                                 const glm::vec3& floorColA, const glm::vec3& floorColB,
+                                 int rowOffset) {
     std::vector<Vertex> verts;
     std::vector<GLuint> inds;
 
-    float hw = width * 0.5f;
+    float hw = width  * 0.5f;
     float hl = length * 0.5f;
     float floorY = -7.5f;
 
-    // 20 columns across width, 12 rows along length
-    const int xSegs = 20;
-    const int zSegs = 12;
-    float dx = width / xSegs;
+    // Ex-Zodiac / Star Fox checkerboard:
+    // tileSize=20 divides evenly into sliceLen=60 (3 rows exactly).
+    // rowOffset lets adjacent slabs alternate parity for seamless continuity.
+    const float tileSize = 20.0f;
+    const int xSegs = static_cast<int>(std::round(width  / tileSize)); // 17 cols for width=340
+    const int zSegs = static_cast<int>(std::round(length / tileSize)); // 3 rows for length=60
+
+    float dx = width  / xSegs;
     float dz = length / zSegs;
+
+    // Darken colB heavily so the two tiles have strong contrast (arcade look)
+    glm::vec3 colA = floorColA;
+    glm::vec3 colB = floorColB * 0.62f;
 
     for (int iz = 0; iz < zSegs; ++iz) {
         float z0 = -hl + iz * dz;
@@ -1221,33 +1230,48 @@ Mesh Mesh::CreateOpenFieldTerrain(float length, float width,
             float x0 = -hw + ix * dx;
             float x1 = x0 + dx;
 
-            // Two-tone checkerboard tile pattern (Ex-Zodiac signature arcade green plains)
-            bool isTileA = ((ix + iz) % 2 == 0);
-            glm::vec3 tileCol = isTileA ? floorColA : floorColB;
+            // rowOffset shifts parity so slab N+1 continues from where slab N left off
+            bool isTileA = ((ix + iz + rowOffset) % 2 == 0);
+            glm::vec3 tileCol = isTileA ? colA : colB;
 
-            // Rolling prairie contours across the vast open landscape
-            float y00 = floorY + std::sin(ix * 0.75f + iz * 1.25f) * 0.12f;
-            float y10 = floorY + std::sin((ix + 1) * 0.75f + iz * 1.25f) * 0.12f;
-            float y11 = floorY + std::sin((ix + 1) * 0.75f + (iz + 1) * 1.25f) * 0.12f;
-            float y01 = floorY + std::sin(ix * 0.75f + (iz + 1) * 1.25f) * 0.12f;
-
-            // Gently ease outer edges to blend with horizon plane
-            if (ix == 0) {
-                y00 -= 2.2f;
-                y01 -= 2.2f;
-            } else if (ix == xSegs - 1) {
-                y10 -= 2.2f;
-                y11 -= 2.2f;
-            }
-
+            // Perfectly flat — Ex-Zodiac ground has no vertex waviness
             AddQuad(verts, inds,
-                    {x0, y00, z0}, {x1, y10, z0}, {x1, y11, z1}, {x0, y01, z1},
+                    {x0, floorY, z0}, {x1, floorY, z0},
+                    {x1, floorY, z1}, {x0, floorY, z1},
                     tileCol);
         }
     }
 
+    // Side berms: slightly raised colored edge strips — gives the "road track" feel
+    float bermH = 2.2f;
+    float bermW = 8.0f;
+    glm::vec3 bermCol = floorColA * 0.55f; // dark toned berm, biome-neutral
+
+    // Left berm top
+    AddQuad(verts, inds,
+            {-hw - bermW, floorY + bermH, -hl}, {-hw, floorY + bermH, -hl},
+            {-hw,         floorY + bermH,  hl}, {-hw - bermW, floorY + bermH, hl},
+            bermCol);
+    // Left berm inner wall
+    AddQuad(verts, inds,
+            {-hw, floorY,         -hl}, {-hw, floorY + bermH, -hl},
+            {-hw, floorY + bermH,  hl}, {-hw, floorY,          hl},
+            bermCol * 0.78f);
+
+    // Right berm top
+    AddQuad(verts, inds,
+            {hw,         floorY + bermH, -hl}, {hw + bermW, floorY + bermH, -hl},
+            {hw + bermW, floorY + bermH,  hl}, {hw,         floorY + bermH,  hl},
+            bermCol);
+    // Right berm inner wall
+    AddQuad(verts, inds,
+            {hw, floorY + bermH, -hl}, {hw, floorY,        -hl},
+            {hw, floorY,          hl}, {hw, floorY + bermH,  hl},
+            bermCol * 0.78f);
+
     return Mesh(verts, inds);
 }
+
 
 Mesh Mesh::CreateLowPolyTree(float trunkHeight, float trunkRadius,
                             float foliageHeight, float foliageRadius,

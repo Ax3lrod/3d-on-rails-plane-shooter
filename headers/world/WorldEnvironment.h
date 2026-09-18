@@ -132,6 +132,8 @@ public:
     Mesh iceCrystalMesh;
     Mesh cactusMesh;
     Mesh desertPyramidMesh;
+    // Odd-parity terrain mesh: same geometry but rowOffset=1 so adjacent slabs tile seamlessly
+    Mesh canyonMeshOdd;
 
     float nextSpawnZ;
     float despawnDistBehind;

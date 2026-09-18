@@ -10,8 +10,11 @@ WorldEnvironment::WorldEnvironment()
       silverRingMesh(Mesh::CreateRing(2.6f, 3.2f, 16, glm::vec3(0.3f, 0.85f, 1.0f))),
       asteroidMesh(Mesh::CreateAsteroid(2.4f, glm::vec3(0.55f, 0.52f, 0.48f))),
       canyonMesh(Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
-                                            glm::vec3(0.18f, 0.65f, 0.28f),   // Ex-Zodiac emerald green plains
-                                            glm::vec3(0.28f, 0.84f, 0.38f))), // Ex-Zodiac chartreuse lime plains
+                                            glm::vec3(0.18f, 0.65f, 0.28f),
+                                            glm::vec3(0.28f, 0.84f, 0.38f), 0)),
+      canyonMeshOdd(Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                            glm::vec3(0.18f, 0.65f, 0.28f),
+                                            glm::vec3(0.28f, 0.84f, 0.38f), 1)),
       rockArchMesh(Mesh::CreateRockArch(54.0f, 22.0f, 8.5f, glm::vec3(0.92f, 0.68f, 0.72f))),
       pillarMesh(Mesh::CreatePillar(1.8f, 16.0f, glm::vec3(0.90f, 0.75f, 0.78f))),
       relayMesh(Mesh::CreateRadarRelay(2.6f, glm::vec3(0.35f, 0.40f, 0.45f), glm::vec3(0.85f, 0.88f, 0.92f), glm::vec3(1.0f, 0.2f, 0.15f))),
@@ -41,37 +44,37 @@ void WorldEnvironment::SetSector(SectorStage sector) {
 void WorldEnvironment::SetTerrainTheme(const std::string& theme) {
     terrainTheme = theme;
     if (theme == "railway_canyon") {
-        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
-                                                  glm::vec3(0.65f, 0.28f, 0.16f),
-                                                  glm::vec3(0.55f, 0.22f, 0.12f));
+        glm::vec3 cA(0.65f, 0.28f, 0.16f), cB(0.55f, 0.22f, 0.12f);
+        canyonMesh    = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 0);
+        canyonMeshOdd = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 1);
         horizonMesh = Mesh::CreateBiomeHorizon("canyon", 700.0f, 260.0f,
                                                glm::vec3(0.85f, 0.42f, 0.18f),
                                                glm::vec3(0.98f, 0.65f, 0.35f));
     } else if (theme == "iron_fortress") {
-        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
-                                                  glm::vec3(0.18f, 0.20f, 0.24f),
-                                                  glm::vec3(0.25f, 0.27f, 0.32f));
+        glm::vec3 cA(0.18f, 0.20f, 0.24f), cB(0.25f, 0.27f, 0.32f);
+        canyonMesh    = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 0);
+        canyonMeshOdd = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 1);
         horizonMesh = Mesh::CreateBiomeHorizon("iron_fortress", 700.0f, 260.0f,
                                                glm::vec3(0.12f, 0.10f, 0.16f),
                                                glm::vec3(0.22f, 0.12f, 0.10f));
     } else if (theme == "dune_pass") {
-        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
-                                                  glm::vec3(0.84f, 0.65f, 0.32f),
-                                                  glm::vec3(0.76f, 0.58f, 0.26f));
+        glm::vec3 cA(0.84f, 0.65f, 0.32f), cB(0.76f, 0.58f, 0.26f);
+        canyonMesh    = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 0);
+        canyonMeshOdd = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 1);
         horizonMesh = Mesh::CreateBiomeHorizon("dune_pass", 700.0f, 260.0f,
                                                glm::vec3(0.70f, 0.52f, 0.28f),
                                                glm::vec3(0.98f, 0.82f, 0.50f));
     } else if (theme == "glacial") {
-        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
-                                                  glm::vec3(0.75f, 0.88f, 0.96f),
-                                                  glm::vec3(0.85f, 0.93f, 1.0f));
+        glm::vec3 cA(0.75f, 0.88f, 0.96f), cB(0.85f, 0.93f, 1.0f);
+        canyonMesh    = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 0);
+        canyonMeshOdd = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 1);
         horizonMesh = Mesh::CreateBiomeHorizon("glacial", 700.0f, 260.0f,
                                                glm::vec3(0.22f, 0.45f, 0.72f),
                                                glm::vec3(0.82f, 0.92f, 1.0f));
     } else {
-        canyonMesh = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
-                                                  glm::vec3(0.18f, 0.58f, 0.28f),
-                                                  glm::vec3(0.24f, 0.68f, 0.35f));
+        glm::vec3 cA(0.18f, 0.58f, 0.28f), cB(0.24f, 0.68f, 0.35f);
+        canyonMesh    = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 0);
+        canyonMeshOdd = Mesh::CreateOpenFieldTerrain(60.0f, 340.0f, cA, cB, 1);
         horizonMesh = Mesh::CreateBiomeHorizon("canyon", 700.0f, 260.0f,
                                                glm::vec3(0.16f, 0.46f, 0.92f),
                                                glm::vec3(0.75f, 0.90f, 0.98f));
@@ -379,12 +382,20 @@ void WorldEnvironment::Draw(const Shader& shader) const {
         shader.SetInt("uUseLighting", 1);
         shader.SetInt("uUseFog", 1);
 
-        // 1. Draw Open Field Ground Slices
+        // 1. Draw Open Field Ground Slices — alternate even/odd mesh for seamless checkerboard
+        const float sliceLen = 60.0f;
         for (const auto& cs : canyonSlices) {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cs.position);
             shader.SetMat4("uModel", model);
-            canyonMesh.Draw(shader);
+            // Each slab covers 3 tile rows (tileSize=20, sliceLen=60). 3 is odd,
+            // so parity flips at every slab boundary. Pick even/odd mesh accordingly.
+            int slabIdx = static_cast<int>(std::round(-cs.position.z / sliceLen));
+            if (std::abs(slabIdx) % 2 == 0) {
+                canyonMesh.Draw(shader);
+            } else {
+                canyonMeshOdd.Draw(shader);
+            }
         }
 
         // 2. Draw Rock Arches
