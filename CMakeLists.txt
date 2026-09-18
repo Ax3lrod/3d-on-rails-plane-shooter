@@ -51,6 +51,7 @@ set(SOURCES
     src/audio/SoundManager.cpp
     src/entities/WingmanSquadron.cpp
     src/renderer/PostProcessor.cpp
+    src/world/LevelTimeline.cpp
 )
 add_executable(OpenGLProject ${SOURCES})
 

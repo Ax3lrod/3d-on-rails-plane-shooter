@@ -1,0 +1,160 @@
+{
+  "stage_name": "Sector 1: Emerald Coastline",
+  "music_track": "stage1",
+  "events": [
+    {
+      "trigger_z": -20.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: RADAR CONTACTS DETECTED AHEAD!",
+      "line2": "STAY SHARP, WATCH FOR GROUND FLAK AND AMBUSHES!",
+      "duration": 4.0
+    },
+    {
+      "trigger_z": -60.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "v_formation",
+      "count": 3,
+      "spawn_x": 0.0,
+      "spawn_y": 2.5,
+      "spacing_x": 4.5,
+      "spacing_z": 12.0
+    },
+    {
+      "trigger_z": -150.0,
+      "type": "transmission",
+      "speaker": "Echo2",
+      "line1": "AEGIS: HOSTILE TANKS ADVANCING ON GROUND SECTOR!",
+      "line2": "DIVE IN LOW OR CLEAR THEM FROM LONG RANGE!",
+      "duration": 3.8
+    },
+    {
+      "trigger_z": -190.0,
+      "type": "spawn_wave",
+      "enemy_type": "tank",
+      "formation": "column",
+      "count": 2,
+      "spawn_x": -6.0,
+      "spawn_y": -7.5,
+      "spacing_x": 0.0,
+      "spacing_z": 24.0
+    },
+    {
+      "trigger_z": -270.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "staggered",
+      "count": 4,
+      "spawn_x": 4.0,
+      "spawn_y": 4.0,
+      "spacing_x": 6.0,
+      "spacing_z": 14.0
+    },
+    {
+      "trigger_z": -360.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "line",
+      "count": 2,
+      "spawn_x": 0.0,
+      "spawn_y": -7.5,
+      "spacing_x": 18.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -420.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: WATCH OUT! ANTI-AIR FLAK LOCKING ON!",
+      "line2": "DO A BARREL ROLL TO DEFLECT INCOMING FIRE!",
+      "duration": 4.0
+    },
+    {
+      "trigger_z": -500.0,
+      "type": "spawn_wave",
+      "enemy_type": "tank",
+      "formation": "staggered",
+      "count": 3,
+      "spawn_x": 4.0,
+      "spawn_y": -7.5,
+      "spacing_x": 10.0,
+      "spacing_z": 20.0
+    },
+    {
+      "trigger_z": -600.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "staggered",
+      "count": 2,
+      "spawn_x": 0.0,
+      "spawn_y": 5.0,
+      "spacing_x": 10.0,
+      "spacing_z": 16.0
+    },
+    {
+      "trigger_z": -680.0,
+      "type": "transmission",
+      "speaker": "Echo2",
+      "line1": "AEGIS: ELITE INTERCEPTORS ON OUR VECTOR!",
+      "line2": "CHARGE PLASMA CANNONS FOR LOCK-ON HOMING SHOTS!",
+      "duration": 4.0
+    },
+    {
+      "trigger_z": -760.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "single",
+      "count": 1,
+      "spawn_x": -11.0,
+      "spawn_y": -7.5,
+      "spacing_x": 0.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -780.0,
+      "type": "spawn_wave",
+      "enemy_type": "turret",
+      "formation": "single",
+      "count": 1,
+      "spawn_x": 11.0,
+      "spawn_y": -7.5,
+      "spacing_x": 0.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -840.0,
+      "type": "spawn_wave",
+      "enemy_type": "drone",
+      "formation": "v_formation",
+      "count": 5,
+      "spawn_x": 0.0,
+      "spawn_y": 3.0,
+      "spacing_x": 5.0,
+      "spacing_z": 10.0
+    },
+    {
+      "trigger_z": -930.0,
+      "type": "spawn_wave",
+      "enemy_type": "interceptor",
+      "formation": "line",
+      "count": 3,
+      "spawn_x": 0.0,
+      "spawn_y": 6.0,
+      "spacing_x": 8.0,
+      "spacing_z": 0.0
+    },
+    {
+      "trigger_z": -1020.0,
+      "type": "transmission",
+      "speaker": "Echo1",
+      "line1": "STRIKER: MASSIVE ENERGY SIGNATURE DETECTED!",
+      "line2": "COLOSSAL DREADNOUGHT WARSHIP AHEAD! ALL-RANGE ENGAGED!",
+      "duration": 5.0
+    },
+    {
+      "trigger_z": -1100.0,
+      "type": "boss_trigger"
+    }
+  ]
+}

@@ -187,3 +187,10 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 30.3**: Open Field Terrain, Horizon Mountains & Abundant Objects: Implement `CreateOpenFieldTerrain` without side canyon walls; add `CreateLowPolyTree` and scatter trees, turbines, rocks, and arches across the plains; enlarge and elevate multi-layered distant horizon mountains in `CreateArcadeHorizon`.
 - [x] **Task 30.4**: Compilation, playtest verification, and push to GitHub remote repository.
 
+## Phase 31: Data-Driven Level Scripting, Choreographed Waves & Ground Units (Tanks & Turrets)
+- [x] **Task 31.1**: New Enemy Variety & Meshes: Create 3D procedural meshes for Ground Tank (`CreateGroundTank`), Flak Turret (`CreateFlakTurret`), and Elite Interceptor (`CreateEliteInterceptor`) in `Mesh.h` & `Mesh.cpp`.
+- [x] **Task 31.2**: Enemy Behaviors & Multi-Type Management: Upgrade `EnemyManager` with `EnemyType` (Drone, GroundTank, FlakTurret, EliteInterceptor), ground positioning ($Y = -7.5\text{m}$), tracking turrets, and tailored attack patterns.
+- [x] **Task 31.3**: Data-Driven Level Timeline Scripting: Implement `LevelTimeline` to parse JSON stage scripts (`resource/stages/stage1.json`) containing scripted enemy waves, choreographed formations, and synchronized radio banter.
+- [x] **Task 31.4**: Engine & Combat Integration: Wire `LevelTimeline` into `Engine` game loop to drive Stage 1 pacing, enemy encounters, and seamless boss battle trigger.
+- [x] **Task 31.5**: Compilation, Playtest Verification & GitHub Sync: Verify gameplay in Release build and push changes to remote repository.
+

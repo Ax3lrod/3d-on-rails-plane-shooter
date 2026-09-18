@@ -74,6 +74,9 @@ public:
     static Mesh CreateLowPolyTree(float trunkHeight, float trunkRadius, float foliageHeight, float foliageRadius,
                                   const glm::vec3& trunkCol, const glm::vec3& foliageCol);
     static Mesh CreateSpikedMace(float radius, float spikeLen, const glm::vec3& coreColor, const glm::vec3& spikeColor);
+    static Mesh CreateGroundTank(const glm::vec3& treadCol, const glm::vec3& hullCol, const glm::vec3& turretCol);
+    static Mesh CreateFlakTurret(const glm::vec3& bunkerCol, const glm::vec3& barrelCol);
+    static Mesh CreateEliteInterceptor(const glm::vec3& hullCol, const glm::vec3& accentCol, const glm::vec3& cockpitCol);
 };
 
 #endif

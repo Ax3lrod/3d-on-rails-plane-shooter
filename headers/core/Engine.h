@@ -18,6 +18,7 @@
 #include "SoundManager.h"
 #include "WingmanSquadron.h"
 #include "PostProcessor.h"
+#include "LevelTimeline.h"
 
 enum class GameState {
     TitleHangar,
@@ -78,6 +79,7 @@ private:
     std::unique_ptr<SoundManager> audio;
     std::unique_ptr<WingmanSquadron> wingmen;
     std::unique_ptr<PostProcessor> postProcessor;
+    std::unique_ptr<LevelTimeline> levelTimeline;
 
     // Hangar & Menu
     std::unique_ptr<Mesh> hangarFloorMesh;

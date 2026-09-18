@@ -1366,3 +1366,286 @@ Mesh Mesh::CreateSpikedMace(float radius, float spikeLen,
 
     return Mesh(verts, inds);
 }
+
+Mesh Mesh::CreateGroundTank(const glm::vec3& treadCol, const glm::vec3& hullCol, const glm::vec3& turretCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Left and Right Caterpillar Treads
+    float treadW = 0.95f;
+    float treadH = 0.85f;
+    float treadLen = 3.8f;
+    float halfLen = treadLen * 0.5f;
+
+    for (int side = -1; side <= 1; side += 2) {
+        float cx = side * 1.75f;
+        float x0 = cx - treadW * 0.5f;
+        float x1 = cx + treadW * 0.5f;
+
+        // Beveled tread loop
+        glm::vec3 b0(x0, 0.0f, -halfLen + 0.5f);
+        glm::vec3 b1(x1, 0.0f, -halfLen + 0.5f);
+        glm::vec3 b2(x1, 0.0f,  halfLen - 0.5f);
+        glm::vec3 b3(x0, 0.0f,  halfLen - 0.5f);
+
+        glm::vec3 t0(x0, treadH, -halfLen + 0.4f);
+        glm::vec3 t1(x1, treadH, -halfLen + 0.4f);
+        glm::vec3 t2(x1, treadH,  halfLen - 0.4f);
+        glm::vec3 t3(x0, treadH,  halfLen - 0.4f);
+
+        glm::vec3 front(cx, treadH * 0.45f, halfLen);
+        glm::vec3 back(cx, treadH * 0.45f, -halfLen);
+
+        // Top and bottom track runs
+        AddQuad(verts, inds, t0, t1, t2, t3, treadCol * 0.85f);
+        AddQuad(verts, inds, b3, b2, b1, b0, treadCol * 0.55f);
+        // Sloped front/back track runs
+        AddQuad(verts, inds, b3, b2, t2, t3, treadCol * 0.95f);
+        AddQuad(verts, inds, t0, t1, b1, b0, treadCol * 0.75f);
+        // Outer track sides
+        glm::vec3 outCol = treadCol * (side < 0 ? 0.80f : 1.05f);
+        if (side < 0) {
+            AddQuad(verts, inds, b0, t0, t3, b3, outCol);
+        } else {
+            AddQuad(verts, inds, b2, t2, t1, b1, outCol);
+        }
+    }
+
+    // 2. Sloped Armored Tank Chassis / Hull
+    float hw = 1.35f;
+    float hullBotY = 0.45f;
+    float hullTopY = 1.25f;
+    float hFrontZ = 1.8f;
+    float hBackZ = -1.8f;
+
+    glm::vec3 hb0(-hw, hullBotY, hBackZ);
+    glm::vec3 hb1( hw, hullBotY, hBackZ);
+    glm::vec3 hb2( hw, hullBotY, hFrontZ);
+    glm::vec3 hb3(-hw, hullBotY, hFrontZ);
+
+    float tw = 1.05f;
+    glm::vec3 ht0(-tw, hullTopY, hBackZ + 0.3f);
+    glm::vec3 ht1( tw, hullTopY, hBackZ + 0.3f);
+    glm::vec3 ht2( tw, hullTopY, hFrontZ - 0.5f);
+    glm::vec3 ht3(-tw, hullTopY, hFrontZ - 0.5f);
+
+    AddQuad(verts, inds, ht0, ht1, ht2, ht3, hullCol * 1.15f); // Roof
+    AddQuad(verts, inds, hb3, hb2, ht2, ht3, hullCol * 1.25f); // Front glacis (sloped)
+    AddQuad(verts, inds, hb1, hb0, ht0, ht1, hullCol * 0.75f); // Rear armor
+    AddQuad(verts, inds, hb0, hb3, ht3, ht0, hullCol * 0.85f); // Left flank
+    AddQuad(verts, inds, hb2, hb1, ht1, ht2, hullCol * 1.05f); // Right flank
+
+    // 3. Rotating Turret Cupola
+    float turRad = 0.95f;
+    float turY = hullTopY;
+    float turH = 0.65f;
+    glm::vec3 turTop(0.0f, turY + turH, 0.0f);
+
+    for (int i = 0; i < 6; ++i) {
+        float a0 = (float)i / 6.0f * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+
+        glm::vec3 c0(std::cos(a0) * turRad, turY, std::sin(a0) * turRad);
+        glm::vec3 c1(std::cos(a1) * turRad, turY, std::sin(a1) * turRad);
+        glm::vec3 ct0(std::cos(a0) * turRad * 0.75f, turY + turH, std::sin(a0) * turRad * 0.75f);
+        glm::vec3 ct1(std::cos(a1) * turRad * 0.75f, turY + turH, std::sin(a1) * turRad * 0.75f);
+
+        float shade = 0.85f + 0.25f * (i % 2);
+        AddQuad(verts, inds, c0, c1, ct1, ct0, turretCol * shade);
+        AddTriangle(verts, inds, turTop, ct0, ct1, turretCol * 1.2f);
+    }
+
+    // 4. Twin Elevated Heavy Cannon Barrels (+Z, elevated ~14 degrees)
+    float barrelLen = 2.4f;
+    float bRadius = 0.16f;
+    float elevY = std::sin(glm::radians(14.0f)) * barrelLen;
+    float forwardZ = std::cos(glm::radians(14.0f)) * barrelLen;
+
+    for (float bx : {-0.32f, 0.32f}) {
+        glm::vec3 root(bx, turY + turH * 0.55f, 0.6f);
+        glm::vec3 tip(bx, root.y + elevY, root.z + forwardZ);
+
+        for (int i = 0; i < 4; ++i) {
+            float a0 = (float)i / 4.0f * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / 4.0f * glm::two_pi<float>();
+            glm::vec3 r0 = root + glm::vec3(std::cos(a0) * bRadius, std::sin(a0) * bRadius, 0.0f);
+            glm::vec3 r1 = root + glm::vec3(std::cos(a1) * bRadius, std::sin(a1) * bRadius, 0.0f);
+            glm::vec3 t0 = tip  + glm::vec3(std::cos(a0) * bRadius, std::sin(a0) * bRadius, 0.0f);
+            glm::vec3 t1 = tip  + glm::vec3(std::cos(a1) * bRadius, std::sin(a1) * bRadius, 0.0f);
+
+            glm::vec3 barrelCol(0.18f, 0.20f, 0.24f);
+            AddQuad(verts, inds, r0, r1, t1, t0, barrelCol * (0.8f + 0.2f * (i % 2)));
+        }
+        // Glowing orange muzzle tip
+        AddQuad(verts, inds,
+                tip + glm::vec3(-bRadius, -bRadius, 0.0f),
+                tip + glm::vec3( bRadius, -bRadius, 0.0f),
+                tip + glm::vec3( bRadius,  bRadius, 0.0f),
+                tip + glm::vec3(-bRadius,  bRadius, 0.0f),
+                glm::vec3(1.0f, 0.4f, 0.1f));
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateFlakTurret(const glm::vec3& bunkerCol, const glm::vec3& barrelCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Octagonal Fortified Pillbox Bunker Base
+    const int segs = 8;
+    float rBase = 2.4f;
+    float rTop = 1.75f;
+    float bunkerH = 1.35f;
+
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 b0(std::cos(a0) * rBase, 0.0f, std::sin(a0) * rBase);
+        glm::vec3 b1(std::cos(a1) * rBase, 0.0f, std::sin(a1) * rBase);
+        glm::vec3 t0(std::cos(a0) * rTop, bunkerH, std::sin(a0) * rTop);
+        glm::vec3 t1(std::cos(a1) * rTop, bunkerH, std::sin(a1) * rTop);
+
+        float shade = 0.82f + 0.26f * (i % 2);
+        AddQuad(verts, inds, b0, b1, t1, t0, bunkerCol * shade);
+    }
+
+    // 2. Swivel Dome Cupola
+    float domeH = 0.8f;
+    float domeRad = 1.25f;
+    glm::vec3 domeApex(0.0f, bunkerH + domeH, 0.0f);
+
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 d0(std::cos(a0) * domeRad, bunkerH, std::sin(a0) * domeRad);
+        glm::vec3 d1(std::cos(a1) * domeRad, bunkerH, std::sin(a1) * domeRad);
+
+        float shade = 0.88f + 0.22f * (i % 2);
+        AddTriangle(verts, inds, domeApex, d0, d1, bunkerCol * 1.18f * shade);
+    }
+
+    // 3. Dual Anti-Air Flak Cannon Barrels (Elevated ~32 degrees into flight corridor)
+    float flakLen = 2.8f;
+    float fRadius = 0.14f;
+    float elevY = std::sin(glm::radians(32.0f)) * flakLen;
+    float forwardZ = std::cos(glm::radians(32.0f)) * flakLen;
+
+    for (float bx : {-0.42f, 0.42f}) {
+        glm::vec3 root(bx, bunkerH + domeH * 0.45f, 0.4f);
+        glm::vec3 tip(bx, root.y + elevY, root.z + forwardZ);
+
+        for (int i = 0; i < 4; ++i) {
+            float a0 = (float)i / 4.0f * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / 4.0f * glm::two_pi<float>();
+            glm::vec3 r0 = root + glm::vec3(std::cos(a0) * fRadius, std::sin(a0) * fRadius, 0.0f);
+            glm::vec3 r1 = root + glm::vec3(std::cos(a1) * fRadius, std::sin(a1) * fRadius, 0.0f);
+            glm::vec3 t0 = tip  + glm::vec3(std::cos(a0) * fRadius, std::sin(a0) * fRadius, 0.0f);
+            glm::vec3 t1 = tip  + glm::vec3(std::cos(a1) * fRadius, std::sin(a1) * fRadius, 0.0f);
+
+            AddQuad(verts, inds, r0, r1, t1, t0, barrelCol * (0.85f + 0.18f * (i % 2)));
+        }
+
+        // Flak Muzzle Flash Suppressor Funnel
+        float mRad = fRadius * 1.7f;
+        glm::vec3 muzzleExt = tip + glm::normalize(tip - root) * 0.35f;
+        AddQuad(verts, inds,
+                tip + glm::vec3(-mRad, -mRad, 0.0f),
+                tip + glm::vec3( mRad, -mRad, 0.0f),
+                muzzleExt + glm::vec3( mRad,  mRad, 0.0f),
+                muzzleExt + glm::vec3(-mRad,  mRad, 0.0f),
+                glm::vec3(0.98f, 0.25f, 0.15f));
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateEliteInterceptor(const glm::vec3& hullCol, const glm::vec3& accentCol, const glm::vec3& cockpitCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Sleek Aggressive Fuselage (Needle nose forward (+Z))
+    glm::vec3 nose(0.0f, 0.0f, 2.6f);
+    glm::vec3 midTop(0.0f, 0.55f, 0.2f);
+    glm::vec3 midBot(0.0f, -0.45f, 0.2f);
+    glm::vec3 midL(-0.85f, 0.0f, 0.2f);
+    glm::vec3 midR( 0.85f, 0.0f, 0.2f);
+
+    glm::vec3 tailTop(0.0f, 0.40f, -2.2f);
+    glm::vec3 tailBot(0.0f, -0.35f, -2.2f);
+    glm::vec3 tailL(-0.65f, 0.0f, -2.2f);
+    glm::vec3 tailR( 0.65f, 0.0f, -2.2f);
+
+    // Forward fuselage facets
+    AddTriangle(verts, inds, nose, midTop, midR, hullCol * 1.15f);
+    AddTriangle(verts, inds, nose, midL, midTop, hullCol * 0.95f);
+    AddTriangle(verts, inds, nose, midR, midBot, hullCol * 0.85f);
+    AddTriangle(verts, inds, nose, midBot, midL, hullCol * 0.75f);
+
+    // Mid to tail fuselage
+    AddQuad(verts, inds, midTop, midR, tailR, tailTop, hullCol * 1.05f);
+    AddQuad(verts, inds, midL, midTop, tailTop, tailL, hullCol * 0.90f);
+    AddQuad(verts, inds, midR, midBot, tailBot, tailR, hullCol * 0.70f);
+    AddQuad(verts, inds, midBot, midL, tailL, tailBot, hullCol * 0.60f);
+
+    // 2. Forward-Swept Wings with Dihedral Anhedral Angle (Star Wolf / Bird of Prey aesthetic)
+    float span = 3.6f;
+    float wingTipZ = 1.1f; // Sweeps forward!
+    float wingRootZ = -0.5f;
+
+    // Right wing
+    glm::vec3 rRoot0( 0.75f, 0.0f, wingRootZ + 0.8f);
+    glm::vec3 rRoot1( 0.65f, 0.0f, wingRootZ - 1.2f);
+    glm::vec3 rTip0(  span, -0.35f, wingTipZ);
+    glm::vec3 rTip1(  span + 0.4f, -0.45f, wingTipZ - 0.7f);
+    AddQuad(verts, inds, rRoot0, rRoot1, rTip1, rTip0, accentCol * 1.10f);
+    AddQuad(verts, inds, rTip0, rTip1, rRoot1, rRoot0, accentCol * 0.85f);
+
+    // Left wing
+    glm::vec3 lRoot0(-0.75f, 0.0f, wingRootZ + 0.8f);
+    glm::vec3 lRoot1(-0.65f, 0.0f, wingRootZ - 1.2f);
+    glm::vec3 lTip0( -span, -0.35f, wingTipZ);
+    glm::vec3 lTip1( -span - 0.4f, -0.45f, wingTipZ - 0.7f);
+    AddQuad(verts, inds, lRoot1, lRoot0, lTip0, lTip1, accentCol * 0.92f);
+    AddQuad(verts, inds, lTip1, lTip0, lRoot0, lRoot1, accentCol * 0.78f);
+
+    // Wingtip Plasma Pods
+    for (float wx : {-span, span}) {
+        glm::vec3 podCenter(wx, -0.38f, wingTipZ - 0.2f);
+        glm::vec3 podTip(wx, -0.38f, wingTipZ + 0.5f);
+        for (int i = 0; i < 4; ++i) {
+            float a0 = (float)i / 4.0f * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / 4.0f * glm::two_pi<float>();
+            glm::vec3 c0 = podCenter + glm::vec3(std::cos(a0) * 0.18f, std::sin(a0) * 0.18f, -0.4f);
+            glm::vec3 c1 = podCenter + glm::vec3(std::cos(a1) * 0.18f, std::sin(a1) * 0.18f, -0.4f);
+            AddTriangle(verts, inds, podTip, c0, c1, glm::vec3(1.0f, 0.2f, 0.15f));
+        }
+    }
+
+    // 3. Cockpit Canopy Glass (Luminous Amber / Crimson)
+    glm::vec3 cNose(0.0f, 0.25f, 1.4f);
+    glm::vec3 cPeak(0.0f, 0.65f, 0.5f);
+    glm::vec3 cRear(0.0f, 0.48f, -0.3f);
+    glm::vec3 cL(-0.35f, 0.32f, 0.4f);
+    glm::vec3 cR( 0.35f, 0.32f, 0.4f);
+
+    AddTriangle(verts, inds, cPeak, cNose, cR, cockpitCol * 1.25f);
+    AddTriangle(verts, inds, cPeak, cL, cNose, cockpitCol * 1.05f);
+    AddTriangle(verts, inds, cPeak, cR, cRear, cockpitCol * 0.90f);
+    AddTriangle(verts, inds, cPeak, cRear, cL, cockpitCol * 0.80f);
+
+    // 4. Twin Afterburner Thruster Rings at Tail
+    for (float tx : {-0.28f, 0.28f}) {
+        glm::vec3 ex(tx, 0.0f, -2.3f);
+        AddQuad(verts, inds,
+                ex + glm::vec3(-0.20f, -0.20f, 0.0f),
+                ex + glm::vec3( 0.20f, -0.20f, 0.0f),
+                ex + glm::vec3( 0.20f,  0.20f, 0.0f),
+                ex + glm::vec3(-0.20f,  0.20f, 0.0f),
+                glm::vec3(0.2f, 0.85f, 1.0f)); // Electric cyan exhaust glow
+    }
+
+    return Mesh(verts, inds);
+}

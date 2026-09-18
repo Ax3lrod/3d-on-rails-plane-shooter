@@ -177,6 +177,10 @@ bool Engine::Init() {
     wingmen = std::make_unique<WingmanSquadron>();
     postProcessor = std::make_unique<PostProcessor>();
     postProcessor->Init(windowWidth, windowHeight);
+    levelTimeline = std::make_unique<LevelTimeline>();
+    if (!levelTimeline->LoadFromFile("resource/stages/stage1.json")) {
+        levelTimeline->LoadFromFile("../resource/stages/stage1.json");
+    }
 
     hangarFloorMesh = std::make_unique<Mesh>(Mesh::CreateCube(glm::vec3(40.0f, 0.4f, 40.0f), glm::vec3(0.08f, 0.11f, 0.16f)));
     turntableMesh = std::make_unique<Mesh>(Mesh::CreateRing(7.2f, 8.2f, 24, glm::vec3(0.2f, 0.85f, 1.0f)));
@@ -226,6 +230,14 @@ void Engine::StartMission() {
     enemies->Clear();
     if (wingmen) wingmen->Reset();
     if (boss) boss->Reset();
+    if (levelTimeline) {
+        if (!levelTimeline->isLoaded) {
+            if (!levelTimeline->LoadFromFile("resource/stages/stage1.json")) {
+                levelTimeline->LoadFromFile("../resource/stages/stage1.json");
+            }
+        }
+        levelTimeline->Reset();
+    }
     bossSpawned = false;
     victoryTimer = 0.0f;
     wasChargingAudio = false;
@@ -976,9 +988,10 @@ void Engine::Update(float dt) {
             player->invulnerableTimer = 0.5f;
         }
 
-        // Spawn Boss when threshold reached in Sector 1
+        // Spawn Boss when threshold reached or triggered by timeline in Sector 1
         if (environment->currentSector == SectorStage::Sector1_Canyon) {
-            if (!bossSpawned && player->transform.position.z <= -950.0f) {
+            bool shouldTriggerBoss = (levelTimeline && levelTimeline->bossTriggered) || (player->transform.position.z <= -1100.0f);
+            if (!bossSpawned && shouldTriggerBoss) {
                 bossSpawned = true;
                 boss->Spawn(player->transform.position.z);
                 camera.StartBossIntro(boss->transform.position, player->transform.position);
@@ -1153,8 +1166,13 @@ void Engine::Update(float dt) {
         particles->Update(dt);
         environment->Update(player->transform.position.z, dt);
 
-        if (boss && boss->IsActive()) {
-            enemies->spawnTimer = 0.0f;
+        if (levelTimeline && levelTimeline->isLoaded && environment->currentSector == SectorStage::Sector1_Canyon) {
+            enemies->spawnTimer = 0.0f; // Scripted level timeline drives waves
+            levelTimeline->Update(player->transform.position.z, *enemies, wingmen.get(), audio.get());
+        } else {
+            if (boss && boss->IsActive()) {
+                enemies->spawnTimer = 0.0f;
+            }
         }
         enemies->Update(player->transform.position.z, player->transform.position, *projectiles, dt, audio.get());
 
