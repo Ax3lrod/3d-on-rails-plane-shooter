@@ -9,20 +9,22 @@ WorldEnvironment::WorldEnvironment()
       goldRingMesh(Mesh::CreateRing(2.6f, 3.2f, 16, glm::vec3(1.0f, 0.85f, 0.2f))),
       silverRingMesh(Mesh::CreateRing(2.6f, 3.2f, 16, glm::vec3(0.3f, 0.85f, 1.0f))),
       asteroidMesh(Mesh::CreateAsteroid(2.4f, glm::vec3(0.55f, 0.52f, 0.48f))),
-      canyonMesh(Mesh::CreateCanyonSection(60.0f, 38.0f, 16.0f,
-                                           glm::vec3(0.10f, 0.38f, 0.82f),   // Vibrant cobalt ocean water
-                                           glm::vec3(0.22f, 0.70f, 0.98f),   // Shimmering azure water crest
-                                           glm::vec3(0.92f, 0.68f, 0.72f))), // Ex-Zodiac Pastel Pink Mesa
-      rockArchMesh(Mesh::CreateRockArch(38.0f, 16.0f, 7.5f, glm::vec3(0.92f, 0.68f, 0.72f))),
-      pillarMesh(Mesh::CreatePillar(1.5f, 14.0f, glm::vec3(0.90f, 0.75f, 0.78f))),
-      relayMesh(Mesh::CreateRadarRelay(2.4f, glm::vec3(0.35f, 0.40f, 0.45f), glm::vec3(0.85f, 0.88f, 0.92f), glm::vec3(1.0f, 0.2f, 0.15f))),
+      canyonMesh(Mesh::CreateOpenFieldTerrain(60.0f, 340.0f,
+                                            glm::vec3(0.18f, 0.65f, 0.28f),   // Ex-Zodiac emerald green plains
+                                            glm::vec3(0.28f, 0.84f, 0.38f))), // Ex-Zodiac chartreuse lime plains
+      rockArchMesh(Mesh::CreateRockArch(54.0f, 22.0f, 8.5f, glm::vec3(0.92f, 0.68f, 0.72f))),
+      pillarMesh(Mesh::CreatePillar(1.8f, 16.0f, glm::vec3(0.90f, 0.75f, 0.78f))),
+      relayMesh(Mesh::CreateRadarRelay(2.6f, glm::vec3(0.35f, 0.40f, 0.45f), glm::vec3(0.85f, 0.88f, 0.92f), glm::vec3(1.0f, 0.2f, 0.15f))),
       debrisMesh(Mesh::CreateSpaceDebris(14.0f, 2.0f, glm::vec3(0.45f, 0.48f, 0.52f))),
-      horizonMesh(Mesh::CreateArcadeHorizon(420.0f, 180.0f,
-                                            glm::vec3(0.24f, 0.55f, 0.92f),   // Sega blue skies
-                                            glm::vec3(0.72f, 0.88f, 0.98f),   // Radiant ocean horizon
-                                            glm::vec3(0.68f, 0.75f, 0.92f))), // Distant pastel sawtooth peaks
-      domeMesh(Mesh::CreateFloatingDome(5.5f, glm::vec3(0.92f, 0.95f, 1.0f), glm::vec3(0.25f, 0.95f, 1.0f))),
-      turbineMesh(Mesh::CreateWindTurbine(26.0f, 9.5f, glm::vec3(0.92f, 0.94f, 0.96f), glm::vec3(0.98f, 0.98f, 1.0f))),
+      horizonMesh(Mesh::CreateArcadeHorizon(460.0f, 220.0f,
+                                            glm::vec3(0.16f, 0.46f, 0.92f),   // Sega blue skies
+                                            glm::vec3(0.75f, 0.90f, 0.98f),   // Radiant horizon light
+                                            glm::vec3(0.58f, 0.66f, 0.86f))), // Majestic distant mountain peaks
+      domeMesh(Mesh::CreateFloatingDome(6.5f, glm::vec3(0.92f, 0.95f, 1.0f), glm::vec3(0.25f, 0.95f, 1.0f))),
+      turbineMesh(Mesh::CreateWindTurbineTower(26.0f, glm::vec3(0.92f, 0.94f, 0.96f), glm::vec3(0.20f, 0.22f, 0.28f))),
+      turbineTowerMesh(Mesh::CreateWindTurbineTower(26.0f, glm::vec3(0.92f, 0.94f, 0.96f), glm::vec3(0.20f, 0.22f, 0.28f))),
+      turbineBladesMesh(Mesh::CreateWindTurbineBlades(10.5f, glm::vec3(0.98f, 0.98f, 1.0f), glm::vec3(0.92f, 0.18f, 0.22f))),
+      treeMesh(Mesh::CreateLowPolyTree(4.2f, 0.75f, 11.0f, 4.4f, glm::vec3(0.45f, 0.28f, 0.16f), glm::vec3(0.16f, 0.62f, 0.24f))),
       nextSpawnZ(0.0f),
       despawnDistBehind(60.0f),
       lastPlayerZ(0.0f) {
@@ -44,44 +46,71 @@ int WorldEnvironment::GetDestroyedRelayCount() const {
 
 void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
     if (currentSector == SectorStage::Sector1_Canyon) {
-        float canyonSliceLen = 60.0f;
+        float sliceLen = 60.0f;
 
-        // 1. Generate seamless canyon slices
-        for (float z = startZ; z >= endZ; z -= canyonSliceLen) {
+        // 1. Generate seamless open field slices (wide expanse, no side walls)
+        for (float z = startZ; z >= endZ; z -= sliceLen) {
             canyonSlices.push_back({glm::vec3(0.0f, 0.0f, z)});
         }
 
-        // 2. Generate massive Rock Archways spanning the canyon
+        // 2. Generate massive Low-Poly Rock Archways across the open plains
         for (float z = startZ - 80.0f; z >= endZ; z -= 180.0f) {
-            rockArches.push_back({glm::vec3(0.0f, 0.0f, z), 34.0f, 16.0f});
-            // Golden Ring nested directly under the arch!
+            rockArches.push_back({glm::vec3(0.0f, 0.0f, z), 54.0f, 22.0f});
+            // Golden Ring nested under arch
             rings.push_back({glm::vec3(0.0f, -0.5f, z), 3.2f, 0.0f, true, false});
         }
 
-        // 3. Generate Hazard Monolith Pillars in the trench
-        for (float z = startZ - 40.0f; z >= endZ; z -= 75.0f) {
-            float rx = ((float)rand() / RAND_MAX > 0.5f ? 1.0f : -1.0f) * (3.0f + ((float)rand() / RAND_MAX) * 5.5f);
+        // 3. Generate Low-Poly Trees scattered across the wide open plains (Ex-Zodiac Image 3)
+        for (float z = startZ - 12.0f; z >= endZ; z -= 22.0f) {
+            // Left flank grove
+            float lx = -22.0f - ((float)rand() / RAND_MAX) * 85.0f;
+            float lScale = 0.85f + ((float)rand() / RAND_MAX) * 0.45f;
+            float lRot = ((float)rand() / RAND_MAX) * 360.0f;
+            trees.push_back({glm::vec3(lx, -7.5f, z + ((float)rand() / RAND_MAX * 10.0f - 5.0f)), lScale, lRot});
+
+            // Right flank grove
+            float rx = 22.0f + ((float)rand() / RAND_MAX) * 85.0f;
+            float rScale = 0.85f + ((float)rand() / RAND_MAX) * 0.45f;
+            float rRot = ((float)rand() / RAND_MAX) * 360.0f;
+            trees.push_back({glm::vec3(rx, -7.5f, z + ((float)rand() / RAND_MAX * 10.0f - 5.0f)), rScale, rRot});
+        }
+
+        // 4. Giant Wind Turbines along the open plains (Ex-Zodiac Image 3)
+        for (float z = startZ - 40.0f; z >= endZ; z -= 70.0f) {
+            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+            float tx = side * (32.0f + ((float)rand() / RAND_MAX) * 65.0f);
+            windTurbines.push_back({
+                glm::vec3(tx, -7.5f, z),
+                ((float)rand() / RAND_MAX) * 360.0f,
+                55.0f + ((float)rand() / RAND_MAX) * 35.0f
+            });
+        }
+
+        // 5. Generate Hazard Monolith Pillars on the plains
+        for (float z = startZ - 40.0f; z >= endZ; z -= 80.0f) {
+            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+            float rx = side * (6.0f + ((float)rand() / RAND_MAX) * 35.0f);
             pillars.push_back({
                 glm::vec3(rx, 0.0f, z),
-                1.6f,   // Collision radius
-                14.0f,  // Height
+                1.8f,   // Collision radius
+                16.0f,  // Height
                 50.0f,  // Health
                 false
             });
         }
 
-        // 4. Generate Energy Rings
-        for (float z = startZ - 50.0f; z >= endZ; z -= 85.0f) {
-            float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 9.0f;
-            float ry = -4.0f + ((float)rand() / RAND_MAX) * 8.0f;
+        // 6. Generate Energy Recovery Rings
+        for (float z = startZ - 45.0f; z >= endZ; z -= 85.0f) {
+            float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 11.0f;
+            float ry = -3.5f + ((float)rand() / RAND_MAX) * 7.5f;
             bool isGold = ((float)rand() / RAND_MAX) > 0.55f;
             rings.push_back({glm::vec3(rx, ry, z), 3.2f, 0.0f, isGold, false});
         }
 
-        // 5. High-altitude floating asteroid debris
+        // 7. High-altitude floating asteroid debris
         for (float z = startZ - 30.0f; z >= endZ; z -= 95.0f) {
-            float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 11.0f;
-            float ry = 3.5f + ((float)rand() / RAND_MAX) * 4.5f;
+            float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 15.0f;
+            float ry = 4.5f + ((float)rand() / RAND_MAX) * 4.5f;
             float radius = 1.8f + ((float)rand() / RAND_MAX) * 1.5f;
             glm::vec3 rotSpeed(
                 ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 40.0f,
@@ -97,22 +126,12 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
             });
         }
 
-        // 6. Floating High-Tech Dome Pavilions (Ex-Zodiac Image 1)
+        // 8. Floating High-Tech Dome Pavilions (Ex-Zodiac Image 1)
         for (float z = startZ - 60.0f; z >= endZ; z -= 140.0f) {
             float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
             floatingDomes.push_back({
-                glm::vec3(side * (24.0f + ((float)rand() / RAND_MAX) * 4.0f), 8.5f, z),
-                5.5f
-            });
-        }
-
-        // 7. Giant Rotating Wind Turbines (Ex-Zodiac Image 3)
-        for (float z = startZ - 90.0f; z >= endZ; z -= 110.0f) {
-            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
-            windTurbines.push_back({
-                glm::vec3(side * (18.5f + ((float)rand() / RAND_MAX) * 5.0f), -7.5f, z),
-                ((float)rand() / RAND_MAX) * 360.0f,
-                55.0f + ((float)rand() / RAND_MAX) * 30.0f
+                glm::vec3(side * (36.0f + ((float)rand() / RAND_MAX) * 25.0f), 8.5f, z),
+                6.5f
             });
         }
     } else {
@@ -250,6 +269,12 @@ void WorldEnvironment::Update(float playerZ, float dt) {
                        [cullZ](const WindTurbineObstacle& wt) { return wt.position.z > cullZ; }),
         windTurbines.end()
     );
+
+    trees.erase(
+        std::remove_if(trees.begin(), trees.end(),
+                       [cullZ](const TreeObstacle& t) { return t.position.z > cullZ; }),
+        trees.end()
+    );
 }
 
 void WorldEnvironment::Draw(const Shader& shader) const {
@@ -266,7 +291,7 @@ void WorldEnvironment::Draw(const Shader& shader) const {
         shader.SetInt("uUseLighting", 1);
         shader.SetInt("uUseFog", 1);
 
-        // 1. Draw Canyon Slices
+        // 1. Draw Open Field Ground Slices
         for (const auto& cs : canyonSlices) {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cs.position);
@@ -299,13 +324,30 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             domeMesh.Draw(shader);
         }
 
-        // 5. Draw Giant Wind Turbines along plains (Ex-Zodiac Image 3)
+        // 5. Draw Giant Wind Turbines along plains: Stationary Tower + Rotating Blades (Ex-Zodiac Image 3)
         for (const auto& wt : windTurbines) {
+            // Stationary tower standing firmly upright
+            glm::mat4 towerModel = glm::mat4(1.0f);
+            towerModel = glm::translate(towerModel, wt.position);
+            shader.SetMat4("uModel", towerModel);
+            turbineTowerMesh.Draw(shader);
+
+            // Rotating 3-blade propeller at the nacelle hub
+            glm::mat4 bladeModel = glm::mat4(1.0f);
+            bladeModel = glm::translate(bladeModel, wt.position + glm::vec3(0.0f, 26.0f, 2.0f));
+            bladeModel = glm::rotate(bladeModel, glm::radians(wt.rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+            shader.SetMat4("uModel", bladeModel);
+            turbineBladesMesh.Draw(shader);
+        }
+
+        // 5b. Draw Low-Poly Trees scattered across the plains (Ex-Zodiac Image 3)
+        for (const auto& tr : trees) {
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, wt.position);
-            model = glm::rotate(model, glm::radians(wt.rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, tr.position);
+            model = glm::rotate(model, glm::radians(tr.rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(tr.scale));
             shader.SetMat4("uModel", model);
-            turbineMesh.Draw(shader);
+            treeMesh.Draw(shader);
         }
 
         // 6. Draw Secret Planetary Radar Relays
@@ -377,6 +419,7 @@ void WorldEnvironment::Clear() {
     spaceDebris.clear();
     floatingDomes.clear();
     windTurbines.clear();
+    trees.clear();
     nextSpawnZ = 0.0f;
     lastPlayerZ = 0.0f;
 

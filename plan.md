@@ -181,3 +181,9 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 29.2**: End-to-end playtest of flight, visuals, and boss battle.
 - [x] **Task 29.3**: Stage, commit, and push all changes to GitHub remote repository.
 
+## Phase 30: Crisp High-Res HUD, Windmill Rotor Animation, and Open Field with Horizon Mountains
+- [x] **Task 30.1**: Crystal-Clear HUD & Clean Visuals: Render HUD & Menus directly onto native window resolution (framebuffer 0) after post-processing; disable dithering on UI; remove stepped fog banding in `default.frag`; set `retroPixelMode` default to false.
+- [x] **Task 30.2**: Windmill Separation & Proper Blade Rotation: Split windmill into stationary tower (`CreateWindTurbineTower`) and rotating propeller (`CreateWindTurbineBlades`); rotate only the blades at the hub in `WorldEnvironment`.
+- [x] **Task 30.3**: Open Field Terrain, Horizon Mountains & Abundant Objects: Implement `CreateOpenFieldTerrain` without side canyon walls; add `CreateLowPolyTree` and scatter trees, turbines, rocks, and arches across the plains; enlarge and elevate multi-layered distant horizon mountains in `CreateArcadeHorizon`.
+- [x] **Task 30.4**: Compilation, playtest verification, and push to GitHub remote repository.
+

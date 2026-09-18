@@ -657,20 +657,22 @@ Mesh Mesh::CreateArcadeHorizon(float radius, float height,
     std::vector<Vertex> verts;
     std::vector<GLuint> inds;
 
-    const int hSegs = 28;
-    float startAngle = -glm::radians(85.0f);
-    float endAngle = glm::radians(85.0f);
+    const int hSegs = 32;
+    float startAngle = -glm::radians(88.0f);
+    float endAngle = glm::radians(88.0f);
     float dAngle = (endAngle - startAngle) / hSegs;
 
-    // 1. Distant Sky Dome Bands (From Horizon to Zenith)
-    float yBot = -25.0f;
-    float yMid = 25.0f;
-    float yHigh = 75.0f;
+    // 1. Distant Sky Dome Bands (From Horizon to High Zenith)
+    float yBot = -30.0f;
+    float yLow = 15.0f;
+    float yMid = 60.0f;
+    float yHigh = 120.0f;
     float yTop = height;
 
     glm::vec3 colBot = horizonCol;
-    glm::vec3 colMid = glm::mix(horizonCol, skyTopCol, 0.45f);
-    glm::vec3 colHigh = glm::mix(horizonCol, skyTopCol, 0.80f);
+    glm::vec3 colLow = glm::mix(horizonCol, skyTopCol, 0.25f);
+    glm::vec3 colMid = glm::mix(horizonCol, skyTopCol, 0.55f);
+    glm::vec3 colHigh = glm::mix(horizonCol, skyTopCol, 0.85f);
     glm::vec3 colTop = skyTopCol;
 
     for (int i = 0; i < hSegs; ++i) {
@@ -683,6 +685,9 @@ Mesh Mesh::CreateArcadeHorizon(float radius, float height,
         glm::vec3 p0_bot(s0 * radius, yBot, -c0 * radius);
         glm::vec3 p1_bot(s1 * radius, yBot, -c1 * radius);
 
+        glm::vec3 p0_low(s0 * radius, yLow, -c0 * radius);
+        glm::vec3 p1_low(s1 * radius, yLow, -c1 * radius);
+
         glm::vec3 p0_mid(s0 * radius, yMid, -c0 * radius);
         glm::vec3 p1_mid(s1 * radius, yMid, -c1 * radius);
 
@@ -692,16 +697,16 @@ Mesh Mesh::CreateArcadeHorizon(float radius, float height,
         glm::vec3 p0_top(s0 * radius, yTop, -c0 * radius);
         glm::vec3 p1_top(s1 * radius, yTop, -c1 * radius);
 
-        // Lower Sky Band
-        AddQuad(verts, inds, p0_bot, p1_bot, p1_mid, p0_mid, colBot);
-        // Mid Sky Band
+        AddQuad(verts, inds, p0_bot, p1_bot, p1_low, p0_low, colBot);
+        AddQuad(verts, inds, p0_low, p1_low, p1_mid, p0_mid, colLow);
         AddQuad(verts, inds, p0_mid, p1_mid, p1_high, p0_high, colMid);
-        // High Sky Band
-        AddQuad(verts, inds, p0_high, p1_high, p1_top, p0_top, colTop);
+        AddQuad(verts, inds, p0_high, p1_high, p1_top, p0_top, colHigh);
     }
 
-    // 2. Low-Poly Sawtooth Mountain Peaks along Horizon
+    // 2. Layer 1: Majestic Distant Sawtooth Peaks (High Horizon Mountains)
     float mRadius = radius * 0.94f;
+    glm::vec3 snowCol(0.92f, 0.96f, 1.0f); // Alpine snowcaps
+
     for (int i = 0; i < hSegs; ++i) {
         float a0 = startAngle + i * dAngle;
         float a1 = a0 + dAngle;
@@ -711,18 +716,57 @@ Mesh Mesh::CreateArcadeHorizon(float radius, float height,
         float s1 = std::sin(a1), c1 = std::cos(a1);
         float sm = std::sin(aMid), cm = std::cos(aMid);
 
-        float peakY = 8.0f + std::sin(i * 1.8f) * 14.0f + std::cos(i * 3.4f) * 9.0f;
-        float baseLeftY = -12.0f;
-        float baseRightY = -12.0f;
+        // Prominent peak heights (35m to 85m tall)
+        float peakY = 38.0f + std::sin(i * 1.6f + 0.4f) * 26.0f + std::cos(i * 3.1f) * 18.0f;
+        float baseLeftY = -8.0f;
+        float baseRightY = -8.0f;
 
         glm::vec3 b0(s0 * mRadius, baseLeftY, -c0 * mRadius);
         glm::vec3 b1(s1 * mRadius, baseRightY, -c1 * mRadius);
         glm::vec3 peak(sm * mRadius, peakY, -cm * mRadius);
 
+        // Sunlit and shadow facets
         glm::vec3 sunCol = mountainCol * 1.25f;
-        glm::vec3 shadeCol = mountainCol * 0.82f;
+        glm::vec3 shadeCol = mountainCol * 0.78f;
+        glm::vec3 basePeakCol = (i % 2 == 0) ? sunCol : shadeCol;
 
-        AddTriangle(verts, inds, b0, peak, b1, (i % 2 == 0) ? sunCol : shadeCol);
+        // Mountain base triangle
+        AddTriangle(verts, inds, b0, peak, b1, basePeakCol);
+
+        // Snowcap on top 28% of the highest peaks
+        if (peakY > 48.0f) {
+            float snowY = peakY - (peakY - baseLeftY) * 0.28f;
+            float tSnow = (peakY - snowY) / (peakY - baseLeftY);
+            glm::vec3 sLeft = glm::mix(peak, b0, tSnow);
+            glm::vec3 sRight = glm::mix(peak, b1, tSnow);
+            AddTriangle(verts, inds, sLeft, peak, sRight, (i % 2 == 0) ? snowCol : snowCol * 0.88f);
+        }
+    }
+
+    // 3. Layer 2: Middle Foothills & Low-Poly Ridges (Foreground Parallax Layer)
+    float fRadius = radius * 0.86f;
+    glm::vec3 footColA(0.24f, 0.46f, 0.35f); // Sage green ridges
+    glm::vec3 footColB(0.32f, 0.54f, 0.42f); // Sunlit hills
+
+    for (int i = 0; i < hSegs; ++i) {
+        float a0 = startAngle + i * dAngle;
+        float a1 = a0 + dAngle;
+        float aMid = (a0 + a1) * 0.5f;
+
+        float s0 = std::sin(a0), c0 = std::cos(a0);
+        float s1 = std::sin(a1), c1 = std::cos(a1);
+        float sm = std::sin(aMid), cm = std::cos(aMid);
+
+        float hillY = 8.0f + std::sin(i * 2.2f + 1.2f) * 12.0f + std::cos(i * 1.5f) * 8.0f;
+        float baseLeftY = -8.0f;
+        float baseRightY = -8.0f;
+
+        glm::vec3 b0(s0 * fRadius, baseLeftY, -c0 * fRadius);
+        glm::vec3 b1(s1 * fRadius, baseRightY, -c1 * fRadius);
+        glm::vec3 peak(sm * fRadius, hillY, -cm * fRadius);
+
+        glm::vec3 col = (i % 2 == 0) ? footColB : footColA;
+        AddTriangle(verts, inds, b0, peak, b1, col);
     }
 
     return Mesh(verts, inds);
@@ -1041,13 +1085,17 @@ Mesh Mesh::CreateFloatingDome(float radius, const glm::vec3& domeColor, const gl
 
 Mesh Mesh::CreateWindTurbine(float towerHeight, float bladeRadius,
                             const glm::vec3& towerColor, const glm::vec3& bladeColor) {
+    return CreateWindTurbineTower(towerHeight, towerColor, glm::vec3(0.20f, 0.22f, 0.28f));
+}
+
+Mesh Mesh::CreateWindTurbineTower(float towerHeight, const glm::vec3& towerColor, const glm::vec3& nacelleColor) {
     std::vector<Vertex> verts;
     std::vector<GLuint> inds;
 
     // 1. Tapered Hexagonal Turbine Tower
     const int segs = 6;
-    float rBase = 1.6f;
-    float rTop = 0.85f;
+    float rBase = 1.8f;
+    float rTop = 0.95f;
 
     for (int i = 0; i < segs; ++i) {
         float a0 = (float)i / segs * glm::two_pi<float>();
@@ -1058,49 +1106,205 @@ Mesh Mesh::CreateWindTurbine(float towerHeight, float bladeRadius,
         glm::vec3 t0(std::cos(a0) * rTop, towerHeight, std::sin(a0) * rTop);
         glm::vec3 t1(std::cos(a1) * rTop, towerHeight, std::sin(a1) * rTop);
 
-        float shade = 0.85f + 0.25f * (i % 2);
+        float shade = 0.86f + 0.22f * (i % 2);
         AddQuad(verts, inds, b0, b1, t1, t0, towerColor * shade);
     }
 
-    // 2. Nacelle / Rotor Hub Pod
+    // 2. Nacelle Generator Housing Pod at Top
     float hubY = towerHeight;
-    float hubLen = 3.5f;
-    float hubRad = 1.1f;
-    glm::vec3 hubCol(0.18f, 0.20f, 0.24f);
+    float nacelleLen = 4.2f;
+    float nacelleRad = 1.25f;
 
-    AddQuad(verts, inds,
-            {-hubRad, hubY - hubRad * 0.5f, -hubLen * 0.5f},
-            { hubRad, hubY - hubRad * 0.5f, -hubLen * 0.5f},
-            { hubRad, hubY + hubRad * 0.5f, -hubLen * 0.5f},
-            {-hubRad, hubY + hubRad * 0.5f, -hubLen * 0.5f}, hubCol);
-    AddQuad(verts, inds,
-            {-hubRad, hubY - hubRad * 0.5f,  hubLen * 0.5f},
-            { hubRad, hubY - hubRad * 0.5f,  hubLen * 0.5f},
-            { hubRad, hubY + hubRad * 0.5f,  hubLen * 0.5f},
-            {-hubRad, hubY + hubRad * 0.5f,  hubLen * 0.5f}, hubCol * 0.9f);
+    glm::vec3 p0(-nacelleRad, hubY - nacelleRad * 0.6f, -nacelleLen * 0.65f);
+    glm::vec3 p1( nacelleRad, hubY - nacelleRad * 0.6f, -nacelleLen * 0.65f);
+    glm::vec3 p2( nacelleRad, hubY + nacelleRad * 0.7f, -nacelleLen * 0.65f);
+    glm::vec3 p3(-nacelleRad, hubY + nacelleRad * 0.7f, -nacelleLen * 0.65f);
 
-    // 3. Three Aerofoil Rotor Blades with Red Warning Tips (Ex-Zodiac Image 3)
-    float bladeW = 0.65f;
-    glm::vec3 tipColor(0.92f, 0.18f, 0.22f); // Retro arcade red tips
+    glm::vec3 f0(-nacelleRad * 0.85f, hubY - nacelleRad * 0.5f, nacelleLen * 0.45f);
+    glm::vec3 f1( nacelleRad * 0.85f, hubY - nacelleRad * 0.5f, nacelleLen * 0.45f);
+    glm::vec3 f2( nacelleRad * 0.85f, hubY + nacelleRad * 0.6f, nacelleLen * 0.45f);
+    glm::vec3 f3(-nacelleRad * 0.85f, hubY + nacelleRad * 0.6f, nacelleLen * 0.45f);
+
+    AddQuad(verts, inds, p0, p1, p2, p3, nacelleColor * 0.75f); // Back
+    AddQuad(verts, inds, f1, f0, f3, f2, nacelleColor * 0.95f); // Front
+    AddQuad(verts, inds, p1, f1, f2, p2, nacelleColor * 0.88f); // Right
+    AddQuad(verts, inds, f0, p0, p3, f3, nacelleColor * 0.82f); // Left
+    AddQuad(verts, inds, p3, p2, f2, f3, nacelleColor * 1.05f); // Top
+    AddQuad(verts, inds, p0, f0, f1, p1, nacelleColor * 0.70f); // Bottom
+
+    // Front axle hub socket extending forward to meet blades
+    float socketZ = nacelleLen * 0.45f + 0.35f;
+    glm::vec3 socketFront(0.0f, hubY, socketZ);
+    for (int i = 0; i < 6; ++i) {
+        float a0 = (float)i / 6 * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 6 * glm::two_pi<float>();
+        glm::vec3 s0(std::cos(a0) * 0.65f, hubY + std::sin(a0) * 0.65f, socketZ - 0.35f);
+        glm::vec3 s1(std::cos(a1) * 0.65f, hubY + std::sin(a1) * 0.65f, socketZ - 0.35f);
+        AddTriangle(verts, inds, socketFront, s0, s1, nacelleColor * 0.65f);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateWindTurbineBlades(float bladeRadius, const glm::vec3& bladeColor, const glm::vec3& tipColor) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Central Aerodynamic Spinner Cone pointing forward (+Z)
+    float hubRadius = 1.05f;
+    float hubDepth = 1.35f;
+    glm::vec3 hubTip(0.0f, 0.0f, hubDepth);
+    glm::vec3 hubCol(0.20f, 0.22f, 0.28f);
+
+    const int hubSegs = 8;
+    for (int i = 0; i < hubSegs; ++i) {
+        float a0 = (float)i / hubSegs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / hubSegs * glm::two_pi<float>();
+
+        glm::vec3 h0(std::cos(a0) * hubRadius, std::sin(a0) * hubRadius, 0.0f);
+        glm::vec3 h1(std::cos(a1) * hubRadius, std::sin(a1) * hubRadius, 0.0f);
+
+        float shade = 0.85f + 0.25f * (i % 2);
+        AddTriangle(verts, inds, hubTip, h0, h1, hubCol * shade);
+    }
+
+    // 2. Three Aerofoil Rotor Blades centered at origin in XY plane (Ex-Zodiac Image 3)
+    float rootRadius = hubRadius * 0.70f;
+    float bladeRootW = 0.90f;
+    float bladeMidW = 0.72f;
+    float bladeTipW = 0.48f;
+    float tipRatio = 0.26f;
 
     for (int b = 0; b < 3; ++b) {
         float angle = (float)b / 3.0f * glm::two_pi<float>();
         glm::vec3 dir(std::cos(angle), std::sin(angle), 0.0f);
-        glm::vec3 right(-std::sin(angle), std::cos(angle), 0.0f);
+        glm::vec3 perp(-std::sin(angle), std::cos(angle), 0.0f);
 
-        glm::vec3 root0 = glm::vec3(0.0f, hubY, hubLen * 0.5f) - right * (bladeW * 0.5f);
-        glm::vec3 root1 = glm::vec3(0.0f, hubY, hubLen * 0.5f) + right * (bladeW * 0.5f);
+        glm::vec3 r0 = dir * rootRadius - perp * (bladeRootW * 0.5f);
+        glm::vec3 r1 = dir * rootRadius + perp * (bladeRootW * 0.5f);
 
-        glm::vec3 mid0 = root0 + dir * (bladeRadius * 0.75f);
-        glm::vec3 mid1 = root1 + dir * (bladeRadius * 0.75f);
+        float midDist = rootRadius + (bladeRadius - rootRadius) * (1.0f - tipRatio);
+        glm::vec3 m0 = dir * midDist - perp * (bladeMidW * 0.5f);
+        glm::vec3 m1 = dir * midDist + perp * (bladeMidW * 0.5f);
 
-        glm::vec3 tip0 = root0 + dir * bladeRadius;
-        glm::vec3 tip1 = root1 + dir * bladeRadius;
+        glm::vec3 t0 = dir * bladeRadius - perp * (bladeTipW * 0.5f);
+        glm::vec3 t1 = dir * bladeRadius + perp * (bladeTipW * 0.5f);
 
-        // White blade body
-        AddQuad(verts, inds, root0, root1, mid1, mid0, bladeColor);
-        // Signature red warning tip
-        AddQuad(verts, inds, mid0, mid1, tip1, tip0, tipColor);
+        float bladeShade = 0.90f + 0.08f * b;
+        AddQuad(verts, inds, r0, r1, m1, m0, bladeColor * bladeShade);
+        AddQuad(verts, inds, m0, m1, t1, t0, tipColor);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateOpenFieldTerrain(float length, float width,
+                                 const glm::vec3& floorColA, const glm::vec3& floorColB) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = width * 0.5f;
+    float hl = length * 0.5f;
+    float floorY = -7.5f;
+
+    // 20 columns across width, 12 rows along length
+    const int xSegs = 20;
+    const int zSegs = 12;
+    float dx = width / xSegs;
+    float dz = length / zSegs;
+
+    for (int iz = 0; iz < zSegs; ++iz) {
+        float z0 = -hl + iz * dz;
+        float z1 = z0 + dz;
+
+        for (int ix = 0; ix < xSegs; ++ix) {
+            float x0 = -hw + ix * dx;
+            float x1 = x0 + dx;
+
+            // Two-tone checkerboard tile pattern (Ex-Zodiac signature arcade green plains)
+            bool isTileA = ((ix + iz) % 2 == 0);
+            glm::vec3 tileCol = isTileA ? floorColA : floorColB;
+
+            // Rolling prairie contours across the vast open landscape
+            float y00 = floorY + std::sin(ix * 0.75f + iz * 1.25f) * 0.12f;
+            float y10 = floorY + std::sin((ix + 1) * 0.75f + iz * 1.25f) * 0.12f;
+            float y11 = floorY + std::sin((ix + 1) * 0.75f + (iz + 1) * 1.25f) * 0.12f;
+            float y01 = floorY + std::sin(ix * 0.75f + (iz + 1) * 1.25f) * 0.12f;
+
+            // Gently ease outer edges to blend with horizon plane
+            if (ix == 0) {
+                y00 -= 2.2f;
+                y01 -= 2.2f;
+            } else if (ix == xSegs - 1) {
+                y10 -= 2.2f;
+                y11 -= 2.2f;
+            }
+
+            AddQuad(verts, inds,
+                    {x0, y00, z0}, {x1, y10, z0}, {x1, y11, z1}, {x0, y01, z1},
+                    tileCol);
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateLowPolyTree(float trunkHeight, float trunkRadius,
+                            float foliageHeight, float foliageRadius,
+                            const glm::vec3& trunkCol, const glm::vec3& foliageCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    // 1. Tapered Hexagonal Tree Trunk
+    const int segs = 6;
+    float rBase = trunkRadius;
+    float rTop = trunkRadius * 0.70f;
+
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+        glm::vec3 b0(std::cos(a0) * rBase, 0.0f, std::sin(a0) * rBase);
+        glm::vec3 b1(std::cos(a1) * rBase, 0.0f, std::sin(a1) * rBase);
+        glm::vec3 t0(std::cos(a0) * rTop, trunkHeight, std::sin(a0) * rTop);
+        glm::vec3 t1(std::cos(a1) * rTop, trunkHeight, std::sin(a1) * rTop);
+
+        float shade = 0.82f + 0.28f * (i % 2);
+        AddQuad(verts, inds, b0, b1, t1, t0, trunkCol * shade);
+    }
+
+    // 2. Three Tiered Low-Poly Polygonal Foliage Cones (Retro arcade pine trees)
+    struct FoliageTier {
+        float baseY;
+        float height;
+        float radius;
+        float colorTint;
+    };
+
+    FoliageTier tiers[3] = {
+        { trunkHeight * 0.65f, foliageHeight * 0.55f, foliageRadius, 0.86f },
+        { trunkHeight * 0.65f + foliageHeight * 0.32f, foliageHeight * 0.50f, foliageRadius * 0.74f, 1.0f },
+        { trunkHeight * 0.65f + foliageHeight * 0.62f, foliageHeight * 0.48f, foliageRadius * 0.48f, 1.18f }
+    };
+
+    for (int t = 0; t < 3; ++t) {
+        float by = tiers[t].baseY;
+        float py = by + tiers[t].height;
+        float tr = tiers[t].radius;
+        glm::vec3 peak(0.0f, py, 0.0f);
+        glm::vec3 tierCol = foliageCol * tiers[t].colorTint;
+
+        for (int i = 0; i < segs; ++i) {
+            float a0 = (float)i / segs * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+
+            glm::vec3 c0(std::cos(a0) * tr, by, std::sin(a0) * tr);
+            glm::vec3 c1(std::cos(a1) * tr, by, std::sin(a1) * tr);
+
+            float shade = 0.84f + 0.26f * (i % 2);
+            AddTriangle(verts, inds, peak, c0, c1, tierCol * shade);
+            AddTriangle(verts, inds, glm::vec3(0.0f, by, 0.0f), c1, c0, tierCol * 0.65f);
+        }
     }
 
     return Mesh(verts, inds);

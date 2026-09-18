@@ -60,15 +60,10 @@ void main() {
         finalColor = ambient + diffuse;
     }
     
-    // Distance Fog (retro arcade / Ex-Zodiac dithered depth fade)
+    // Distance Fog (smooth atmospheric arcade depth fade)
     if (uUseFog == 1) {
         float distanceToCam = length(uCameraPos - FragPos);
         float fogFactor = clamp((distanceToCam - uFogStart) / (uFogEnd - uFogStart), 0.0, 1.0);
-        if (uUseDithering == 1) {
-            float dither = (GetBayer4() - 0.5) * 0.22;
-            fogFactor = clamp(fogFactor + dither, 0.0, 1.0);
-            fogFactor = floor(fogFactor * 10.0 + 0.5) / 10.0;
-        }
         finalColor = mix(finalColor, uFogColor, fogFactor);
     }
     

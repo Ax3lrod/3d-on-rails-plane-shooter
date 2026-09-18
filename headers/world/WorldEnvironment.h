@@ -72,6 +72,12 @@ struct WindTurbineObstacle {
     float rotSpeed;
 };
 
+struct TreeObstacle {
+    glm::vec3 position;
+    float scale;
+    float rotation;
+};
+
 class WorldEnvironment {
 public:
     SectorStage currentSector;
@@ -85,6 +91,7 @@ public:
     std::vector<SpaceDebris> spaceDebris;
     std::vector<FloatingDomeObstacle> floatingDomes;
     std::vector<WindTurbineObstacle> windTurbines;
+    std::vector<TreeObstacle> trees;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -97,6 +104,9 @@ public:
     Mesh horizonMesh;
     Mesh domeMesh;
     Mesh turbineMesh;
+    Mesh turbineTowerMesh;
+    Mesh turbineBladesMesh;
+    Mesh treeMesh;
 
     float nextSpawnZ;
     float despawnDistBehind;

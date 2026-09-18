@@ -3,7 +3,7 @@
 
 PostProcessor::PostProcessor()
     : fbo(0), colorTexture(0), rbo(0), quadVAO(0), quadVBO(0),
-      width(1280), height(720), crtEnabled(false), retroPixelMode(true), warpIntensity(0.0f), initialized(false) {
+      width(1280), height(720), crtEnabled(false), retroPixelMode(false), warpIntensity(0.0f), initialized(false) {
 }
 
 PostProcessor::~PostProcessor() {

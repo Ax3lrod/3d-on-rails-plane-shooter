@@ -804,6 +804,7 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
     // Disable lighting and fog for 2D UI
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
     shader.SetInt("uUseColorOverride", 1);
 
     float curTime = static_cast<float>(glfwGetTime());
@@ -977,7 +978,7 @@ void HUD::Render(const Shader& shader, int screenWidth, int screenHeight,
         DrawText(shader, vicTitle, (vw - titleW) * 0.5f + slant * 0.5f, vy + 22.0f, 2.6f, glm::vec3(1.0f, 0.90f, 0.3f), 1.0f);
 
         // Stage cleared subtitle
-        std::string subTitle = "PLANETARY CANYON CORRIDOR CLEARED // THREAT ELIMINATED";
+        std::string subTitle = "SECTOR 1 PLAINS LIBERATED // THREAT ELIMINATED";
         float subW = subTitle.length() * 6.0f * 1.4f;
         DrawText(shader, subTitle, (vw - subW) * 0.5f + slant * 0.5f, vy + 68.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.95f);
 
@@ -1082,6 +1083,7 @@ void HUD::DrawWarpHUD(const Shader& shader, int screenWidth, int screenHeight,
     shader.SetMat4("uView", glm::mat4(1.0f));
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
     shader.SetInt("uUseColorOverride", 1);
 
     float boxW = 720.0f;
@@ -1118,6 +1120,15 @@ void HUD::DrawWarpHUD(const Shader& shader, int screenWidth, int screenHeight,
         DrawText(shader, sub1, (vw - sw1) * 0.5f + slant * 0.5f, by + 74.0f, 1.5f, glm::vec3(0.9f, 0.95f, 1.0f), 0.95f);
     }
 
+    std::string sub2 = "SECTOR 1 PLANETARY CANYON LIBERATED";
+    float sw2 = sub2.length() * 6.0f * 1.4f;
+    DrawText(shader, sub2, (vw - sw2) * 0.5f + slant * 0.5f, by + 104.0f, 1.4f, glm::vec3(0.65f, 0.85f, 1.0f), 0.90f);
+
+    float pulse = std::sin(warpTimer * 5.0f) * 0.25f + 0.75f;
+    std::string prompt = "PRESS [SPACE] OR [A] TO PROCEED";
+    float pw = prompt.length() * 6.0f * 1.5f;
+    DrawText(shader, prompt, (vw - pw) * 0.5f + slant * 0.5f, by + 130.0f, 1.5f, glm::vec3(1.0f, 0.9f, 0.4f) * pulse, 1.0f);
+
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 }
@@ -1137,6 +1148,7 @@ void HUD::DrawTitleScreen(const Shader& shader, int screenWidth, int screenHeigh
     shader.SetMat4("uView", glm::mat4(1.0f));
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
     shader.SetInt("uUseColorOverride", 1);
 
     float slant = 26.0f;
@@ -1235,6 +1247,7 @@ void HUD::DrawSettingsMenu(const Shader& shader, int screenWidth, int screenHeig
     shader.SetMat4("uView", glm::mat4(1.0f));
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
     shader.SetInt("uUseColorOverride", 1);
 
     float boxW = 780.0f;
@@ -1334,6 +1347,7 @@ void HUD::DrawLeaderboard(const Shader& shader, int screenWidth, int screenHeigh
     shader.SetMat4("uView", glm::mat4(1.0f));
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
     shader.SetInt("uUseColorOverride", 1);
 
     float boxW = 760.0f;
@@ -1410,6 +1424,7 @@ void HUD::DrawMissionBriefing(const Shader& shader, int screenWidth, int screenH
     shader.SetMat4("uView", glm::mat4(1.0f));
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
+    shader.SetInt("uUseDithering", 0);
     shader.SetInt("uUseColorOverride", 1);
 
     float boxW = 760.0f;
@@ -1425,23 +1440,23 @@ void HUD::DrawMissionBriefing(const Shader& shader, int screenWidth, int screenH
                     glm::vec3(1.0f, 1.0f, 1.0f),     // Solid white border
                     3.5f, 0.96f);
 
-    std::string headerStr = "★ TACTICAL SORTIE BRIEFING // OP CANYON STRIKE ★";
+    std::string headerStr = "★ TACTICAL SORTIE BRIEFING // OP EMERALD PLAINS ★";
     float headW = headerStr.length() * 6.0f * 2.2f;
     DrawText(shader, headerStr, (vw - headW) * 0.5f + slant * 0.5f, by + 24.0f, 2.2f, glm::vec3(0.3f, 1.0f, 0.6f), 1.0f);
     DrawSlantedRect(shader, bx + 28.0f, by + 58.0f, boxW - 56.0f, 2.0f, slant * 0.1f, glm::vec3(1.0f, 1.0f, 1.0f), 0.7f);
 
     DrawDiamond(shader, bx + 45.0f, by + 92.0f, 6.0f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
-    DrawText(shader, "TARGET ZONE: SECTOR 1 - CANYON TRENCH", bx + 60.0f, by + 85.0f, 1.7f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
+    DrawText(shader, "TARGET ZONE: SECTOR 1 - EMERALD PLAINS", bx + 60.0f, by + 85.0f, 1.7f, glm::vec3(1.0f, 0.88f, 0.25f), 1.0f);
     DrawText(shader, "The hostile war fleet has deployed a Colossal Dreadnought flagship", bx + 60.0f, by + 115.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
-    DrawText(shader, "deep inside the planetary canyon corridor.", bx + 60.0f, by + 138.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
+    DrawText(shader, "deep across the open planetary plains.", bx + 60.0f, by + 138.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
 
     DrawDiamond(shader, bx + 45.0f, by + 187.0f, 6.0f, glm::vec3(0.3f, 0.9f, 1.0f), 1.0f);
     DrawText(shader, "PRIMARY OBJECTIVE:", bx + 60.0f, by + 180.0f, 1.6f, glm::vec3(0.3f, 0.9f, 1.0f), 1.0f);
-    DrawText(shader, "- Infiltrate trench, eliminate drone squadrons, and destroy Dreadnought.", bx + 80.0f, by + 208.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
+    DrawText(shader, "- Sweep across the plains, eliminate drone squadrons, and destroy Dreadnought.", bx + 80.0f, by + 208.0f, 1.4f, glm::vec3(0.85f, 0.95f, 1.0f), 0.90f);
 
     DrawDiamond(shader, bx + 45.0f, by + 255.0f, 6.0f, glm::vec3(1.0f, 0.45f, 0.2f), 1.0f);
     DrawText(shader, "SECRET DIRECTIVE [HARD ROUTE]:", bx + 60.0f, by + 248.0f, 1.6f, glm::vec3(1.0f, 0.45f, 0.2f), 1.0f);
-    DrawText(shader, "- Locate and destroy all 3 hidden Planetary Radar Relays inside archways.", bx + 80.0f, by + 276.0f, 1.4f, glm::vec3(1.0f, 0.85f, 0.75f), 0.90f);
+    DrawText(shader, "- Locate and destroy all 3 hidden Planetary Radar Relays on the plains.", bx + 80.0f, by + 276.0f, 1.4f, glm::vec3(1.0f, 0.85f, 0.75f), 0.90f);
     DrawText(shader, "- Keep both Echo wingmen intact to unlock Hyperspace Warp to SECTOR 2!", bx + 80.0f, by + 300.0f, 1.4f, glm::vec3(1.0f, 0.88f, 0.25f), 0.95f);
 
     float pulse = std::sin(time * 4.0f) * 0.25f + 0.75f;

@@ -68,6 +68,11 @@ public:
     static Mesh CreateShadowDisc(float radius, int segments = 16);
     static Mesh CreateFloatingDome(float radius, const glm::vec3& domeColor, const glm::vec3& ringColor);
     static Mesh CreateWindTurbine(float towerHeight, float bladeRadius, const glm::vec3& towerColor, const glm::vec3& bladeColor);
+    static Mesh CreateWindTurbineTower(float towerHeight, const glm::vec3& towerColor, const glm::vec3& nacelleColor);
+    static Mesh CreateWindTurbineBlades(float bladeRadius, const glm::vec3& bladeColor, const glm::vec3& tipColor);
+    static Mesh CreateOpenFieldTerrain(float length, float width, const glm::vec3& floorColA, const glm::vec3& floorColB);
+    static Mesh CreateLowPolyTree(float trunkHeight, float trunkRadius, float foliageHeight, float foliageRadius,
+                                  const glm::vec3& trunkCol, const glm::vec3& foliageCol);
     static Mesh CreateSpikedMace(float radius, float spikeLen, const glm::vec3& coreColor, const glm::vec3& spikeColor);
 };
 

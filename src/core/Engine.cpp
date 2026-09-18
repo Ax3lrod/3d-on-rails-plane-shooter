@@ -1284,6 +1284,15 @@ void Engine::Render() {
         shader.SetMat4("uModel", shipModel);
         player->mesh.Draw(shader);
 
+        if (postProcessor) {
+            postProcessor->EndRender();
+            postProcessor->Render(currentTime);
+        }
+
+        glViewport(0, 0, windowWidth, windowHeight);
+        shader.Activate();
+        shader.SetInt("uUseDithering", 0);
+
         // Render specific menu HUD overlay
         if (state == GameState::TitleHangar) {
             hud->DrawTitleScreen(shader, windowWidth, windowHeight, currentTime, selectedTitleMenu);
@@ -1297,16 +1306,11 @@ void Engine::Render() {
                                   postProcessor ? postProcessor->IsCRTEnabled() : false,
                                   defaultCockpitMode,
                                   flatShading,
-                                  postProcessor ? postProcessor->IsRetroPixelMode() : true);
+                                  postProcessor ? postProcessor->IsRetroPixelMode() : false);
         } else if (state == GameState::Leaderboard) {
             hud->DrawLeaderboard(shader, windowWidth, windowHeight, highScores);
         } else if (state == GameState::MissionBriefing) {
             hud->DrawMissionBriefing(shader, windowWidth, windowHeight, currentTime);
-        }
-
-        if (postProcessor) {
-            postProcessor->EndRender();
-            postProcessor->Render(currentTime);
         }
 
         glfwSwapBuffers(window);
@@ -1344,8 +1348,8 @@ void Engine::Render() {
         shader.SetVec3("uLightColor", glm::vec3(1.0f, 0.98f, 0.90f));
         shader.SetVec3("uAmbientColor", glm::vec3(0.42f, 0.45f, 0.55f));
         shader.SetVec3("uFogColor", glm::vec3(0.35f, 0.68f, 0.92f));
-        shader.SetFloat("uFogStart", 120.0f);
-        shader.SetFloat("uFogEnd", 360.0f);
+        shader.SetFloat("uFogStart", 160.0f);
+        shader.SetFloat("uFogEnd", 550.0f);
     }
     shader.SetVec3("uCameraPos", camera.position);
     shader.SetInt("uUseLighting", 1);
@@ -1364,7 +1368,7 @@ void Engine::Render() {
     ordnance->Draw(shader);
     particles->Draw(shader);
 
-    // Dynamic Ground Shadow Projection (Sector 1: Canyon Water/Floor)
+    // Dynamic Ground Shadow Projection (Sector 1: Ground/Floor)
     if (environment && environment->currentSector == SectorStage::Sector1_Canyon) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1419,6 +1423,17 @@ void Engine::Render() {
         }
     }
 
+    // Finish 3D scene post-processing and composite to screen
+    if (postProcessor) {
+        postProcessor->EndRender();
+        postProcessor->Render(currentTime);
+    }
+
+    // Now render 2D HUD at native window resolution on top of composited scene
+    glViewport(0, 0, windowWidth, windowHeight);
+    shader.Activate();
+    shader.SetInt("uUseDithering", 0);
+
     if (state == GameState::StageClearWarp) {
         hud->DrawWarpHUD(shader, windowWidth, windowHeight, warpTransitionTimer, true);
     } else {
@@ -1464,11 +1479,6 @@ void Engine::Render() {
                     environment ? environment->GetDestroyedRelayCount() : 0, 3,
                     comboHits, comboTimer, comboMaxDuration, comboAnimScale,
                     player->lives);
-    }
-
-    if (postProcessor) {
-        postProcessor->EndRender();
-        postProcessor->Render(currentTime);
     }
 
     glfwSwapBuffers(window);
