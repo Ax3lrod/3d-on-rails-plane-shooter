@@ -219,4 +219,9 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 38.4 — Full 5-Act Encounter Choreography in `stage1.json`**: Restructure `stage1.json` into 5 distinct narrative and tactical acts (Outskirts Approach, Suburban Combat, Striker Rescue & Breathing Room, Downtown Canyon & Collapsing Spire, and Industrial Citadel to Arena).
 - [x] **Task 38.5 — Build, Verification & Testing**: Compile Release build with MinGW GCC, verify all mechanics, check memory/bounds safety, and ensure 0 regressions.
 
-
+## Phase 39: AI Development Workflow Scaffold & Persistent Documentation (`agentsetup.md`)
+- [x] **Task 39.1 — Root `AGENTS.md`**: Create comprehensive AI developer instructions, persona definitions (Designer, Architect, Coder, Reviewer), coding standards, and review rubrics.
+- [x] **Task 39.2 — System Inventory (`docs/architecture/available-systems.md`)**: Inventory all existing C++ systems, mechanics, bosses, enemies, props, and JSON event types.
+- [x] **Task 39.3 — Design Pattern Library (`docs/game-design/patterns/`)**: Document reusable level design patterns (`wingman-rescue.md`, `collapsing-hazard.md`, `enemy-formation.md`, `boss-arena-transition.md`).
+- [x] **Task 39.4 — Stage 1 Beat Sheet (`docs/levels/stage1-fallen-city.md`)**: Formalize Stage 1's 5-act structure, pacing, encounter beats, and boss design into persistent documentation.
+- [x] **Task 39.5 — Knowledge Graph Sync & Verification**: Run `graphify update .` to capture any new docs/rules and update `GEMINI_TOOLBOX.md`.

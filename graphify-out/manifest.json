@@ -334,5 +334,107 @@
     "seen": 1790093350.9520235,
     "ast_hash": "d64e372b35771750415581dccc8ae8b1",
     "semantic_hash": "d64e372b35771750415581dccc8ae8b1"
+  },
+  ".agents/rules/graphify.md": {
+    "mtime": 1790093381.5623033,
+    "seen": 1790094067.6001616,
+    "ast_hash": "a0e4d192b9e2e17256124dbfc8e24e6a",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1790093381.5637453,
+    "seen": 1790094067.6001616,
+    "ast_hash": "a831cf3669f1e6ab85d8a80ebe655f99",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1790093996.1270518,
+    "seen": 1790094067.6001616,
+    "ast_hash": "2687640c1d67262e89ffa1ffc9f5039f",
+    "semantic_hash": ""
+  },
+  "CMakeLists.txt": {
+    "mtime": 1789761098.0942135,
+    "seen": 1790094067.6001616,
+    "ast_hash": "a4ff1aeda7a63d839da936a67c0e893b",
+    "semantic_hash": ""
+  },
+  "agentsetup.md": {
+    "mtime": 1790093808.6991138,
+    "seen": 1790094067.6001616,
+    "ast_hash": "048bcd1708ca5f332e1d8f29d69c41cb",
+    "semantic_hash": ""
+  },
+  "corneria.md": {
+    "mtime": 1790091856.807247,
+    "seen": 1790094067.6001616,
+    "ast_hash": "a49274ee64f1792b5cbde602b9617f2d",
+    "semantic_hash": ""
+  },
+  "docs/architecture/available-systems.md": {
+    "mtime": 1790094011.6200652,
+    "seen": 1790094067.6001616,
+    "ast_hash": "a4af11f0663a9d8cb91ba47b0d62594d",
+    "semantic_hash": ""
+  },
+  "docs/architecture/stage-schema.md": {
+    "mtime": 1790094017.5970893,
+    "seen": 1790094067.6001616,
+    "ast_hash": "d7bf6b73b32b65a3144778e7074ac5fd",
+    "semantic_hash": ""
+  },
+  "docs/game-design/patterns/boss-arena-transition.md": {
+    "mtime": 1790094042.6899867,
+    "seen": 1790094067.6001616,
+    "ast_hash": "0fb6d80b6d2f04cc7e76bb5583ff8154",
+    "semantic_hash": ""
+  },
+  "docs/game-design/patterns/collapsing-hazard.md": {
+    "mtime": 1790094026.6454136,
+    "seen": 1790094067.6001616,
+    "ast_hash": "6985baabb688fb14e3ff3ce5b59c91f4",
+    "semantic_hash": ""
+  },
+  "docs/game-design/patterns/enemy-formation.md": {
+    "mtime": 1790094033.835327,
+    "seen": 1790094067.6001616,
+    "ast_hash": "019f2461453feed5d42aa2c2ecf1efbf",
+    "semantic_hash": ""
+  },
+  "docs/game-design/patterns/wingman-rescue.md": {
+    "mtime": 1790094021.1626127,
+    "seen": 1790094067.6001616,
+    "ast_hash": "4e81d92b6adb49ca2c9654dcaa7d973a",
+    "semantic_hash": ""
+  },
+  "docs/levels/stage1-fallen-city.md": {
+    "mtime": 1790094051.8019984,
+    "seen": 1790094067.6001616,
+    "ast_hash": "03289dcc81a61eab3ef532e6ff8c9fd0",
+    "semantic_hash": ""
+  },
+  "plan.md": {
+    "mtime": 1790093986.496304,
+    "seen": 1790094067.6001616,
+    "ast_hash": "9fa9ccbb085dda3843272abb64e63837",
+    "semantic_hash": ""
+  },
+  "inspo/exzodiac1.png": {
+    "mtime": 1789533393.5449543,
+    "seen": 1790094067.6001616,
+    "ast_hash": "bb15d8162022a39a9001f21fed3c4325",
+    "semantic_hash": ""
+  },
+  "inspo/exzodiac2.png": {
+    "mtime": 1789533406.9042904,
+    "seen": 1790094067.6001616,
+    "ast_hash": "b94a41277f5d9760db3d10310133a637",
+    "semantic_hash": ""
+  },
+  "inspo/exzodiac3.png": {
+    "mtime": 1789533415.6295512,
+    "seen": 1790094067.6001616,
+    "ast_hash": "64fe7eaf38b3ff35c8a66c09e5c34d48",
+    "semantic_hash": ""
   }
 }
