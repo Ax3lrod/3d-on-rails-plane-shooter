@@ -1,0 +1,338 @@
+{
+  "headers/audio/SoundManager.h": {
+    "mtime": 1789704380.838864,
+    "seen": 1790093350.9514415,
+    "ast_hash": "595ab2aed8a1f0bbc57700de99d00327",
+    "semantic_hash": "595ab2aed8a1f0bbc57700de99d00327"
+  },
+  "headers/combat/CombatSystem.h": {
+    "mtime": 1790050971.3776114,
+    "seen": 1790093350.9514415,
+    "ast_hash": "617a7aca8051d293b349a2f6c974a303",
+    "semantic_hash": "617a7aca8051d293b349a2f6c974a303"
+  },
+  "headers/core/Camera.h": {
+    "mtime": 1789550053.532185,
+    "seen": 1790093350.9520235,
+    "ast_hash": "77cf54263c51d180d203590699562f23",
+    "semantic_hash": "77cf54263c51d180d203590699562f23"
+  },
+  "headers/core/Engine.h": {
+    "mtime": 1789761229.6202922,
+    "seen": 1790093350.9520235,
+    "ast_hash": "0e2fc606cd8a23c365e63f7f55bd4d75",
+    "semantic_hash": "0e2fc606cd8a23c365e63f7f55bd4d75"
+  },
+  "headers/core/Input.h": {
+    "mtime": 1789556617.742562,
+    "seen": 1790093350.9520235,
+    "ast_hash": "be92651f915e7e62faaecbd3dd61ed42",
+    "semantic_hash": "be92651f915e7e62faaecbd3dd61ed42"
+  },
+  "headers/core/Transform.h": {
+    "mtime": 1789526605.3938675,
+    "seen": 1790093350.9520235,
+    "ast_hash": "e7b1dc18759267be196fb5fe4cd7357c",
+    "semantic_hash": "e7b1dc18759267be196fb5fe4cd7357c"
+  },
+  "headers/entities/BossDreadnought.h": {
+    "mtime": 1789702533.894207,
+    "seen": 1790093350.9520235,
+    "ast_hash": "3620f25027e74d5e28b637219d0ace73",
+    "semantic_hash": "3620f25027e74d5e28b637219d0ace73"
+  },
+  "headers/entities/BossMechaWorm.h": {
+    "mtime": 1789702614.7133844,
+    "seen": 1790093350.9520235,
+    "ast_hash": "700e0266bbeed107256a4e266f290431",
+    "semantic_hash": "700e0266bbeed107256a4e266f290431"
+  },
+  "headers/entities/BossMegaTank.h": {
+    "mtime": 1789702596.9263053,
+    "seen": 1790093350.9520235,
+    "ast_hash": "2efa57fd59eae73f54faa9210c3d3ef3",
+    "semantic_hash": "2efa57fd59eae73f54faa9210c3d3ef3"
+  },
+  "headers/entities/BossTwinHelicopters.h": {
+    "mtime": 1789702578.894706,
+    "seen": 1790093350.9520235,
+    "ast_hash": "057a12c1aa7574532cd72bd9c5162699",
+    "semantic_hash": "057a12c1aa7574532cd72bd9c5162699"
+  },
+  "headers/entities/BossWalkingRobot.h": {
+    "mtime": 1790092112.5710733,
+    "seen": 1790093350.9520235,
+    "ast_hash": "c33c54d2ec5a8ff0b9e132837845cd85",
+    "semantic_hash": "c33c54d2ec5a8ff0b9e132837845cd85"
+  },
+  "headers/entities/EnemyManager.h": {
+    "mtime": 1789701947.4455407,
+    "seen": 1790093350.9520235,
+    "ast_hash": "c1ae66e4a60bfa83a86b40815c8af9db",
+    "semantic_hash": "c1ae66e4a60bfa83a86b40815c8af9db"
+  },
+  "headers/entities/IBoss.h": {
+    "mtime": 1789702522.3469882,
+    "seen": 1790093350.9520235,
+    "ast_hash": "14494b01c0b462ce2712db5235d15da1",
+    "semantic_hash": "14494b01c0b462ce2712db5235d15da1"
+  },
+  "headers/entities/PlayerStarfighter.h": {
+    "mtime": 1789552387.7702568,
+    "seen": 1790093350.9520235,
+    "ast_hash": "601d8b7dabff182c73e904946e2d71da",
+    "semantic_hash": "601d8b7dabff182c73e904946e2d71da"
+  },
+  "headers/entities/WingmanSquadron.h": {
+    "mtime": 1790092190.2845428,
+    "seen": 1790093350.9520235,
+    "ast_hash": "f5930fa90736dd94f5f129292e35e99c",
+    "semantic_hash": "f5930fa90736dd94f5f129292e35e99c"
+  },
+  "headers/renderer/EBO.h": {
+    "mtime": 1789526560.950091,
+    "seen": 1790093350.9520235,
+    "ast_hash": "e4aac0217cea99c44ad8decc989b1a4b",
+    "semantic_hash": "e4aac0217cea99c44ad8decc989b1a4b"
+  },
+  "headers/renderer/Mesh.h": {
+    "mtime": 1790092222.5913215,
+    "seen": 1790093350.9520235,
+    "ast_hash": "20384cea617ab9e00ca0f05612295518",
+    "semantic_hash": "20384cea617ab9e00ca0f05612295518"
+  },
+  "headers/renderer/PostProcessor.h": {
+    "mtime": 1789563847.4857543,
+    "seen": 1790093350.9520235,
+    "ast_hash": "d0d1791e944f96f74a5fc8fc4ee66ec5",
+    "semantic_hash": "d0d1791e944f96f74a5fc8fc4ee66ec5"
+  },
+  "headers/renderer/VAO.h": {
+    "mtime": 1789526546.8702502,
+    "seen": 1790093350.9520235,
+    "ast_hash": "b3e826918ae45bb28b146220056334e3",
+    "semantic_hash": "b3e826918ae45bb28b146220056334e3"
+  },
+  "headers/renderer/VBO.h": {
+    "mtime": 1789526555.636855,
+    "seen": 1790093350.9520235,
+    "ast_hash": "f693d2d42632caa406c62d0a15180aa4",
+    "semantic_hash": "f693d2d42632caa406c62d0a15180aa4"
+  },
+  "headers/renderer/shaderClass.h": {
+    "mtime": 1789532000.0474393,
+    "seen": 1790093350.9520235,
+    "ast_hash": "c90ebf5ee3b6265fa636b98d2f43e0e2",
+    "semantic_hash": "c90ebf5ee3b6265fa636b98d2f43e0e2"
+  },
+  "headers/ui/HUD.h": {
+    "mtime": 1789703245.143276,
+    "seen": 1790093350.9520235,
+    "ast_hash": "d4e5e777126e9122858943950d271761",
+    "semantic_hash": "d4e5e777126e9122858943950d271761"
+  },
+  "headers/world/LevelTimeline.h": {
+    "mtime": 1790092359.0724857,
+    "seen": 1790093350.9520235,
+    "ast_hash": "39750e6f913b4ab3317e94d41a23ad65",
+    "semantic_hash": "39750e6f913b4ab3317e94d41a23ad65"
+  },
+  "headers/world/TrainConvoy.h": {
+    "mtime": 1789702633.0077696,
+    "seen": 1790093350.9520235,
+    "ast_hash": "7c73226495a93d0672aad6579bec7f36",
+    "semantic_hash": "7c73226495a93d0672aad6579bec7f36"
+  },
+  "headers/world/WorldEnvironment.h": {
+    "mtime": 1790092250.8229265,
+    "seen": 1790093350.9520235,
+    "ast_hash": "49748cf12c704f263cd91c4771195938",
+    "semantic_hash": "49748cf12c704f263cd91c4771195938"
+  },
+  "include/glad/glad.h": {
+    "mtime": 1764433808.2664044,
+    "seen": 1790093350.9520235,
+    "ast_hash": "6eeb6d2642356cacb949c17ee6fad384",
+    "semantic_hash": "6eeb6d2642356cacb949c17ee6fad384"
+  },
+  "resource/stages/stage1.json": {
+    "mtime": 1790092416.8221798,
+    "seen": 1790093350.9520235,
+    "ast_hash": "9ef64c89119628d2d7b7cc70909be939",
+    "semantic_hash": "9ef64c89119628d2d7b7cc70909be939"
+  },
+  "resource/stages/stage2.json": {
+    "mtime": 1789702647.8838313,
+    "seen": 1790093350.9520235,
+    "ast_hash": "d776e02e6546206660cd7c3370754ee3",
+    "semantic_hash": "d776e02e6546206660cd7c3370754ee3"
+  },
+  "resource/stages/stage3.json": {
+    "mtime": 1789702652.8897862,
+    "seen": 1790093350.9520235,
+    "ast_hash": "6266e32e4534d1642f0db496489020f2",
+    "semantic_hash": "6266e32e4534d1642f0db496489020f2"
+  },
+  "resource/stages/stage4.json": {
+    "mtime": 1789702656.8369677,
+    "seen": 1790093350.9520235,
+    "ast_hash": "5b19c3925631a60d1d7e22cb34f4bb51",
+    "semantic_hash": "5b19c3925631a60d1d7e22cb34f4bb51"
+  },
+  "resource/stages/stage5.json": {
+    "mtime": 1789702662.1842105,
+    "seen": 1790093350.9520235,
+    "ast_hash": "19166d398d2d93963fa304e152e1513e",
+    "semantic_hash": "19166d398d2d93963fa304e152e1513e"
+  },
+  "src/audio/SoundManager.cpp": {
+    "mtime": 1789704483.8328695,
+    "seen": 1790093350.9520235,
+    "ast_hash": "93b6df3919788f22b1a5a707dfa34902",
+    "semantic_hash": "93b6df3919788f22b1a5a707dfa34902"
+  },
+  "src/combat/CombatSystem.cpp": {
+    "mtime": 1790051018.9012115,
+    "seen": 1790093350.9520235,
+    "ast_hash": "802014c8ead4b0e97a2c99a162c8c502",
+    "semantic_hash": "802014c8ead4b0e97a2c99a162c8c502"
+  },
+  "src/core/Camera.cpp": {
+    "mtime": 1789555137.4803157,
+    "seen": 1790093350.9520235,
+    "ast_hash": "7c6fb1499591ad5e2ac4aeaebc5a6d75",
+    "semantic_hash": "7c6fb1499591ad5e2ac4aeaebc5a6d75"
+  },
+  "src/core/Engine.cpp": {
+    "mtime": 1790092489.3447099,
+    "seen": 1790093350.9520235,
+    "ast_hash": "e8b416e42a9651a305cec37eb77b2e85",
+    "semantic_hash": "e8b416e42a9651a305cec37eb77b2e85"
+  },
+  "src/core/Input.cpp": {
+    "mtime": 1789556633.6509967,
+    "seen": 1790093350.9520235,
+    "ast_hash": "09a4b002fe1c55512c3f53ff7db232a8",
+    "semantic_hash": "09a4b002fe1c55512c3f53ff7db232a8"
+  },
+  "src/entities/BossDreadnought.cpp": {
+    "mtime": 1789703155.1244164,
+    "seen": 1790093350.9520235,
+    "ast_hash": "a87891738eabf1dc204e9be95a4232de",
+    "semantic_hash": "a87891738eabf1dc204e9be95a4232de"
+  },
+  "src/entities/BossMechaWorm.cpp": {
+    "mtime": 1789704366.4375684,
+    "seen": 1790093350.9520235,
+    "ast_hash": "ab502d5851c0ace469efde5e154f3aad",
+    "semantic_hash": "ab502d5851c0ace469efde5e154f3aad"
+  },
+  "src/entities/BossMegaTank.cpp": {
+    "mtime": 1789703187.963114,
+    "seen": 1790093350.9520235,
+    "ast_hash": "79b89b807e8020d32e7d26eab2c0510e",
+    "semantic_hash": "79b89b807e8020d32e7d26eab2c0510e"
+  },
+  "src/entities/BossTwinHelicopters.cpp": {
+    "mtime": 1789703183.5379643,
+    "seen": 1790093350.9520235,
+    "ast_hash": "79823d1749d98a976092ee4afd251793",
+    "semantic_hash": "79823d1749d98a976092ee4afd251793"
+  },
+  "src/entities/BossWalkingRobot.cpp": {
+    "mtime": 1790092164.8794377,
+    "seen": 1790093350.9520235,
+    "ast_hash": "4aa149fb1e08342ce5b53308f2be9499",
+    "semantic_hash": "4aa149fb1e08342ce5b53308f2be9499"
+  },
+  "src/entities/EnemyManager.cpp": {
+    "mtime": 1789702001.415285,
+    "seen": 1790093350.9520235,
+    "ast_hash": "90dc3c2bc736c469a5799d8f107606a1",
+    "semantic_hash": "90dc3c2bc736c469a5799d8f107606a1"
+  },
+  "src/entities/PlayerStarfighter.cpp": {
+    "mtime": 1790051353.1408808,
+    "seen": 1790093350.9520235,
+    "ast_hash": "886411d533ec39b99d65140c2b76c5ad",
+    "semantic_hash": "886411d533ec39b99d65140c2b76c5ad"
+  },
+  "src/entities/WingmanSquadron.cpp": {
+    "mtime": 1790092208.05857,
+    "seen": 1790093350.9520235,
+    "ast_hash": "4da7277feeb5c1edd04093ffe0b9d703",
+    "semantic_hash": "4da7277feeb5c1edd04093ffe0b9d703"
+  },
+  "src/glad.c": {
+    "mtime": 1764433808.0503397,
+    "seen": 1790093350.9520235,
+    "ast_hash": "380e13788c7f56546ea8394974f6aae8",
+    "semantic_hash": "380e13788c7f56546ea8394974f6aae8"
+  },
+  "src/main.cpp": {
+    "mtime": 1789532508.4309523,
+    "seen": 1790093350.9520235,
+    "ast_hash": "e8ddfe2c182c204cf2ffc936f0c2a2e8",
+    "semantic_hash": "e8ddfe2c182c204cf2ffc936f0c2a2e8"
+  },
+  "src/renderer/EBO.cpp": {
+    "mtime": 1789526562.530049,
+    "seen": 1790093350.9520235,
+    "ast_hash": "1f6d5aca4aaba6047138078749983dd8",
+    "semantic_hash": "1f6d5aca4aaba6047138078749983dd8"
+  },
+  "src/renderer/Mesh.cpp": {
+    "mtime": 1790092236.1179016,
+    "seen": 1790093350.9520235,
+    "ast_hash": "b7afb41b254c2c83d364d17033b62cad",
+    "semantic_hash": "b7afb41b254c2c83d364d17033b62cad"
+  },
+  "src/renderer/PostProcessor.cpp": {
+    "mtime": 1789565245.8145728,
+    "seen": 1790093350.9520235,
+    "ast_hash": "832b80d6876b05dd0266bf5a28b33541",
+    "semantic_hash": "832b80d6876b05dd0266bf5a28b33541"
+  },
+  "src/renderer/VAO.cpp": {
+    "mtime": 1789526564.6093209,
+    "seen": 1790093350.9520235,
+    "ast_hash": "9dbfe00df26aea52c86233fadd7c765a",
+    "semantic_hash": "9dbfe00df26aea52c86233fadd7c765a"
+  },
+  "src/renderer/VBO.cpp": {
+    "mtime": 1789526558.4094832,
+    "seen": 1790093350.9520235,
+    "ast_hash": "f282abfe64be308985c88cc5f6ae8988",
+    "semantic_hash": "f282abfe64be308985c88cc5f6ae8988"
+  },
+  "src/renderer/shaderClass.cpp": {
+    "mtime": 1789532003.07049,
+    "seen": 1790093350.9520235,
+    "ast_hash": "c216508d4c2c6af9ccfa4a019cd06169",
+    "semantic_hash": "c216508d4c2c6af9ccfa4a019cd06169"
+  },
+  "src/ui/HUD.cpp": {
+    "mtime": 1789703247.08257,
+    "seen": 1790093350.9520235,
+    "ast_hash": "720dadaf884abfa7acf03f00a8e1e9f2",
+    "semantic_hash": "720dadaf884abfa7acf03f00a8e1e9f2"
+  },
+  "src/world/LevelTimeline.cpp": {
+    "mtime": 1790092374.055849,
+    "seen": 1790093350.9520235,
+    "ast_hash": "66a552c7a9388b4da8824e95950749bf",
+    "semantic_hash": "66a552c7a9388b4da8824e95950749bf"
+  },
+  "src/world/TrainConvoy.cpp": {
+    "mtime": 1789702641.1204538,
+    "seen": 1790093350.9520235,
+    "ast_hash": "428ef73fb721342884f89f4a5e2e9ad4",
+    "semantic_hash": "428ef73fb721342884f89f4a5e2e9ad4"
+  },
+  "src/world/WorldEnvironment.cpp": {
+    "mtime": 1790092327.6644454,
+    "seen": 1790093350.9520235,
+    "ast_hash": "d64e372b35771750415581dccc8ae8b1",
+    "semantic_hash": "d64e372b35771750415581dccc8ae8b1"
+  }
+}
