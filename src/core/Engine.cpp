@@ -227,8 +227,8 @@ void Engine::StartMission(int stageIndex) {
     if (stageDef.id == "sector_5") {
         environment->SetSector(SectorStage::Sector2_DeepSpace);
     } else {
-        environment->SetSector(SectorStage::Sector1_Canyon);
         environment->SetTerrainTheme(stageDef.terrainTheme);
+        environment->SetSector(SectorStage::Sector1_Canyon);
     }
 
     player = std::make_unique<PlayerStarfighter>();

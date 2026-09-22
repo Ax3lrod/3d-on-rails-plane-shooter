@@ -4,40 +4,41 @@
     "boss_type": "walking_robot",
     "events": [
         // =========================================================================
-        // ACT 1: COASTAL OUTSKIRTS APPROACH (Z: 0 to -2400)
-        // Establishing the world: Approaching the invaded metropolis.
-        // Teaching combat rhythm: Air drones, ground tanks, and overhead gantries.
+        // ACT 1: COASTAL OUTSKIRTS & OPEN OCEAN (Z: 0 to -2400)
+        // Establishing the world: Open ocean flight over emerald archipelago.
+        // Pure aerial combat: Recon drones, interceptor scouts, island skimming.
         // =========================================================================
-        { "trigger_z": -80, "type": "transmission", "speaker": "Striker", "line1": "Striker reporting in. Entering city airspace!", "line2": "Capital district is under active assault. Stay alert!", "duration": 4.0 },
+        { "trigger_z": -80, "type": "transmission", "speaker": "Striker", "line1": "Approaching emerald coastline!", "line2": "Recon bogeys detected over open water!", "duration": 4.0 },
         { "trigger_z": -200, "type": "spawn_wave", "enemy_type": "drone", "formation": "v_formation", "count": 4, "spawn_x": 0.0, "spawn_y": 6.0, "spacing_x": 5.0, "spacing_z": 10.0 },
         { "trigger_z": -380, "type": "spawn_wave", "enemy_type": "drone", "formation": "staggered", "count": 4, "spawn_x": -8.0, "spawn_y": 8.0, "spacing_x": 6.0, "spacing_z": 12.0 },
-        { "trigger_z": -560, "type": "spawn_wave", "enemy_type": "tank", "formation": "column", "count": 2, "spawn_x": -6.0, "spawn_y": -7.5, "spacing_x": 0.0, "spacing_z": 18.0 },
-        { "trigger_z": -720, "type": "spawn_wave", "enemy_type": "drone", "formation": "line", "count": 5, "spawn_x": 0.0, "spawn_y": 10.0, "spacing_x": 7.0 },
-        { "trigger_z": -900, "type": "spawn_wave", "enemy_type": "tank", "formation": "line", "count": 2, "spawn_x": 0.0, "spawn_y": -7.5, "spacing_x": 14.0 },
-        { "trigger_z": -1080, "type": "transmission", "speaker": "Aegis", "line1": "Outskirts scout wing neutralized.", "line2": "Watch for armored batteries along the highway!", "duration": 3.8 },
+        { "trigger_z": -560, "type": "spawn_wave", "enemy_type": "drone", "formation": "line", "count": 3, "spawn_x": -6.0, "spawn_y": 5.0, "spacing_x": 7.0 },
+        { "trigger_z": -720, "type": "spawn_wave", "enemy_type": "drone", "formation": "line", "count": 5, "spawn_x": 0.0, "spawn_y": 9.0, "spacing_x": 7.0 },
+        { "trigger_z": -900, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "line", "count": 2, "spawn_x": 0.0, "spawn_y": 7.5, "spacing_x": 12.0 },
+        { "trigger_z": -1080, "type": "transmission", "speaker": "Aegis", "line1": "Coastal air patrol neutralized.", "line2": "Skim low over the islands for supply rings!", "duration": 3.8 },
         { "trigger_z": -1240, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "line", "count": 2, "spawn_x": 8.0, "spawn_y": 7.0, "spacing_x": 8.0 },
-        { "trigger_z": -1420, "type": "spawn_wave", "enemy_type": "turret", "formation": "line", "count": 2, "spawn_x": 0.0, "spawn_y": -7.5, "spacing_x": 30.0 },
+        { "trigger_z": -1420, "type": "spawn_wave", "enemy_type": "drone", "formation": "v_formation", "count": 5, "spawn_x": 0.0, "spawn_y": 8.0, "spacing_x": 6.0, "spacing_z": 10.0 },
         { "trigger_z": -1600, "type": "spawn_wave", "enemy_type": "drone", "formation": "v_formation", "count": 5, "spawn_x": -5.0, "spawn_y": 9.0, "spacing_x": 6.0, "spacing_z": 12.0 },
-        { "trigger_z": -1800, "type": "spawn_wave", "enemy_type": "tank", "formation": "column", "count": 3, "spawn_x": 8.0, "spawn_y": -7.5, "spacing_x": 0.0, "spacing_z": 16.0 },
+        { "trigger_z": -1800, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "staggered", "count": 3, "spawn_x": 8.0, "spawn_y": 8.0, "spacing_x": 8.0, "spacing_z": 14.0 },
         { "trigger_z": -2000, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "staggered", "count": 3, "spawn_x": -8.0, "spawn_y": 8.0, "spacing_x": 9.0, "spacing_z": 14.0 },
         { "trigger_z": -2200, "type": "spawn_wave", "enemy_type": "drone", "formation": "staggered", "count": 5, "spawn_x": 8.0, "spawn_y": 10.0, "spacing_x": 6.0, "spacing_z": 10.0 },
-        { "trigger_z": -2380, "type": "transmission", "speaker": "Striker", "line1": "Passing outer security perimeter!", "line2": "Entering suburban commercial sector!", "duration": 4.0 },
+        { "trigger_z": -2380, "type": "transmission", "speaker": "Striker", "line1": "Crossing the bay! Look at that highway bridge!", "line2": "Entering the metropolitan corridor!", "duration": 4.0 },
 
         // =========================================================================
-        // ACT 2: COMMERCIAL SUBURBS & MULTI-ELEVATION (Z: -2400 to -4400)
-        // Multi-level combat: Roof turrets, highway roadblocks, fast interceptors.
+        // ACT 2: COASTAL CAUSEWAY & SUSPENSION BRIDGE (Z: -2400 to -4400)
+        // High-speed aerial combat: Dogfights over the bay, sweeping drone wings,
+        // interceptor flights weaving through suspension bridge cable towers.
         // =========================================================================
         { "trigger_z": -2550, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "line", "count": 3, "spawn_x": 0.0, "spawn_y": 8.0, "spacing_x": 10.0 },
         { "trigger_z": -2720, "type": "spawn_wave", "enemy_type": "drone", "formation": "v_formation", "count": 6, "spawn_x": 0.0, "spawn_y": 12.0, "spacing_x": 5.0, "spacing_z": 10.0 },
-        { "trigger_z": -2900, "type": "spawn_wave", "enemy_type": "tank", "formation": "column", "count": 3, "spawn_x": -8.0, "spawn_y": -7.5, "spacing_x": 0.0, "spacing_z": 15.0 },
-        { "trigger_z": -3080, "type": "spawn_wave", "enemy_type": "turret", "formation": "line", "count": 2, "spawn_x": 0.0, "spawn_y": -7.5, "spacing_x": 28.0 },
-        { "trigger_z": -3260, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "staggered", "count": 3, "spawn_x": 10.0, "spawn_y": 7.0, "spacing_x": 8.0, "spacing_z": 14.0 },
-        { "trigger_z": -3440, "type": "spawn_wave", "enemy_type": "tank", "formation": "staggered", "count": 3, "spawn_x": 0.0, "spawn_y": -7.5, "spacing_x": 10.0, "spacing_z": 15.0 },
+        { "trigger_z": -2900, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "staggered", "count": 3, "spawn_x": -6.0, "spawn_y": 7.0, "spacing_x": 8.0, "spacing_z": 12.0 },
+        { "trigger_z": -3080, "type": "spawn_wave", "enemy_type": "drone", "formation": "line", "count": 5, "spawn_x": 0.0, "spawn_y": 9.0, "spacing_x": 6.5 },
+        { "trigger_z": -3260, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "staggered", "count": 3, "spawn_x": 8.0, "spawn_y": 7.0, "spacing_x": 8.0, "spacing_z": 14.0 },
+        { "trigger_z": -3440, "type": "spawn_wave", "enemy_type": "drone", "formation": "v_formation", "count": 6, "spawn_x": 0.0, "spawn_y": 14.0, "spacing_x": 5.0, "spacing_z": 10.0 },
         { "trigger_z": -3620, "type": "spawn_wave", "enemy_type": "drone", "formation": "line", "count": 5, "spawn_x": -6.0, "spawn_y": 10.0, "spacing_x": 6.5 },
         { "trigger_z": -3800, "type": "transmission", "speaker": "Aegis", "line1": "Multiple hostiles locked on radar!", "line2": "Use your barrel roll to deflect incoming fire!", "duration": 4.0 },
         { "trigger_z": -3980, "type": "spawn_wave", "enemy_type": "drone", "formation": "v_formation", "count": 5, "spawn_x": 6.0, "spawn_y": 11.0, "spacing_x": 5.5, "spacing_z": 11.0 },
-        { "trigger_z": -4160, "type": "spawn_wave", "enemy_type": "tank", "formation": "column", "count": 4, "spawn_x": 6.0, "spawn_y": -7.5, "spacing_x": 0.0, "spacing_z": 15.0 },
-        { "trigger_z": -4340, "type": "spawn_wave", "enemy_type": "turret", "formation": "line", "count": 2, "spawn_x": 0.0, "spawn_y": -7.5, "spacing_x": 32.0 },
+        { "trigger_z": -4160, "type": "spawn_wave", "enemy_type": "interceptor", "formation": "line", "count": 4, "spawn_x": 0.0, "spawn_y": 8.5, "spacing_x": 7.5 },
+        { "trigger_z": -4340, "type": "spawn_wave", "enemy_type": "drone", "formation": "staggered", "count": 5, "spawn_x": -5.0, "spawn_y": 10.0, "spacing_x": 6.0, "spacing_z": 10.0 },
 
         // =========================================================================
         // ACT 3: THE AMBUSH & STRIKER RESCUE (Z: -4400 to -6200)

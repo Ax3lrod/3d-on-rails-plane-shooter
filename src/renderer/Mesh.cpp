@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include <cmath>
+#include <algorithm>
 #include <glm/gtc/constants.hpp>
 
 Mesh::Mesh() : vao(), vbo(), ebo() {}
@@ -2591,6 +2592,353 @@ Mesh Mesh::CreateCityRoad(float length, float width) {
     return Mesh(verts, inds);
 }
 
+// CreateCityIntersection: Perpendicular cross-street avenue with traffic signals and crosswalks
+Mesh Mesh::CreateCityIntersection(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = width * 0.5f, hl = length * 0.5f;
+    float roadY = -7.5f;
+    float crossW = 20.0f; // 40m wide cross avenue
+    float crossExtent = 180.0f; // extends out to X = +/- 180m
+
+    glm::vec3 asphaltCol(0.18f, 0.18f, 0.20f);
+    glm::vec3 laneCol(0.85f, 0.78f, 0.25f);
+    glm::vec3 crosswalkCol(0.92f, 0.92f, 0.95f);
+    glm::vec3 sidewalkCol(0.32f, 0.30f, 0.28f);
+    glm::vec3 swTop = sidewalkCol * 1.15f;
+    glm::vec3 trafficMastCol(0.24f, 0.26f, 0.30f);
+    glm::vec3 redLight(0.95f, 0.15f, 0.10f);
+    glm::vec3 yellowLight(0.95f, 0.80f, 0.15f);
+    glm::vec3 greenLight(0.10f, 0.95f, 0.35f);
+    glm::vec3 streetSignCyan(0.15f, 0.85f, 0.95f);
+
+    // 1. Central Intersection Square & Highway Approaches
+    AddQuad(verts, inds, {-hw, roadY, -crossW}, {hw, roadY, -crossW}, {hw, roadY, crossW}, {-hw, roadY, crossW}, asphaltCol);
+    AddQuad(verts, inds, {-hw, roadY, -hl}, {hw, roadY, -hl}, {hw, roadY, -crossW}, {-hw, roadY, -crossW}, asphaltCol);
+    AddQuad(verts, inds, {-hw, roadY, crossW}, {hw, roadY, crossW}, {hw, roadY, hl}, {-hw, roadY, hl}, asphaltCol);
+
+    // 2. Perpendicular Cross-Street Avenues (East and West Wings out to +/- 180m)
+    AddQuad(verts, inds, {-crossExtent, roadY, -crossW}, {-hw, roadY, -crossW},
+                         {-hw, roadY, crossW}, {-crossExtent, roadY, crossW}, asphaltCol * 0.95f);
+    AddQuad(verts, inds, {hw, roadY, -crossW}, {crossExtent, roadY, -crossW},
+                         {crossExtent, roadY, crossW}, {hw, roadY, crossW}, asphaltCol * 0.95f);
+
+    // Yellow center lines for the cross-avenue
+    float cMarkW = 0.5f, cLaneY = roadY + 0.04f;
+    AddQuad(verts, inds, {-crossExtent, cLaneY, -cMarkW}, {-hw - 4.0f, cLaneY, -cMarkW},
+                         {-hw - 4.0f, cLaneY, cMarkW}, {-crossExtent, cLaneY, cMarkW}, laneCol);
+    AddQuad(verts, inds, {hw + 4.0f, cLaneY, -cMarkW}, {crossExtent, cLaneY, -cMarkW},
+                         {crossExtent, cLaneY, cMarkW}, {hw + 4.0f, cLaneY, cMarkW}, laneCol);
+
+    // 3. Zebra Crosswalk Markings (4 crosswalks at intersection perimeter)
+    float stripeW = 1.2f, stripeGap = 1.0f;
+    for (float x = -hw + 2.0f; x + stripeW <= hw - 2.0f; x += stripeW + stripeGap) {
+        AddQuad(verts, inds, {x, cLaneY, -crossW - 5.0f}, {x + stripeW, cLaneY, -crossW - 5.0f},
+                             {x + stripeW, cLaneY, -crossW - 1.0f}, {x, cLaneY, -crossW - 1.0f}, crosswalkCol * 1.5f);
+        AddQuad(verts, inds, {x, cLaneY, crossW + 1.0f}, {x + stripeW, cLaneY, crossW + 1.0f},
+                             {x + stripeW, cLaneY, crossW + 5.0f}, {x, cLaneY, crossW + 5.0f}, crosswalkCol * 1.5f);
+    }
+    for (float z = -crossW + 2.0f; z + stripeW <= crossW - 2.0f; z += stripeW + stripeGap) {
+        AddQuad(verts, inds, {-hw - 5.0f, cLaneY, z}, {-hw - 1.0f, cLaneY, z},
+                             {-hw - 1.0f, cLaneY, z + stripeW}, {-hw - 5.0f, cLaneY, z + stripeW}, crosswalkCol * 1.5f);
+        AddQuad(verts, inds, {hw + 1.0f, cLaneY, z}, {hw + 5.0f, cLaneY, z},
+                             {hw + 5.0f, cLaneY, z + stripeW}, {hw + 1.0f, cLaneY, z + stripeW}, crosswalkCol * 1.5f);
+    }
+
+    // 4. Corner Sidewalk Plazas & Cantilever Traffic Signal Masts
+    float swH = 1.2f, curbW = 14.0f;
+    for (float sx : {-1.0f, 1.0f}) {
+        for (float sz : {-1.0f, 1.0f}) {
+            float x0 = sx * hw, x1 = sx * (hw + curbW);
+            float z0 = sz * crossW, z1 = sz * (crossW + curbW);
+            float mx0 = std::min(x0, x1), mx1 = std::max(x0, x1);
+            float mz0 = std::min(z0, z1), mz1 = std::max(z0, z1);
+
+            AddQuad(verts, inds, {mx0, roadY + swH, mz0}, {mx1, roadY + swH, mz0},
+                                 {mx1, roadY + swH, mz1}, {mx0, roadY + swH, mz1}, swTop);
+            AddQuad(verts, inds, {x0, roadY, mz0}, {x0, roadY + swH, mz0},
+                                 {x0, roadY + swH, mz1}, {x0, roadY, mz1}, sidewalkCol * 0.85f);
+            AddQuad(verts, inds, {mx0, roadY, z0}, {mx1, roadY, z0},
+                                 {mx1, roadY + swH, z0}, {mx0, roadY + swH, z0}, sidewalkCol * 0.85f);
+
+            // 5. Cantilever Traffic Light Signal Mast on each corner
+            float mastX = sx * (hw + 1.2f), mastZ = sz * (crossW + 1.2f);
+            float mastTopY = roadY + 11.0f;
+            float armLen = 8.5f;
+
+            AddQuad(verts, inds, {mastX - 0.4f, roadY, mastZ - 0.4f}, {mastX + 0.4f, roadY, mastZ - 0.4f},
+                                 {mastX + 0.3f, mastTopY, mastZ - 0.3f}, {mastX - 0.3f, mastTopY, mastZ - 0.3f}, trafficMastCol);
+            AddQuad(verts, inds, {mastX + 0.4f, roadY, mastZ + 0.4f}, {mastX - 0.4f, roadY, mastZ + 0.4f},
+                                 {mastX - 0.3f, mastTopY, mastZ + 0.3f}, {mastX + 0.3f, mastTopY, mastZ + 0.3f}, trafficMastCol * 0.8f);
+
+            float armEndX = mastX - sx * armLen;
+            AddQuad(verts, inds, {mastX, mastTopY - 0.4f, mastZ - 0.3f}, {armEndX, mastTopY - 0.4f, mastZ - 0.3f},
+                                 {armEndX, mastTopY + 0.4f, mastZ - 0.3f}, {mastX, mastTopY + 0.4f, mastZ - 0.3f}, trafficMastCol);
+            AddQuad(verts, inds, {armEndX, mastTopY - 0.4f, mastZ + 0.3f}, {mastX, mastTopY - 0.4f, mastZ + 0.3f},
+                                 {mastX, mastTopY + 0.4f, mastZ + 0.3f}, {armEndX, mastTopY + 0.4f, mastZ + 0.3f}, trafficMastCol * 0.85f);
+
+            // Traffic light signal head
+            float lightX = mastX - sx * (armLen * 0.65f);
+            float lightBoxY = mastTopY - 2.8f;
+            AddQuad(verts, inds, {lightX - 0.8f, lightBoxY - 2.4f, mastZ - 0.4f}, {lightX + 0.8f, lightBoxY - 2.4f, mastZ - 0.4f},
+                                 {lightX + 0.8f, lightBoxY + 0.6f, mastZ - 0.4f}, {lightX - 0.8f, lightBoxY + 0.6f, mastZ - 0.4f}, glm::vec3(0.12f, 0.13f, 0.15f));
+            AddQuad(verts, inds, {lightX - 0.45f, lightBoxY + 0.05f, mastZ - 0.45f}, {lightX + 0.45f, lightBoxY + 0.05f, mastZ - 0.45f},
+                                 {lightX + 0.45f, lightBoxY + 0.55f, mastZ - 0.45f}, {lightX - 0.45f, lightBoxY + 0.55f, mastZ - 0.45f}, redLight * 2.2f);
+            AddQuad(verts, inds, {lightX - 0.45f, lightBoxY - 0.95f, mastZ - 0.45f}, {lightX + 0.45f, lightBoxY - 0.95f, mastZ - 0.45f},
+                                 {lightX + 0.45f, lightBoxY - 0.45f, mastZ - 0.45f}, {lightX - 0.45f, lightBoxY - 0.45f, mastZ - 0.45f}, yellowLight * 2.0f);
+            AddQuad(verts, inds, {lightX - 0.45f, lightBoxY - 1.95f, mastZ - 0.45f}, {lightX + 0.45f, lightBoxY - 1.95f, mastZ - 0.45f},
+                                 {lightX + 0.45f, lightBoxY - 1.45f, mastZ - 0.45f}, {lightX - 0.45f, lightBoxY - 1.45f, mastZ - 0.45f}, greenLight * 2.5f);
+
+            // Illuminated street sign
+            AddQuad(verts, inds, {mastX, mastTopY + 0.6f, mastZ - 0.05f}, {mastX - sx * 5.5f, mastTopY + 0.6f, mastZ - 0.05f},
+                                 {mastX - sx * 5.5f, mastTopY + 1.8f, mastZ - 0.05f}, {mastX, mastTopY + 1.8f, mastZ - 0.05f}, streetSignCyan * 2.0f);
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+// CreateRuinedBuilding: Half-destroyed skyscraper with exposed floors, twisted rebar, and embers
+Mesh Mesh::CreateRuinedBuilding(float w, float h, float d, const glm::vec3& wallCol, const glm::vec3& windowCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = w * 0.5f, hd = d * 0.5f;
+    float shearBaseY = h * 0.42f; // ~46m where catastrophic sheared break begins
+    float shearTopY  = h * 0.85f; // ~93m on the surviving side
+
+    glm::vec3 rebarSteel(0.65f, 0.35f, 0.22f);
+    glm::vec3 blastScorch(0.08f, 0.08f, 0.10f);
+    glm::vec3 emberGlow(1.0f, 0.35f, 0.12f);
+    glm::vec3 concreteCore(0.28f, 0.30f, 0.34f);
+
+    // 1. Lower Intact Structure (Y = 0 to shearBaseY)
+    AddQuad(verts, inds, {-hw, 0, hd}, {hw, 0, hd}, {hw, shearBaseY, hd}, {-hw, shearBaseY, hd}, wallCol * 0.92f);
+    AddQuad(verts, inds, {hw, 0, -hd}, {-hw, 0, -hd}, {-hw, shearBaseY, -hd}, {hw, shearBaseY, -hd}, wallCol * 0.70f);
+    AddQuad(verts, inds, {-hw, 0, -hd}, {-hw, 0, hd}, {-hw, shearBaseY, hd}, {-hw, shearBaseY, -hd}, wallCol * 0.80f);
+    AddQuad(verts, inds, {hw, 0, hd}, {hw, 0, -hd}, {hw, shearBaseY, -hd}, {hw, shearBaseY, hd}, wallCol * 0.76f);
+
+    // Damaged window matrix
+    float ww = (w / 3.0f) * 0.30f, wh = (shearBaseY / 5.0f) * 0.28f;
+    for (int r = 0; r < 5; ++r) {
+        float wy = (shearBaseY / 5.0f) * (r + 0.5f);
+        for (int c = 0; c < 3; ++c) {
+            float wx = -hw + (w / 3.0f) * (c + 0.5f);
+            glm::vec3 wc = (r == 4 && c == 1) ? blastScorch : (r % 2 == 0 ? windowCol : windowCol * 0.35f);
+            AddQuad(verts, inds,
+                {wx-ww, wy-wh, hd+0.06f}, {wx+ww, wy-wh, hd+0.06f},
+                {wx+ww, wy+wh, hd+0.06f}, {wx-ww, wy+wh, hd+0.06f}, wc);
+        }
+    }
+
+    // 2. Sheared Catastrophic Upper Wedge
+    AddQuad(verts, inds, {-hw, shearBaseY, hd}, {hw, shearBaseY, hd},
+                         {hw * 0.2f, shearBaseY + 8.0f, hd}, {-hw, shearTopY, hd}, wallCol * 0.88f);
+    AddQuad(verts, inds, {hw * 0.2f, shearBaseY + 8.0f, -hd}, {hw, shearBaseY, -hd},
+                         {-hw, shearBaseY, -hd}, {-hw, shearTopY, -hd}, wallCol * 0.68f);
+    AddQuad(verts, inds, {-hw, shearBaseY, -hd}, {-hw, shearBaseY, hd},
+                         {-hw, shearTopY, hd}, {-hw, shearTopY, -hd}, wallCol * 0.82f);
+
+    // 3. Exposed Internal Floor Slabs in the Breach
+    float slabStep = 7.5f;
+    for (float sy = shearBaseY + 2.0f; sy < shearTopY; sy += slabStep) {
+        float rightX = glm::mix(hw * 0.1f, -hw * 0.8f, (sy - shearBaseY) / (shearTopY - shearBaseY));
+        AddQuad(verts, inds, {-hw + 0.5f, sy, -hd + 0.5f}, {rightX, sy, -hd + 0.5f},
+                             {rightX, sy, hd - 0.5f}, {-hw + 0.5f, sy, hd - 0.5f}, concreteCore);
+        AddQuad(verts, inds, {-hw + 0.5f, sy - 0.6f, hd - 0.5f}, {rightX, sy - 0.6f, hd - 0.5f},
+                             {rightX, sy, hd - 0.5f}, {-hw + 0.5f, sy, hd - 0.5f}, concreteCore * 0.75f);
+        if ((int)(sy) % 2 == 0) {
+            AddQuad(verts, inds, {-hw + 2.0f, sy + 0.05f, -2.0f}, {rightX - 1.0f, sy + 0.05f, -2.0f},
+                                 {rightX - 1.0f, sy + 0.05f, 2.0f}, {-hw + 2.0f, sy + 0.05f, 2.0f}, emberGlow * 2.4f);
+        }
+    }
+
+    // 4. Jagged Concrete Teeth & Exposed Twisted Rebar Spikes
+    for (int i = 0; i < 6; ++i) {
+        float t = (float)i / 6.0f;
+        float rx = glm::mix(hw * 0.2f, -hw * 0.85f, t);
+        float ry = glm::mix(shearBaseY + 8.0f, shearTopY, t);
+        float rz = (i % 2 == 0) ? (hd * 0.8f) : (-hd * 0.8f);
+
+        float rebarH = 6.5f + (i % 3) * 3.0f;
+        float rebarAngle = ((i % 2 == 0) ? 1.0f : -1.0f) * 1.8f;
+        glm::vec3 rBase(rx, ry, rz);
+        glm::vec3 rTip(rx + rebarAngle, ry + rebarH, rz + (float)(i % 3) - 1.0f);
+        AddQuad(verts, inds, rBase - glm::vec3(0.2f, 0, 0), rBase + glm::vec3(0.2f, 0, 0),
+                             rTip + glm::vec3(0.15f, 0, 0), rTip - glm::vec3(0.15f, 0, 0), rebarSteel);
+
+        glm::vec3 toothApex(rx - 1.5f, ry + 4.0f, rz);
+        AddTriangle(verts, inds, rBase - glm::vec3(1.5f, 0, 0.8f), rBase + glm::vec3(1.5f, 0, -0.8f), toothApex, concreteCore * 0.9f);
+    }
+
+    AddQuad(verts, inds, {hw * 0.1f - 5.0f, shearBaseY - 6.0f, hd + 0.07f}, {hw * 0.1f + 5.0f, shearBaseY - 6.0f, hd + 0.07f},
+                         {hw * 0.1f + 5.0f, shearBaseY + 4.0f, hd + 0.07f}, {hw * 0.1f - 5.0f, shearBaseY + 4.0f, hd + 0.07f}, blastScorch);
+
+    return Mesh(verts, inds);
+}
+
+// CreateSkybridge: Illuminated glass-and-steel skybridge tube spanning across the corridor
+Mesh Mesh::CreateSkybridge(float spanWidth, float clearanceHeight, float bridgeThickness) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = spanWidth * 0.5f;
+    float botY = clearanceHeight;
+    float topY = clearanceHeight + bridgeThickness;
+    float hd = 5.0f;
+
+    glm::vec3 steelCol(0.22f, 0.24f, 0.28f);
+    glm::vec3 glassCol(0.15f, 0.75f, 0.95f);
+    glm::vec3 hazardYellow(0.95f, 0.78f, 0.15f);
+    glm::vec3 beaconRed(1.0f, 0.2f, 0.15f);
+
+    // Floor and roof
+    AddQuad(verts, inds, {-hw, botY, -hd}, {hw, botY, -hd}, {hw, botY, hd}, {-hw, botY, hd}, steelCol * 0.85f);
+    AddQuad(verts, inds, {-hw, topY, hd}, {hw, topY, hd}, {hw, topY, -hd}, {-hw, topY, -hd}, steelCol * 1.15f);
+
+    // Structural frames
+    float frameH = 0.9f;
+    AddQuad(verts, inds, {-hw, botY, hd}, {hw, botY, hd}, {hw, botY + frameH, hd}, {-hw, botY + frameH, hd}, steelCol);
+    AddQuad(verts, inds, {-hw, topY - frameH, hd}, {hw, topY - frameH, hd}, {hw, topY, hd}, {-hw, topY, hd}, steelCol);
+    AddQuad(verts, inds, {hw, botY, -hd}, {-hw, botY, -hd}, {-hw, botY + frameH, -hd}, {hw, botY + frameH, -hd}, steelCol * 0.8f);
+    AddQuad(verts, inds, {hw, topY - frameH, -hd}, {-hw, topY - frameH, -hd}, {-hw, topY, -hd}, {hw, topY, -hd}, steelCol * 0.8f);
+
+    // Large panoramic glowing windows
+    int windowBays = 7;
+    float bayW = (spanWidth - 4.0f) / windowBays;
+    for (int b = 0; b < windowBays; ++b) {
+        float bx0 = -hw + 2.0f + b * bayW + 0.4f;
+        float bx1 = bx0 + bayW - 0.8f;
+        AddQuad(verts, inds, {bx0, botY + frameH, hd + 0.05f}, {bx1, botY + frameH, hd + 0.05f},
+                             {bx1, topY - frameH, hd + 0.05f}, {bx0, topY - frameH, hd + 0.05f}, glassCol * 1.8f);
+        AddQuad(verts, inds, {bx1, botY + frameH, -hd - 0.05f}, {bx0, botY + frameH, -hd - 0.05f},
+                             {bx0, topY - frameH, -hd - 0.05f}, {bx1, topY - frameH, -hd - 0.05f}, glassCol * 1.3f);
+    }
+
+    // Hazard chevron warning stripes on bridge underbelly
+    float stripeW = 2.4f;
+    for (float x = -hw + 4.0f; x + stripeW <= hw - 4.0f; x += stripeW * 2.0f) {
+        AddQuad(verts, inds, {x, botY - 0.04f, hd - 0.9f}, {x + stripeW, botY - 0.04f, hd - 0.9f},
+                             {x + stripeW, botY + 0.05f, hd + 0.06f}, {x, botY + 0.05f, hd + 0.06f}, hazardYellow * 1.8f);
+    }
+
+    // Pulsing aviation warning beacons
+    for (float sx : {-hw + 2.0f, hw - 2.0f}) {
+        AddQuad(verts, inds, {sx - 0.6f, botY - 0.8f, hd - 0.6f}, {sx + 0.6f, botY - 0.8f, hd - 0.6f},
+                             {sx + 0.6f, botY, hd + 0.6f}, {sx - 0.6f, botY, hd + 0.6f}, beaconRed * 2.5f);
+        AddQuad(verts, inds, {sx - 0.6f, topY, hd - 0.6f}, {sx + 0.6f, topY, hd - 0.6f},
+                             {sx + 0.6f, topY + 0.8f, hd + 0.6f}, {sx - 0.6f, topY + 0.8f, hd + 0.6f}, beaconRed * 2.5f);
+    }
+
+    return Mesh(verts, inds);
+}
+
+// CreateCyberBillboardBuilding: Towering 145m skyscraper with giant holographic cyberpunk billboard
+Mesh Mesh::CreateCyberBillboardBuilding(float w, float h, float d, const glm::vec3& wallCol, const glm::vec3& windowCol, const glm::vec3& neonCol, int adType) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = w * 0.5f, hd = d * 0.5f;
+
+    // 1. Skyscraper Main Monolith
+    AddQuad(verts, inds, {-hw, 0, hd}, {hw, 0, hd}, {hw, h, hd}, {-hw, h, hd}, wallCol * 0.92f);
+    AddQuad(verts, inds, {hw, 0, -hd}, {-hw, 0, -hd}, {-hw, h, -hd}, {hw, h, -hd}, wallCol * 0.70f);
+    AddQuad(verts, inds, {-hw, 0, -hd}, {-hw, 0, hd}, {-hw, h, hd}, {-hw, h, -hd}, wallCol * 0.80f);
+    AddQuad(verts, inds, {hw, 0, hd}, {hw, 0, -hd}, {hw, h, -hd}, {hw, h, hd}, wallCol * 0.76f);
+    AddQuad(verts, inds, {-hw, h, -hd}, {hw, h, -hd}, {hw, h, hd}, {-hw, h, hd}, wallCol * 1.1f);
+
+    // Neon window grid
+    int rows = 12, cols = 4;
+    float ww = (w / cols) * 0.28f, wh = (h / rows) * 0.26f;
+    for (int r = 0; r < rows; ++r) {
+        float wy = (h / rows) * (r + 0.5f);
+        bool onBillboard = (wy >= 30.0f && wy <= 76.0f);
+        for (int c = 0; c < cols; ++c) {
+            float wx = -hw + (w / cols) * (c + 0.5f);
+            if (!onBillboard) {
+                AddQuad(verts, inds,
+                    {wx-ww, wy-wh, hd+0.06f}, {wx+ww, wy-wh, hd+0.06f},
+                    {wx+ww, wy+wh, hd+0.06f}, {wx-ww, wy+wh, hd+0.06f}, windowCol);
+            }
+            AddQuad(verts, inds,
+                {wx+ww, wy-wh, -hd-0.06f}, {wx-ww, wy-wh, -hd-0.06f},
+                {wx-ww, wy+wh, -hd-0.06f}, {wx+ww, wy+wh, -hd-0.06f}, windowCol * 0.65f);
+        }
+    }
+
+    // 2. Rooftop Helipad & Communications Spire
+    float padR = hw * 0.65f;
+    for (int i = 0; i < 8; ++i) {
+        float a0 = (float)i / 8.0f * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 8.0f * glm::two_pi<float>();
+        glm::vec3 p0(std::cos(a0) * padR, h + 0.08f, std::sin(a0) * padR);
+        glm::vec3 p1(std::cos(a1) * padR, h + 0.08f, std::sin(a1) * padR);
+        AddTriangle(verts, inds, {0.0f, h + 0.08f, 0.0f}, p0, p1, glm::vec3(0.24f, 0.26f, 0.30f));
+    }
+    float spireH = 24.0f;
+    AddQuad(verts, inds, {-0.4f, h, -0.4f}, {0.4f, h, -0.4f}, {0.1f, h + spireH, 0.1f}, {-0.1f, h + spireH, 0.1f}, glm::vec3(0.5f));
+    AddQuad(verts, inds, {-0.5f, h + spireH - 1.0f, -0.5f}, {0.5f, h + spireH - 1.0f, -0.5f},
+                         {0.5f, h + spireH + 1.5f, 0.5f}, {-0.5f, h + spireH + 1.5f, 0.5f}, glm::vec3(1.0f, 0.2f, 0.1f) * 2.5f);
+
+    // 3. Giant Holographic / Neon Cyberpunk Billboard (Y = 32.0 to 74.0)
+    float bbY0 = 32.0f, bbY1 = 74.0f;
+    float bbW = w * 0.88f;
+    float bbHw = bbW * 0.5f;
+    float bbZ = hd + 0.35f;
+
+    // Dark high-contrast backplate
+    AddQuad(verts, inds, {-bbHw, bbY0, bbZ}, {bbHw, bbY0, bbZ}, {bbHw, bbY1, bbZ}, {-bbHw, bbY1, bbZ}, glm::vec3(0.04f, 0.04f, 0.07f));
+
+    // Outer neon glow border frame
+    float borderW = 1.0f;
+    AddQuad(verts, inds, {-bbHw, bbY0, bbZ + 0.05f}, {bbHw, bbY0, bbZ + 0.05f}, {bbHw, bbY0 + borderW, bbZ + 0.05f}, {-bbHw, bbY0 + borderW, bbZ + 0.05f}, neonCol * 2.2f);
+    AddQuad(verts, inds, {-bbHw, bbY1 - borderW, bbZ + 0.05f}, {bbHw, bbY1 - borderW, bbZ + 0.05f}, {bbHw, bbY1, bbZ + 0.05f}, {-bbHw, bbY1, bbZ + 0.05f}, neonCol * 2.2f);
+    AddQuad(verts, inds, {-bbHw, bbY0, bbZ + 0.05f}, {-bbHw + borderW, bbY0, bbZ + 0.05f}, {-bbHw + borderW, bbY1, bbZ + 0.05f}, {-bbHw, bbY1, bbZ + 0.05f}, neonCol * 2.2f);
+    AddQuad(verts, inds, {bbHw - borderW, bbY0, bbZ + 0.05f}, {bbHw, bbY0, bbZ + 0.05f}, {bbHw, bbY1, bbZ + 0.05f}, {bbHw - borderW, bbY1, bbZ + 0.05f}, neonCol * 2.2f);
+
+    float bbMidY = (bbY0 + bbY1) * 0.5f;
+    if (adType == 0) {
+        // "CYBER ARROW / NOVA"
+        glm::vec3 adPink(0.98f, 0.20f, 0.65f);
+        glm::vec3 adWhite(0.98f, 0.98f, 1.0f);
+        AddTriangle(verts, inds, {0.0f, bbMidY + 12.0f, bbZ + 0.1f}, {-bbHw + 3.0f, bbMidY, bbZ + 0.1f}, {0.0f, bbMidY + 4.0f, bbZ + 0.1f}, adPink * 2.2f);
+        AddTriangle(verts, inds, {0.0f, bbMidY + 12.0f, bbZ + 0.1f}, {0.0f, bbMidY + 4.0f, bbZ + 0.1f}, {bbHw - 3.0f, bbMidY, bbZ + 0.1f}, adPink * 2.2f);
+        AddTriangle(verts, inds, {0.0f, bbMidY + 2.0f, bbZ + 0.1f}, {-bbHw + 4.0f, bbMidY - 9.0f, bbZ + 0.1f}, {0.0f, bbMidY - 5.0f, bbZ + 0.1f}, adPink * 1.8f);
+        AddTriangle(verts, inds, {0.0f, bbMidY + 2.0f, bbZ + 0.1f}, {0.0f, bbMidY - 5.0f, bbZ + 0.1f}, {bbHw - 4.0f, bbMidY - 9.0f, bbZ + 0.1f}, adPink * 1.8f);
+        AddQuad(verts, inds, {-bbHw + 5.0f, bbMidY - 12.0f, bbZ + 0.12f}, {bbHw - 5.0f, bbMidY - 12.0f, bbZ + 0.12f},
+                             {bbHw - 5.0f, bbMidY - 10.0f, bbZ + 0.12f}, {-bbHw + 5.0f, bbMidY - 10.0f, bbZ + 0.12f}, adWhite * 2.5f);
+    } else if (adType == 1) {
+        // "TITAN HEAVY DYNAMICS"
+        glm::vec3 adCyan(0.15f, 0.95f, 0.90f);
+        glm::vec3 adCore(0.98f, 0.85f, 0.20f);
+        float hr = 10.0f;
+        for (int i = 0; i < 6; ++i) {
+            float a0 = (float)i / 6.0f * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+            glm::vec3 p0(std::cos(a0) * hr, bbMidY + std::sin(a0) * hr, bbZ + 0.1f);
+            glm::vec3 p1(std::cos(a1) * hr, bbMidY + std::sin(a1) * hr, bbZ + 0.1f);
+            glm::vec3 p0i(std::cos(a0) * (hr - 2.2f), bbMidY + std::sin(a0) * (hr - 2.2f), bbZ + 0.1f);
+            glm::vec3 p1i(std::cos(a1) * (hr - 2.2f), bbMidY + std::sin(a1) * (hr - 2.2f), bbZ + 0.1f);
+            AddQuad(verts, inds, p0i, p1i, p1, p0, adCyan * 2.4f);
+        }
+        AddQuad(verts, inds, {0.0f, bbMidY - 4.0f, bbZ + 0.12f}, {4.0f, bbMidY, bbZ + 0.12f},
+                             {0.0f, bbMidY + 4.0f, bbZ + 0.12f}, {-4.0f, bbMidY, bbZ + 0.12f}, adCore * 2.5f);
+    } else {
+        // "HYPERION DEFENSE / STARBURST"
+        glm::vec3 adAmber(1.0f, 0.72f, 0.15f);
+        glm::vec3 adRed(0.95f, 0.22f, 0.15f);
+        AddQuad(verts, inds, {-11.0f, bbMidY - 1.2f, bbZ + 0.1f}, {11.0f, bbMidY - 1.2f, bbZ + 0.1f},
+                             {11.0f, bbMidY + 1.2f, bbZ + 0.1f}, {-11.0f, bbMidY + 1.2f, bbZ + 0.1f}, adAmber * 2.2f);
+        AddQuad(verts, inds, {-1.2f, bbMidY - 13.0f, bbZ + 0.1f}, {1.2f, bbMidY - 13.0f, bbZ + 0.1f},
+                             {1.2f, bbMidY + 13.0f, bbZ + 0.1f}, {-1.2f, bbMidY + 13.0f, bbZ + 0.1f}, adAmber * 2.2f);
+        AddQuad(verts, inds, {-4.5f, bbMidY - 4.5f, bbZ + 0.12f}, {4.5f, bbMidY - 4.5f, bbZ + 0.12f},
+                             {4.5f, bbMidY + 4.5f, bbZ + 0.12f}, {-4.5f, bbMidY + 4.5f, bbZ + 0.12f}, adRed * 2.5f);
+    }
+
+    return Mesh(verts, inds);
+}
+
 Mesh Mesh::CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol,
                                     const glm::vec3& legCol, const glm::vec3& coreCol) {
     std::vector<Vertex> verts;
@@ -2856,6 +3204,770 @@ Mesh Mesh::CreateCollapsingSpire(float height, float baseRadius, const glm::vec3
     for (int side = 0; side < 4; ++side) {
         int nextSide = (side + 1) % 4;
         AddTriangle(verts, inds, tCorners[side], tCorners[nextSide], apex, beaconCol * 3.0f);
+    }
+
+    return Mesh(verts, inds);
+}
+
+// =========================================================================
+// PHASE 40: CORNERIA-STYLE 5-ZONE MODULAR TERRAIN MESHES
+// =========================================================================
+
+Mesh Mesh::CreateCoastlineTerrain(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hl = length * 0.5f;
+    float baseY = -7.5f;
+
+    // 1. Vast Open Ocean Water Surface (X = -220 to +220)
+    // Clean retro-arcade deep azure and vibrant sea-blue water bands
+    glm::vec3 deepAzure(0.06f, 0.36f, 0.68f);
+    glm::vec3 vibrantBlue(0.08f, 0.44f, 0.78f);
+    glm::vec3 midAzure(0.07f, 0.40f, 0.73f);
+
+    float bands[9] = { -220.0f, -165.0f, -110.0f, -55.0f, 0.0f, 55.0f, 110.0f, 165.0f, 220.0f };
+    glm::vec3 palette[4] = { deepAzure, midAzure, vibrantBlue, midAzure };
+
+    for (int b = 0; b < 8; ++b) {
+        float x0 = bands[b], x1 = bands[b+1];
+        glm::vec3 col = palette[b % 4];
+        // Winding order: (x0, baseY, hl) -> (x1, baseY, hl) -> (x1, baseY, -hl) -> (x0, baseY, -hl)
+        // Ensures surface normal points directly upward (0, 1, 0)
+        AddQuad(verts, inds, {x0, baseY, hl}, {x1, baseY, hl}, {x1, baseY, -hl}, {x0, baseY, -hl}, col);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateOceanIsland(float radiusX, float radiusZ, float height) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float baseY = 0.0f;
+    const int segs = 10;
+    float dAngle = glm::two_pi<float>() / segs;
+
+    glm::vec3 sandCol(0.92f, 0.82f, 0.58f);       // golden tropical sand
+    glm::vec3 wetSandCol(0.78f, 0.68f, 0.48f);    // wet shoreline
+    glm::vec3 rockCol(0.58f, 0.48f, 0.38f);       // sea rock terraces
+    glm::vec3 grassCol(0.28f, 0.68f, 0.25f);      // lush emerald greenery
+    glm::vec3 palmTrunk(0.42f, 0.30f, 0.18f);     // palm wood
+    glm::vec3 palmLeaf(0.18f, 0.55f, 0.20f);      // palm foliage
+
+    // 1. Sand Beach Ring (outermost ring at sea level)
+    for (int i = 0; i < segs; ++i) {
+        float a0 = i * dAngle, a1 = (i + 1) * dAngle;
+        float c0 = std::cos(a0), s0 = std::sin(a0);
+        float c1 = std::cos(a1), s1 = std::sin(a1);
+
+        // Waterline edge
+        glm::vec3 w0(c0 * radiusX, baseY, s0 * radiusZ);
+        glm::vec3 w1(c1 * radiusX, baseY, s1 * radiusZ);
+
+        // Beach berm ridge
+        float r1X = radiusX * 0.78f, r1Z = radiusZ * 0.78f;
+        glm::vec3 b0(c0 * r1X, baseY + 1.2f, s0 * r1Z);
+        glm::vec3 b1(c1 * r1X, baseY + 1.2f, s1 * r1Z);
+
+        // Rocky terrace
+        float r2X = radiusX * 0.52f, r2Z = radiusZ * 0.52f;
+        glm::vec3 k0(c0 * r2X, baseY + 3.2f, s0 * r2Z);
+        glm::vec3 k1(c1 * r2X, baseY + 3.2f, s1 * r2Z);
+
+        // Grassy plateau
+        float r3X = radiusX * 0.32f, r3Z = radiusZ * 0.32f;
+        glm::vec3 g0(c0 * r3X, baseY + height, s0 * r3Z);
+        glm::vec3 g1(c1 * r3X, baseY + height, s1 * r3Z);
+
+        // Island apex center
+        glm::vec3 apex(0.0f, baseY + height + 0.8f, 0.0f);
+
+        // Beach slope (wet shoreline to dry sand)
+        AddQuad(verts, inds, w0, w1, b1, b0, (i % 2 == 0) ? sandCol : wetSandCol);
+        // Rocky terrace slope
+        AddQuad(verts, inds, b0, b1, k1, k0, (i % 2 == 0) ? rockCol : rockCol * 0.85f);
+        // Green hillside slope
+        AddQuad(verts, inds, k0, k1, g1, g0, (i % 2 == 0) ? grassCol : grassCol * 0.9f);
+        // Top grassy cap
+        AddTriangle(verts, inds, apex, g0, g1, grassCol * 1.1f);
+    }
+
+    // 2. Small Palm Tree Cluster on Island Plateau
+    float px[3] = { 0.0f, radiusX * 0.12f, -radiusX * 0.10f };
+    float pz[3] = { 0.0f, radiusZ * 0.10f,  radiusZ * 0.12f };
+    for (int p = 0; p < 3; ++p) {
+        float trunkH = 4.5f + p * 0.8f;
+        glm::vec3 tBase(px[p], baseY + height + 0.8f, pz[p]);
+        glm::vec3 tTop = tBase + glm::vec3(0.4f * p, trunkH, 0.3f * p);
+
+        // Trunk
+        float tr = 0.35f;
+        for (int s = 0; s < 4; ++s) {
+            float a0 = s * glm::half_pi<float>(), a1 = (s + 1) * glm::half_pi<float>();
+            glm::vec3 tb0 = tBase + glm::vec3(std::cos(a0) * tr, 0.0f, std::sin(a0) * tr);
+            glm::vec3 tb1 = tBase + glm::vec3(std::cos(a1) * tr, 0.0f, std::sin(a1) * tr);
+            glm::vec3 tt0 = tTop  + glm::vec3(std::cos(a0) * (tr * 0.7f), 0.0f, std::sin(a0) * (tr * 0.7f));
+            glm::vec3 tt1 = tTop  + glm::vec3(std::cos(a1) * (tr * 0.7f), 0.0f, std::sin(a1) * (tr * 0.7f));
+            AddQuad(verts, inds, tb0, tb1, tt1, tt0, palmTrunk);
+        }
+
+        // Palm Frond Canopy (4 drooping fan leaves)
+        for (int f = 0; f < 4; ++f) {
+            float fa = f * glm::half_pi<float>() + p * 0.4f;
+            float leafLen = 3.6f;
+            glm::vec3 fTip = tTop + glm::vec3(std::cos(fa) * leafLen, -0.9f, std::sin(fa) * leafLen);
+            glm::vec3 fL = tTop + glm::vec3(std::cos(fa - 0.4f) * (leafLen * 0.5f), 0.2f, std::sin(fa - 0.4f) * (leafLen * 0.5f));
+            glm::vec3 fR = tTop + glm::vec3(std::cos(fa + 0.4f) * (leafLen * 0.5f), 0.2f, std::sin(fa + 0.4f) * (leafLen * 0.5f));
+            AddTriangle(verts, inds, tTop, fL, fTip, palmLeaf);
+            AddTriangle(verts, inds, tTop, fTip, fR, palmLeaf * 0.9f);
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateCoastalHighwayTransition(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hl = length * 0.5f;
+    float deckY = -7.5f;
+    float hw = 26.0f; // matches elevatedHighwayMesh road deck half-width
+
+    glm::vec3 asphaltCol(0.18f, 0.18f, 0.20f);
+    glm::vec3 yellowLine(0.88f, 0.78f, 0.22f);
+    glm::vec3 concreteCol(0.42f, 0.44f, 0.48f);
+    glm::vec3 steelGirder(0.25f, 0.27f, 0.32f);
+    glm::vec3 bayWater(0.06f, 0.38f, 0.62f);
+    glm::vec3 deepWater(0.04f, 0.28f, 0.50f);
+    glm::vec3 coastSand(0.88f, 0.78f, 0.54f);
+    glm::vec3 coastRock(0.58f, 0.48f, 0.38f);
+    glm::vec3 coastGrass(0.28f, 0.64f, 0.25f);
+    glm::vec3 lightBeam(1.0f, 0.95f, 0.40f);
+
+    const int segs = 24;
+    float dz = length / segs;
+    float markW = 0.55f;
+
+    // Graceful sweeping curve: starts from far right off-screen (X = 145),
+    // arching smoothly over the turquoise bay into the central flight corridor (X = 0)
+    auto getCenterX = [&](float z) -> float {
+        float t = (hl - z) / length;
+        t = std::clamp(t, 0.0f, 1.0f);
+        return 145.0f * 0.5f * (1.0f + std::cos(t * glm::pi<float>()));
+    };
+
+    auto getWaterY = [&](float z) -> float {
+        float t = (hl - z) / length;
+        t = std::clamp(t, 0.0f, 1.0f);
+        // Slopes gently from open ocean level (-7.5f) to deep urban harbor (-18.0f)
+        return glm::mix(-7.5f, -18.0f, t);
+    };
+
+    // 1. Vast Sloping Bay Water Floor (X = -220 to +220)
+    for (int s = 0; s < segs; ++s) {
+        float z0 = hl - s * dz;
+        float z1 = hl - (s + 1) * dz;
+        float wy0 = getWaterY(z0), wy1 = getWaterY(z1);
+        glm::vec3 wCol = (s % 2 == 0) ? bayWater : deepWater;
+
+        AddQuad(verts, inds, {-220.0f, wy0, z0}, {220.0f, wy0, z0}, {220.0f, wy1, z1}, {-220.0f, wy1, z1}, wCol);
+    }
+
+    // 2. Left Rocky Promontory & Classic Octagonal Lighthouse (Z ~ hl*0.6f to 0.0f)
+    for (int s = 4; s < 14; ++s) {
+        float z0 = hl - s * dz;
+        float z1 = hl - (s + 1) * dz;
+        float wy0 = getWaterY(z0), wy1 = getWaterY(z1);
+
+        float capeEdge0 = -75.0f - std::sin((float)(s - 4) / 10.0f * glm::pi<float>()) * 25.0f;
+        float capeEdge1 = -75.0f - std::sin((float)(s - 3) / 10.0f * glm::pi<float>()) * 25.0f;
+
+        // Sand shoreline
+        AddQuad(verts, inds, {-180.0f, wy0, z0}, {capeEdge0, wy0, z0},
+                             {capeEdge1, wy1, z1}, {-180.0f, wy1, z1}, coastSand);
+        // Rocky terrace
+        AddQuad(verts, inds, {capeEdge0, wy0, z0}, {capeEdge0 - 15.0f, deckY + 4.0f, z0},
+                             {capeEdge1 - 15.0f, deckY + 4.0f, z1}, {capeEdge1, wy1, z1}, coastRock);
+        // Cape grass plateau
+        AddQuad(verts, inds, {capeEdge0 - 15.0f, deckY + 4.0f, z0}, {-180.0f, deckY + 5.5f, z0},
+                             {-180.0f, deckY + 5.5f, z1}, {capeEdge1 - 15.0f, deckY + 4.0f, z1}, coastGrass);
+    }
+
+    // Octagonal Retro-Arcade Lighthouse on Left Cape
+    {
+        float lhX = -92.0f, lhZ = hl * 0.35f, lhBaseY = deckY + 4.0f;
+        float lhH = 24.0f, lhR0 = 3.6f, lhR1 = 2.0f;
+        const int lhSegs = 8;
+        glm::vec3 whiteBand(0.92f, 0.94f, 0.98f);
+        glm::vec3 redBand(0.92f, 0.22f, 0.18f);
+
+        // 4 vertical striped bands
+        for (int b = 0; b < 4; ++b) {
+            float y0 = lhBaseY + (lhH / 4.0f) * b;
+            float y1 = lhBaseY + (lhH / 4.0f) * (b + 1);
+            float r0 = glm::mix(lhR0, lhR1, (float)b / 4.0f);
+            float r1 = glm::mix(lhR0, lhR1, (float)(b + 1) / 4.0f);
+            glm::vec3 bCol = (b % 2 == 0) ? redBand : whiteBand;
+
+            for (int i = 0; i < lhSegs; ++i) {
+                float a0 = (float)i / lhSegs * glm::two_pi<float>();
+                float a1 = (float)(i + 1) / lhSegs * glm::two_pi<float>();
+                glm::vec3 p00(lhX + std::cos(a0) * r0, y0, lhZ + std::sin(a0) * r0);
+                glm::vec3 p10(lhX + std::cos(a1) * r0, y0, lhZ + std::sin(a1) * r0);
+                glm::vec3 p11(lhX + std::cos(a1) * r1, y1, lhZ + std::sin(a1) * r1);
+                glm::vec3 p01(lhX + std::cos(a0) * r1, y1, lhZ + std::sin(a0) * r1);
+                AddQuad(verts, inds, p00, p10, p11, p01, bCol * (0.85f + 0.15f * (i % 2)));
+            }
+        }
+
+        // Lantern Room & Radiant Glowing Beacon
+        float lanternY = lhBaseY + lhH;
+        for (int i = 0; i < lhSegs; ++i) {
+            float a0 = (float)i / lhSegs * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / lhSegs * glm::two_pi<float>();
+            glm::vec3 l0(lhX + std::cos(a0) * (lhR1 * 1.25f), lanternY, lhZ + std::sin(a0) * (lhR1 * 1.25f));
+            glm::vec3 l1(lhX + std::cos(a1) * (lhR1 * 1.25f), lanternY, lhZ + std::sin(a1) * (lhR1 * 1.25f));
+            glm::vec3 t0(lhX + std::cos(a0) * (lhR1 * 1.15f), lanternY + 3.5f, lhZ + std::sin(a0) * (lhR1 * 1.15f));
+            glm::vec3 t1(lhX + std::cos(a1) * (lhR1 * 1.15f), lanternY + 3.5f, lhZ + std::sin(a1) * (lhR1 * 1.15f));
+            AddQuad(verts, inds, l0, l1, t1, t0, lightBeam * 2.2f);
+        }
+        // Conical Copper Roof Cap
+        glm::vec3 roofApex(lhX, lanternY + 6.0f, lhZ);
+        for (int i = 0; i < lhSegs; ++i) {
+            float a0 = (float)i / lhSegs * glm::two_pi<float>();
+            float a1 = (float)(i + 1) / lhSegs * glm::two_pi<float>();
+            glm::vec3 t0(lhX + std::cos(a0) * (lhR1 * 1.35f), lanternY + 3.5f, lhZ + std::sin(a0) * (lhR1 * 1.35f));
+            glm::vec3 t1(lhX + std::cos(a1) * (lhR1 * 1.35f), lanternY + 3.5f, lhZ + std::sin(a1) * (lhR1 * 1.35f));
+            AddTriangle(verts, inds, roofApex, t0, t1, glm::vec3(0.25f, 0.48f, 0.35f));
+        }
+    }
+
+    // 3. Snaking Elevated Highway Deck & Underside Structure
+    for (int s = 0; s < segs; ++s) {
+        float z0 = hl - s * dz;
+        float z1 = hl - (s + 1) * dz;
+        float cx0 = getCenterX(z0), cx1 = getCenterX(z1);
+
+        // Asphalt road surface
+        glm::vec3 rL0(cx0 - hw, deckY, z0), rR0(cx0 + hw, deckY, z0);
+        glm::vec3 rL1(cx1 - hw, deckY, z1), rR1(cx1 + hw, deckY, z1);
+        AddQuad(verts, inds, rL0, rR0, rR1, rL1, asphaltCol);
+
+        // Dashed yellow center line along the curve
+        if (s % 2 == 0) {
+            glm::vec3 mL0(cx0 - markW, deckY + 0.05f, z0), mR0(cx0 + markW, deckY + 0.05f, z0);
+            glm::vec3 mL1(cx1 - markW, deckY + 0.05f, z1), mR1(cx1 + markW, deckY + 0.05f, z1);
+            AddQuad(verts, inds, mL0, mR0, mR1, mL1, yellowLine);
+        }
+
+        // Concrete Crash Barrier Guardrails
+        float gh = 1.4f, gw = 0.9f;
+        // Left rail
+        AddQuad(verts, inds, rL0, rL0 + glm::vec3(gw, 0, 0), rL1 + glm::vec3(gw, 0, 0), rL1, concreteCol);
+        AddQuad(verts, inds, rL0 + glm::vec3(0, gh, 0), rL0 + glm::vec3(gw, gh, 0),
+                             rL1 + glm::vec3(gw, gh, 0), rL1 + glm::vec3(0, gh, 0), concreteCol * 1.15f);
+        AddQuad(verts, inds, rL0, rL1, rL1 + glm::vec3(0, gh, 0), rL0 + glm::vec3(0, gh, 0), concreteCol * 0.75f);
+        // Right rail
+        AddQuad(verts, inds, rR0 - glm::vec3(gw, 0, 0), rR0, rR1, rR1 - glm::vec3(gw, 0, 0), concreteCol);
+        AddQuad(verts, inds, rR0 - glm::vec3(gw, gh, 0), rR0 + glm::vec3(0, gh, 0),
+                             rR1 + glm::vec3(0, gh, 0), rR1 - glm::vec3(gw, gh, 0), concreteCol * 1.15f);
+        AddQuad(verts, inds, rR0, rR0 + glm::vec3(0, gh, 0), rR1 + glm::vec3(0, gh, 0), rR1, concreteCol * 0.75f);
+
+        // Steel girder underside
+        float botY = deckY - 2.8f;
+        glm::vec3 uL0(cx0 - hw, botY, z0), uR0(cx0 + hw, botY, z0);
+        glm::vec3 uL1(cx1 - hw, botY, z1), uR1(cx1 + hw, botY, z1);
+        AddQuad(verts, inds, uL0, uR0, uR1, uL1, steelGirder);
+        AddQuad(verts, inds, uL0, uL1, rL1, rL0, steelGirder * 0.8f);
+        AddQuad(verts, inds, rR0, rR1, uR1, uR0, steelGirder * 0.8f);
+    }
+
+    // 4. Massive Concrete Bridge Pylons anchored into coastal bay water (Every 2 segments)
+    for (int s = 1; s < segs; s += 2) {
+        float pz = hl - (s + 0.5f) * dz;
+        float px = getCenterX(pz);
+        float wy = getWaterY(pz);
+        float pr = 3.6f;
+        float botY = deckY - 2.8f;
+
+        // Dual pier columns (left and right under the girder)
+        for (float sideX : {-12.0f, 12.0f}) {
+            float cx = px + sideX;
+            for (int i = 0; i < 6; ++i) {
+                float a0 = (float)i / 6.0f * glm::two_pi<float>();
+                float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+                glm::vec3 b0(cx + std::cos(a0) * pr, wy, pz + std::sin(a0) * pr);
+                glm::vec3 b1(cx + std::cos(a1) * pr, wy, pz + std::sin(a1) * pr);
+                glm::vec3 t0(cx + std::cos(a0) * (pr * 1.12f), botY, pz + std::sin(a0) * (pr * 1.12f));
+                glm::vec3 t1(cx + std::cos(a1) * (pr * 1.12f), botY, pz + std::sin(a1) * (pr * 1.12f));
+                AddQuad(verts, inds, b0, b1, t1, t0, (i % 2 == 0) ? concreteCol : concreteCol * 0.82f);
+            }
+        }
+
+        // Curved Streetlight Mast on Outer Guardrail
+        float poleX = px + hw - 0.4f;
+        glm::vec3 poleBase(poleX, deckY + 1.4f, pz);
+        glm::vec3 poleTop(poleX - 2.5f, deckY + 8.5f, pz);
+        glm::vec3 lampQuad0(poleX - 3.2f, deckY + 8.3f, pz - 0.4f);
+        glm::vec3 lampQuad1(poleX - 1.8f, deckY + 8.3f, pz - 0.4f);
+        glm::vec3 lampQuad2(poleX - 1.8f, deckY + 8.3f, pz + 0.4f);
+        glm::vec3 lampQuad3(poleX - 3.2f, deckY + 8.3f, pz + 0.4f);
+
+        // Light pole rod
+        AddQuad(verts, inds, poleBase, poleBase + glm::vec3(0.2f, 0, 0),
+                             poleTop + glm::vec3(0.2f, 0, 0), poleTop, glm::vec3(0.35f, 0.38f, 0.42f));
+        // Glowing sodium lamp
+        AddQuad(verts, inds, lampQuad0, lampQuad1, lampQuad2, lampQuad3, glm::vec3(1.0f, 0.90f, 0.45f) * 2.0f);
+    }
+
+    return Mesh(verts, inds);
+}
+
+// CreateElevatedHighway: 2200m continuous winding coastal viaduct with suspension bridge cable towers
+Mesh Mesh::CreateElevatedHighway(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hl = length * 0.5f;
+    float deckY = -7.5f;
+    float waterY = -18.0f;
+    float hw = 26.0f; // half road width
+
+    glm::vec3 asphaltCol(0.18f, 0.18f, 0.20f);
+    glm::vec3 yellowLine(0.88f, 0.78f, 0.22f);
+    glm::vec3 concreteCol(0.42f, 0.44f, 0.48f);
+    glm::vec3 steelGirder(0.25f, 0.27f, 0.32f);
+    glm::vec3 bayWater(0.06f, 0.32f, 0.58f);
+    glm::vec3 deepWater(0.04f, 0.25f, 0.48f);
+
+    const int segs = 88;
+    float dz = length / (float)segs;
+    float markW = 0.55f;
+
+    // Organic S-curve: 1.5 cycles with smooth sine envelope for zero slope and position at endpoints
+    auto getCenterX = [&](float t) -> float {
+        t = std::clamp(t, 0.0f, 1.0f);
+        return 16.0f * std::sin(3.0f * glm::pi<float>() * t) * std::sin(glm::pi<float>() * t);
+    };
+
+    // 1. Vast Continuous Blue Bay Water Floor (X = -220 to +220)
+    for (int s = 0; s < segs; ++s) {
+        float z0 = hl - s * dz;
+        float z1 = hl - (s + 1) * dz;
+        glm::vec3 wCol = (s % 2 == 0) ? bayWater : deepWater;
+
+        AddQuad(verts, inds, {-220.0f, waterY, z0}, {220.0f, waterY, z0},
+                             {220.0f, waterY, z1}, {-220.0f, waterY, z1}, wCol);
+    }
+
+    // 2. Winding Elevated Highway Deck & Underside
+    for (int s = 0; s < segs; ++s) {
+        float z0 = hl - s * dz;
+        float z1 = hl - (s + 1) * dz;
+        float t0 = (float)s / (float)segs;
+        float t1 = (float)(s + 1) / (float)segs;
+        float cx0 = getCenterX(t0);
+        float cx1 = getCenterX(t1);
+
+        glm::vec3 rL0(cx0 - hw, deckY, z0), rR0(cx0 + hw, deckY, z0);
+        glm::vec3 rL1(cx1 - hw, deckY, z1), rR1(cx1 + hw, deckY, z1);
+        AddQuad(verts, inds, rL0, rR0, rR1, rL1, asphaltCol);
+
+        // Center Dashed Yellow Lane Line
+        if (s % 2 == 0) {
+            glm::vec3 mL0(cx0 - markW, deckY + 0.05f, z0), mR0(cx0 + markW, deckY + 0.05f, z0);
+            glm::vec3 mL1(cx1 - markW, deckY + 0.05f, z1), mR1(cx1 + markW, deckY + 0.05f, z1);
+            AddQuad(verts, inds, mL0, mR0, mR1, mL1, yellowLine);
+        }
+
+        // Concrete Crash Barrier Guardrails
+        float gh = 1.4f, gw = 0.9f;
+        // Left rail
+        AddQuad(verts, inds, rL0, rL0 + glm::vec3(gw, 0, 0), rL1 + glm::vec3(gw, 0, 0), rL1, concreteCol * 0.85f);
+        AddQuad(verts, inds, rL0 + glm::vec3(0, gh, 0), rL0 + glm::vec3(gw, gh, 0),
+                             rL1 + glm::vec3(gw, gh, 0), rL1 + glm::vec3(0, gh, 0), concreteCol * 1.15f);
+        AddQuad(verts, inds, rL0, rL1, rL1 + glm::vec3(0, gh, 0), rL0 + glm::vec3(0, gh, 0), concreteCol * 0.75f);
+        // Right rail
+        AddQuad(verts, inds, rR0 - glm::vec3(gw, 0, 0), rR0, rR1, rR1 - glm::vec3(gw, 0, 0), concreteCol * 0.85f);
+        AddQuad(verts, inds, rR0 - glm::vec3(gw, gh, 0), rR0 + glm::vec3(0, gh, 0),
+                             rR1 + glm::vec3(0, gh, 0), rR1 - glm::vec3(gw, gh, 0), concreteCol * 1.15f);
+        AddQuad(verts, inds, rR0, rR0 + glm::vec3(0, gh, 0), rR1 + glm::vec3(0, gh, 0), rR1, concreteCol * 0.75f);
+
+        // Steel girder underside
+        float botY = deckY - 2.8f;
+        glm::vec3 uL0(cx0 - hw, botY, z0), uR0(cx0 + hw, botY, z0);
+        glm::vec3 uL1(cx1 - hw, botY, z1), uR1(cx1 + hw, botY, z1);
+        AddQuad(verts, inds, uL0, uR0, uR1, uL1, steelGirder);
+        AddQuad(verts, inds, uL0, uL1, rL1, rL0, steelGirder * 0.8f);
+        AddQuad(verts, inds, rR0, rR1, uR1, uR0, steelGirder * 0.8f);
+    }
+
+    // 3. Massive Concrete Pylon Piers descending to sea level
+    for (int s = 1; s < segs; s += 2) {
+        float pz = hl - (s + 0.5f) * dz;
+        float t = (float)(s + 0.5f) / (float)segs;
+        float px = getCenterX(t);
+        float pr = 3.8f;
+        float botY = deckY - 2.8f;
+
+        for (float sideX : {-13.0f, 13.0f}) {
+            float cx = px + sideX;
+            for (int i = 0; i < 6; ++i) {
+                float a0 = (float)i / 6.0f * glm::two_pi<float>();
+                float a1 = (float)(i + 1) / 6.0f * glm::two_pi<float>();
+                glm::vec3 b0(cx + std::cos(a0) * pr, waterY, pz + std::sin(a0) * pr);
+                glm::vec3 b1(cx + std::cos(a1) * pr, waterY, pz + std::sin(a1) * pr);
+                glm::vec3 t0(cx + std::cos(a0) * (pr * 1.12f), botY, pz + std::sin(a0) * (pr * 1.12f));
+                glm::vec3 t1(cx + std::cos(a1) * (pr * 1.12f), botY, pz + std::sin(a1) * (pr * 1.12f));
+                AddQuad(verts, inds, b0, b1, t1, t0, (i % 2 == 0) ? concreteCol : concreteCol * 0.80f);
+            }
+        }
+
+        // Curved Streetlight Mast (alternates left and right outer barrier)
+        bool rightSide = (s % 4 == 1);
+        float poleX = rightSide ? (px + hw - 0.4f) : (px - hw + 0.4f);
+        float armDir = rightSide ? -1.0f : 1.0f;
+        glm::vec3 poleBase(poleX, deckY + 1.4f, pz);
+        glm::vec3 poleTop(poleX + armDir * 2.5f, deckY + 8.5f, pz);
+        glm::vec3 lamp0(poleX + armDir * 3.2f, deckY + 8.3f, pz - 0.4f);
+        glm::vec3 lamp1(poleX + armDir * 1.8f, deckY + 8.3f, pz - 0.4f);
+        glm::vec3 lamp2(poleX + armDir * 1.8f, deckY + 8.3f, pz + 0.4f);
+        glm::vec3 lamp3(poleX + armDir * 3.2f, deckY + 8.3f, pz + 0.4f);
+
+        AddQuad(verts, inds, poleBase, poleBase + glm::vec3(0.2f * armDir, 0, 0),
+                             poleTop + glm::vec3(0.2f * armDir, 0, 0), poleTop, glm::vec3(0.35f, 0.38f, 0.42f));
+        AddQuad(verts, inds, lamp0, lamp1, lamp2, lamp3, glm::vec3(1.0f, 0.90f, 0.45f) * 2.0f);
+    }
+
+    // 4. Two Grand Suspension Bridge A-Frame Cable Towers (at s = 25 and s = 63)
+    for (int towerSeg : {25, 63}) {
+        float pz = hl - towerSeg * dz;
+        float t = (float)towerSeg / (float)segs;
+        float px = getCenterX(t);
+        float legW = 2.4f, legD = 3.2f;
+        float towerTopY = deckY + 38.0f; // 30.5m above water
+        float spanX = hw + 3.0f; // outside guardrail
+
+        glm::vec3 towerSteel(0.82f, 0.22f, 0.18f); // Golden Gate red/orange bridge steel
+        glm::vec3 towerTrim(0.22f, 0.24f, 0.28f);
+        glm::vec3 cableCol(0.72f, 0.75f, 0.80f);
+        glm::vec3 beaconRed(1.0f, 0.2f, 0.15f);
+
+        // Left leg (waterY to towerTopY)
+        float lx = px - spanX;
+        AddQuad(verts, inds, {lx - legW, waterY, pz - legD}, {lx + legW, waterY, pz - legD},
+                             {lx + legW * 0.7f, towerTopY, pz - legD * 0.7f}, {lx - legW * 0.7f, towerTopY, pz - legD * 0.7f}, towerSteel);
+        AddQuad(verts, inds, {lx + legW, waterY, pz + legD}, {lx - legW, waterY, pz + legD},
+                             {lx - legW * 0.7f, towerTopY, pz + legD * 0.7f}, {lx + legW * 0.7f, towerTopY, pz + legD * 0.7f}, towerSteel * 0.85f);
+        AddQuad(verts, inds, {lx - legW, waterY, pz + legD}, {lx - legW, waterY, pz - legD},
+                             {lx - legW * 0.7f, towerTopY, pz - legD * 0.7f}, {lx - legW * 0.7f, towerTopY, pz + legD * 0.7f}, towerSteel * 0.9f);
+        AddQuad(verts, inds, {lx + legW, waterY, pz - legD}, {lx + legW, waterY, pz + legD},
+                             {lx + legW * 0.7f, towerTopY, pz + legD * 0.7f}, {lx + legW * 0.7f, towerTopY, pz - legD * 0.7f}, towerSteel * 0.8f);
+
+        // Right leg (waterY to towerTopY)
+        float rx = px + spanX;
+        AddQuad(verts, inds, {rx - legW, waterY, pz - legD}, {rx + legW, waterY, pz - legD},
+                             {rx + legW * 0.7f, towerTopY, pz - legD * 0.7f}, {rx - legW * 0.7f, towerTopY, pz - legD * 0.7f}, towerSteel);
+        AddQuad(verts, inds, {rx + legW, waterY, pz + legD}, {rx - legW, waterY, pz + legD},
+                             {rx - legW * 0.7f, towerTopY, pz + legD * 0.7f}, {rx + legW * 0.7f, towerTopY, pz + legD * 0.7f}, towerSteel * 0.85f);
+        AddQuad(verts, inds, {rx - legW, waterY, pz + legD}, {rx - legW, waterY, pz - legD},
+                             {rx - legW * 0.7f, towerTopY, pz - legD * 0.7f}, {rx - legW * 0.7f, towerTopY, pz + legD * 0.7f}, towerSteel * 0.8f);
+        AddQuad(verts, inds, {rx + legW, waterY, pz - legD}, {rx + legW, waterY, pz + legD},
+                             {rx + legW * 0.7f, towerTopY, pz + legD * 0.7f}, {rx + legW * 0.7f, towerTopY, pz - legD * 0.7f}, towerSteel * 0.9f);
+
+        // Horizontal crossbeams connecting legs above the road
+        float beam1Y = deckY + 16.0f, beam2Y = deckY + 32.0f;
+        AddQuad(verts, inds, {lx, beam1Y - 1.2f, pz - 1.0f}, {rx, beam1Y - 1.2f, pz - 1.0f},
+                             {rx, beam1Y + 1.2f, pz - 1.0f}, {lx, beam1Y + 1.2f, pz - 1.0f}, towerTrim);
+        AddQuad(verts, inds, {lx, beam1Y - 1.2f, pz + 1.0f}, {rx, beam1Y - 1.2f, pz + 1.0f},
+                             {rx, beam1Y + 1.2f, pz + 1.0f}, {lx, beam1Y + 1.2f, pz + 1.0f}, towerTrim * 0.85f);
+        AddQuad(verts, inds, {lx, beam2Y - 1.2f, pz - 1.0f}, {rx, beam2Y - 1.2f, pz - 1.0f},
+                             {rx, beam2Y + 1.2f, pz - 1.0f}, {lx, beam2Y + 1.2f, pz - 1.0f}, towerTrim);
+        AddQuad(verts, inds, {lx, beam2Y - 1.2f, pz + 1.0f}, {rx, beam2Y - 1.2f, pz + 1.0f},
+                             {rx, beam2Y + 1.2f, pz + 1.0f}, {lx, beam2Y + 1.2f, pz + 1.0f}, towerTrim * 0.85f);
+
+        // Glowing red aviation warning beacon on tower summits
+        for (float tx : {lx, rx}) {
+            AddQuad(verts, inds, {tx - 0.8f, towerTopY, pz - 0.8f}, {tx + 0.8f, towerTopY, pz - 0.8f},
+                                 {tx + 0.8f, towerTopY + 2.2f, pz + 0.8f}, {tx - 0.8f, towerTopY + 2.2f, pz + 0.8f}, beaconRed * 2.5f);
+        }
+
+        // Fanned steel suspension tension cables
+        for (float dZOffset : {-75.0f, -50.0f, -25.0f, 25.0f, 50.0f, 75.0f}) {
+            float cableZ = pz + dZOffset;
+            float ct = (hl - cableZ) / length;
+            float cpx = getCenterX(ct);
+            float cw = 0.18f;
+
+            // Left cable
+            glm::vec3 cTopL(lx, towerTopY - 1.0f, pz);
+            glm::vec3 cDeckL(cpx - hw, deckY + 1.4f, cableZ);
+            AddQuad(verts, inds, cTopL, cTopL + glm::vec3(cw, 0, 0), cDeckL + glm::vec3(cw, 0, 0), cDeckL, cableCol);
+
+            // Right cable
+            glm::vec3 cTopR(rx, towerTopY - 1.0f, pz);
+            glm::vec3 cDeckR(cpx + hw, deckY + 1.4f, cableZ);
+            AddQuad(verts, inds, cTopR - glm::vec3(cw, 0, 0), cTopR, cDeckR, cDeckR - glm::vec3(cw, 0, 0), cableCol);
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+// CreateNavalFortress: Offshore hexagonal concrete bastion with radar dish and warning beacon
+Mesh Mesh::CreateNavalFortress(float radius, float height) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float r = radius > 0.0f ? radius : 22.0f;
+
+    glm::vec3 concreteCol(0.36f, 0.38f, 0.42f);
+    glm::vec3 rustWaterline(0.24f, 0.28f, 0.26f);
+    glm::vec3 deckCol(0.26f, 0.28f, 0.32f);
+    glm::vec3 bunkerCol(0.20f, 0.22f, 0.26f);
+    glm::vec3 sensorGreen(0.15f, 0.95f, 0.45f);
+    glm::vec3 beaconAmber(1.0f, 0.75f, 0.15f);
+    glm::vec3 yellowHeli(0.92f, 0.78f, 0.15f);
+
+    // 1. Hexagonal Heavy Concrete Sea Bastion Base (Y = 0 to Y = 6.0)
+    const int segs = 6;
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+        glm::vec3 b0(std::cos(a0) * r, 0.0f, std::sin(a0) * r);
+        glm::vec3 b1(std::cos(a1) * r, 0.0f, std::sin(a1) * r);
+        glm::vec3 m0(std::cos(a0) * (r * 0.96f), 2.0f, std::sin(a0) * (r * 0.96f));
+        glm::vec3 m1(std::cos(a1) * (r * 0.96f), 2.0f, std::sin(a1) * (r * 0.96f));
+        glm::vec3 t0(std::cos(a0) * (r * 0.92f), 6.0f, std::sin(a0) * (r * 0.92f));
+        glm::vec3 t1(std::cos(a1) * (r * 0.92f), 6.0f, std::sin(a1) * (r * 0.92f));
+
+        AddQuad(verts, inds, b0, b1, m1, m0, rustWaterline);
+        AddQuad(verts, inds, m0, m1, t1, t0, (i % 2 == 0) ? concreteCol : concreteCol * 0.82f);
+        AddTriangle(verts, inds, {0.0f, 6.0f, 0.0f}, t0, t1, deckCol);
+    }
+
+    // Helipad markings on bastion deck
+    AddQuad(verts, inds, {-6.0f, 6.05f, -1.0f}, {-4.5f, 6.05f, -1.0f}, {-4.5f, 6.05f, 5.0f}, {-6.0f, 6.05f, 5.0f}, yellowHeli);
+    AddQuad(verts, inds, { 4.5f, 6.05f, -1.0f}, { 6.0f, 6.05f, -1.0f}, { 6.0f, 6.05f, 5.0f}, { 4.5f, 6.05f, 5.0f}, yellowHeli);
+    AddQuad(verts, inds, {-4.5f, 6.05f,  1.2f}, { 4.5f, 6.05f,  1.2f}, { 4.5f, 6.05f, 2.8f}, {-4.5f, 6.05f, 2.8f}, yellowHeli);
+
+    // 2. Central Armored Command Bunker (Y = 6.0 to Y = 13.0)
+    float br = r * 0.52f;
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+        glm::vec3 b0(std::cos(a0) * br, 6.0f, std::sin(a0) * br);
+        glm::vec3 b1(std::cos(a1) * br, 6.0f, std::sin(a1) * br);
+        glm::vec3 t0(std::cos(a0) * (br * 0.88f), 13.0f, std::sin(a0) * (br * 0.88f));
+        glm::vec3 t1(std::cos(a1) * (br * 0.88f), 13.0f, std::sin(a1) * (br * 0.88f));
+
+        AddQuad(verts, inds, b0, b1, t1, t0, bunkerCol * (0.85f + 0.15f * (i % 2)));
+        AddTriangle(verts, inds, {0.0f, 13.0f, 0.0f}, t0, t1, bunkerCol * 1.1f);
+
+        // Glowing sensor slit
+        glm::vec3 s0 = glm::mix(b0, t0, 0.65f);
+        glm::vec3 s1 = glm::mix(b1, t1, 0.65f);
+        glm::vec3 st0 = s0 + glm::vec3(0, 1.2f, 0);
+        glm::vec3 st1 = s1 + glm::vec3(0, 1.2f, 0);
+        AddQuad(verts, inds, s0, s1, st1, st0, sensorGreen * 2.0f);
+    }
+
+    // 3. Lattice Radar Mast & Rotating Radar Dish (Y = 13.0 to Y = 25.0)
+    glm::vec3 mastCol(0.35f, 0.38f, 0.42f);
+    float mw = 1.2f;
+    AddQuad(verts, inds, {-mw, 13.0f, -mw}, {mw, 13.0f, -mw}, {mw * 0.4f, 24.0f, -mw * 0.4f}, {-mw * 0.4f, 24.0f, -mw * 0.4f}, mastCol);
+    AddQuad(verts, inds, {mw, 13.0f, -mw}, {mw, 13.0f, mw}, {mw * 0.4f, 24.0f, mw * 0.4f}, {mw * 0.4f, 24.0f, -mw * 0.4f}, mastCol * 0.85f);
+    AddQuad(verts, inds, {mw, 13.0f, mw}, {-mw, 13.0f, mw}, {-mw * 0.4f, 24.0f, mw * 0.4f}, {mw * 0.4f, 24.0f, mw * 0.4f}, mastCol);
+    AddQuad(verts, inds, {-mw, 13.0f, mw}, {-mw, 13.0f, -mw}, {-mw * 0.4f, 24.0f, -mw * 0.4f}, {-mw * 0.4f, 24.0f, mw * 0.4f}, mastCol * 0.85f);
+
+    // Concave Radar Dish at Y = 20.0
+    float dishY = 20.0f, dishR = 4.2f;
+    glm::vec3 dishBack(0.0f, dishY, 0.2f);
+    glm::vec3 dishCol(0.85f, 0.88f, 0.92f);
+    for (int i = 0; i < 8; ++i) {
+        float a0 = (float)i / 8.0f * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / 8.0f * glm::two_pi<float>();
+        glm::vec3 p0(std::cos(a0) * dishR, dishY + std::sin(a0) * dishR * 0.7f, 1.8f);
+        glm::vec3 p1(std::cos(a1) * dishR, dishY + std::sin(a1) * dishR * 0.7f, 1.8f);
+        AddTriangle(verts, inds, dishBack, p0, p1, dishCol * (0.85f + 0.15f * (i % 2)));
+    }
+
+    // Flashing amber beacon at mast tip
+    AddQuad(verts, inds, {-0.6f, 24.0f, -0.6f}, {0.6f, 24.0f, -0.6f}, {0.6f, 26.2f, 0.6f}, {-0.6f, 26.2f, 0.6f}, beaconAmber * 2.5f);
+
+    return Mesh(verts, inds);
+}
+
+// CreateCargoShip: Low-poly container freighter anchored in bay waters
+Mesh Mesh::CreateCargoShip(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float l = length > 0.0f ? length : 72.0f;
+    float w = width > 0.0f ? width : 18.0f;
+    float hl = l * 0.5f, hw = w * 0.5f;
+
+    glm::vec3 redHull(0.55f, 0.16f, 0.14f);    // Antifouling red bottom
+    glm::vec3 blackHull(0.16f, 0.17f, 0.20f);  // Slate black hull topsides
+    glm::vec3 whiteBoot(0.92f, 0.92f, 0.94f);  // White waterline stripe
+    glm::vec3 deckCol(0.32f, 0.34f, 0.36f);    // Steel deck plating
+    glm::vec3 houseCol(0.88f, 0.90f, 0.94f);   // White bridge superstructure
+    glm::vec3 funnelCol(0.82f, 0.22f, 0.18f);  // Red funnel smokestack
+    glm::vec3 windowCol(0.15f, 0.60f, 0.85f);  // Tinted bridge windows
+
+    // 1. Ship Hull (Waterline Y = 0 to Deck Y = 7.5)
+    float bowZ = hl, bowTipZ = hl + 10.0f;
+    float sternZ = -hl;
+
+    // Red Lower Hull
+    AddQuad(verts, inds, {-hw * 0.8f, 0.0f, sternZ}, {hw * 0.8f, 0.0f, sternZ},
+                         {hw, 3.0f, bowZ}, {-hw, 3.0f, bowZ}, redHull);
+    AddTriangle(verts, inds, {0.0f, 3.0f, bowTipZ}, {-hw, 3.0f, bowZ}, {hw, 3.0f, bowZ}, redHull * 0.9f);
+
+    // White boot-topping waterline stripe
+    AddQuad(verts, inds, {-hw, 3.0f, sternZ}, {hw, 3.0f, sternZ}, {hw, 3.8f, bowZ}, {-hw, 3.8f, bowZ}, whiteBoot);
+    AddTriangle(verts, inds, {0.0f, 3.8f, bowTipZ}, {-hw, 3.8f, bowZ}, {hw, 3.8f, bowZ}, whiteBoot);
+
+    // Slate Black Upper Hull Topsides (Y = 3.8 to Y = 7.5)
+    AddQuad(verts, inds, {-hw, 3.8f, sternZ}, {hw, 3.8f, sternZ}, {hw, 7.5f, bowZ}, {-hw, 7.5f, bowZ}, blackHull);
+    AddQuad(verts, inds, {-hw, 3.8f, sternZ}, {-hw, 7.5f, sternZ}, {-hw, 7.5f, bowZ}, {-hw, 3.8f, bowZ}, blackHull * 0.85f);
+    AddQuad(verts, inds, {hw, 3.8f, bowZ}, {hw, 7.5f, bowZ}, {hw, 7.5f, sternZ}, {hw, 3.8f, sternZ}, blackHull * 0.85f);
+    AddQuad(verts, inds, {hw, 0.0f, sternZ}, {-hw, 0.0f, sternZ}, {-hw, 7.5f, sternZ}, {hw, 7.5f, sternZ}, blackHull * 0.75f);
+    AddTriangle(verts, inds, {0.0f, 7.5f, bowTipZ}, {-hw, 7.5f, bowZ}, {hw, 7.5f, bowZ}, blackHull * 1.05f);
+    AddTriangle(verts, inds, {-hw, 3.8f, bowZ}, {-hw, 7.5f, bowZ}, {0.0f, 7.5f, bowTipZ}, blackHull * 0.9f);
+    AddTriangle(verts, inds, {hw, 7.5f, bowZ}, {hw, 3.8f, bowZ}, {0.0f, 7.5f, bowTipZ}, blackHull * 0.9f);
+
+    // Flat Main Deck (Y = 7.5)
+    AddQuad(verts, inds, {-hw, 7.5f, sternZ}, {hw, 7.5f, sternZ}, {hw, 7.5f, bowZ}, {-hw, 7.5f, bowZ}, deckCol);
+    AddTriangle(verts, inds, {0.0f, 7.5f, bowTipZ}, {hw, 7.5f, bowZ}, {-hw, 7.5f, bowZ}, deckCol * 0.95f);
+
+    // 2. Cargo Container Stacks (From Z = -hl * 0.3 to bowZ - 6.0)
+    glm::vec3 cColors[4] = {
+        glm::vec3(0.15f, 0.42f, 0.82f), // Royal Blue
+        glm::vec3(0.85f, 0.20f, 0.16f), // Shipping Red
+        glm::vec3(0.92f, 0.70f, 0.14f), // Yellow
+        glm::vec3(0.18f, 0.62f, 0.38f)  // Green
+    };
+
+    float cW = 4.8f, cH = 4.2f, cL = 11.0f;
+    float startBayZ = sternZ + 22.0f;
+    float endBayZ = bowZ - 8.0f;
+    int colIdx = 0;
+
+    for (float cz = startBayZ; cz + cL <= endBayZ; cz += cL + 1.2f) {
+        for (float cx : {-hw * 0.52f, hw * 0.52f}) {
+            int stackH = ((int)(std::abs(cz) * 7 + cx) % 2) + 2; // 2 to 3 tiers
+            for (int tier = 0; tier < stackH; ++tier) {
+                float baseY = 7.5f + tier * cH;
+                float topY = baseY + cH - 0.2f;
+                glm::vec3 col = cColors[colIdx % 4];
+                colIdx++;
+
+                float x0 = cx - cW * 0.5f, x1 = cx + cW * 0.5f;
+                float z0 = cz, z1 = cz + cL;
+
+                AddQuad(verts, inds, {x0, topY, z0}, {x1, topY, z0}, {x1, topY, z1}, {x0, topY, z1}, col * 1.1f);
+                AddQuad(verts, inds, {x0, baseY, z0}, {x1, baseY, z0}, {x1, topY, z0}, {x0, topY, z0}, col * 0.9f);
+                AddQuad(verts, inds, {x1, baseY, z1}, {x0, baseY, z1}, {x0, topY, z1}, {x1, topY, z1}, col * 0.85f);
+                AddQuad(verts, inds, {x0, baseY, z1}, {x0, baseY, z0}, {x0, topY, z0}, {x0, topY, z1}, col * 0.95f);
+                AddQuad(verts, inds, {x1, baseY, z0}, {x1, baseY, z1}, {x1, topY, z1}, {x1, topY, z0}, col * 0.8f);
+            }
+        }
+    }
+
+    // 3. Stern Bridge Superstructure (Wheelhouse & Accommodations)
+    float shZ0 = sternZ + 2.0f, shZ1 = sternZ + 18.0f;
+    float shW = hw * 0.85f;
+    float shH1 = 15.0f, shH2 = 21.0f;
+
+    // Lower deckhouse (Y = 7.5 to 15.0)
+    AddQuad(verts, inds, {-shW, 7.5f, shZ0}, {shW, 7.5f, shZ0}, {shW, shH1, shZ0}, {-shW, shH1, shZ0}, houseCol * 0.9f);
+    AddQuad(verts, inds, {shW, 7.5f, shZ1}, {-shW, 7.5f, shZ1}, {-shW, shH1, shZ1}, {shW, shH1, shZ1}, houseCol);
+    AddQuad(verts, inds, {-shW, 7.5f, shZ1}, {-shW, 7.5f, shZ0}, {-shW, shH1, shZ0}, {-shW, shH1, shZ1}, houseCol * 0.85f);
+    AddQuad(verts, inds, {shW, 7.5f, shZ0}, {shW, 7.5f, shZ1}, {shW, shH1, shZ1}, {shW, shH1, shZ0}, houseCol * 0.85f);
+    AddQuad(verts, inds, {-shW, shH1, shZ0}, {shW, shH1, shZ0}, {shW, shH1, shZ1}, {-shW, shH1, shZ1}, houseCol * 1.05f);
+
+    // Upper bridge wheelhouse (Y = 15.0 to 21.0)
+    float whW = shW * 1.15f;
+    AddQuad(verts, inds, {-whW, shH1, shZ0 + 3.0f}, {whW, shH1, shZ0 + 3.0f}, {whW, shH2, shZ0 + 3.0f}, {-whW, shH2, shZ0 + 3.0f}, houseCol * 0.92f);
+    AddQuad(verts, inds, {whW, shH1, shZ1 - 2.0f}, {-whW, shH1, shZ1 - 2.0f}, {-whW, shH2, shZ1 - 2.0f}, {whW, shH2, shZ1 - 2.0f}, houseCol);
+    AddQuad(verts, inds, {-whW, shH1, shZ1 - 2.0f}, {-whW, shH1, shZ0 + 3.0f}, {-whW, shH2, shZ0 + 3.0f}, {-whW, shH2, shZ1 - 2.0f}, houseCol * 0.88f);
+    AddQuad(verts, inds, {whW, shH1, shZ0 + 3.0f}, {whW, shH1, shZ1 - 2.0f}, {whW, shH2, shZ1 - 2.0f}, {whW, shH2, shZ0 + 3.0f}, houseCol * 0.88f);
+    AddQuad(verts, inds, {-whW, shH2, shZ0 + 3.0f}, {whW, shH2, shZ0 + 3.0f}, {whW, shH2, shZ1 - 2.0f}, {-whW, shH2, shZ1 - 2.0f}, houseCol * 1.1f);
+
+    // Panoramic forward bridge windows
+    AddQuad(verts, inds, {-whW + 0.8f, shH2 - 2.5f, shZ1 - 1.9f}, {whW - 0.8f, shH2 - 2.5f, shZ1 - 1.9f},
+                         {whW - 0.8f, shH2 - 0.8f, shZ1 - 1.9f}, {-whW + 0.8f, shH2 - 0.8f, shZ1 - 1.9f}, windowCol * 2.0f);
+
+    // Twin Exhaust Smokestack Funnels
+    for (float fx : {-3.2f, 3.2f}) {
+        float fz = shZ0 + 5.5f;
+        float fr = 1.4f;
+        for (int s = 0; s < 6; ++s) {
+            float a0 = (float)s / 6.0f * glm::two_pi<float>();
+            float a1 = (float)(s + 1) / 6.0f * glm::two_pi<float>();
+            glm::vec3 b0(fx + std::cos(a0) * fr, shH1, fz + std::sin(a0) * fr);
+            glm::vec3 b1(fx + std::cos(a1) * fr, shH1, fz + std::sin(a1) * fr);
+            glm::vec3 t0(fx + std::cos(a0) * (fr * 0.82f), shH2 + 4.5f, fz - 1.2f + std::sin(a0) * (fr * 0.82f));
+            glm::vec3 t1(fx + std::cos(a1) * (fr * 0.82f), shH2 + 4.5f, fz - 1.2f + std::sin(a1) * (fr * 0.82f));
+            AddQuad(verts, inds, b0, b1, t1, t0, (s % 2 == 0) ? funnelCol : funnelCol * 0.85f);
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateCityCanal(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hl = length * 0.5f;
+    float waterY = -7.5f;
+    float dykeTopY = 3.5f;
+
+    glm::vec3 canalWater(0.12f, 0.34f, 0.52f);
+    glm::vec3 concreteDyke(0.36f, 0.38f, 0.42f);
+    glm::vec3 promenadeCol(0.28f, 0.30f, 0.34f);
+    glm::vec3 warningYellow(0.85f, 0.72f, 0.16f);
+    glm::vec3 rustMetal(0.55f, 0.28f, 0.18f);
+
+    // 1. Central Water Channel (X = -22 to +22)
+    AddQuad(verts, inds, {-22.0f, waterY, -hl}, {22.0f, waterY, -hl}, {22.0f, waterY, hl}, {-22.0f, waterY, hl}, canalWater);
+    // Waterline grime strip
+    AddQuad(verts, inds, {-22.0f, waterY + 0.05f, -hl}, {-20.5f, waterY + 0.05f, -hl},
+                         {-20.5f, waterY + 0.05f, hl}, {-22.0f, waterY + 0.05f, hl}, canalWater * 0.75f);
+    AddQuad(verts, inds, {20.5f, waterY + 0.05f, -hl}, {22.0f, waterY + 0.05f, -hl},
+                         {22.0f, waterY + 0.05f, hl}, {20.5f, waterY + 0.05f, hl}, canalWater * 0.75f);
+
+    // 2. Slanted Concrete Levee Embankments (35 degree slope)
+    // Left embankment: X = -22 -> -38, Y = -7.5 -> 3.5
+    AddQuad(verts, inds, {-22.0f, waterY, -hl}, {-38.0f, dykeTopY, -hl}, {-38.0f, dykeTopY, hl}, {-22.0f, waterY, hl}, concreteDyke);
+    // Right embankment: X = +22 -> +38, Y = -7.5 -> 3.5
+    AddQuad(verts, inds, {38.0f, dykeTopY, -hl}, {22.0f, waterY, -hl}, {22.0f, waterY, hl}, {38.0f, dykeTopY, hl}, concreteDyke * 0.9f);
+
+    // 3. Hazard Warning Stripes along dyke lips
+    float stripeW = 1.2f;
+    AddQuad(verts, inds, {-38.0f, dykeTopY + 0.04f, -hl}, {-38.0f + stripeW, dykeTopY + 0.04f, -hl},
+                         {-38.0f + stripeW, dykeTopY + 0.04f, hl}, {-38.0f, dykeTopY + 0.04f, hl}, warningYellow);
+    AddQuad(verts, inds, {38.0f - stripeW, dykeTopY + 0.04f, -hl}, {38.0f, dykeTopY + 0.04f, -hl},
+                         {38.0f, dykeTopY + 0.04f, hl}, {38.0f - stripeW, dykeTopY + 0.04f, hl}, warningYellow);
+
+    // 4. Elevated Upper Promenades (X = -38 -> -75, and +38 -> +75)
+    AddQuad(verts, inds, {-75.0f, dykeTopY, -hl}, {-38.0f, dykeTopY, -hl}, {-38.0f, dykeTopY, hl}, {-75.0f, dykeTopY, hl}, promenadeCol);
+    AddQuad(verts, inds, {38.0f, dykeTopY, -hl}, {75.0f, dykeTopY, -hl}, {75.0f, dykeTopY, hl}, {38.0f, dykeTopY, hl}, promenadeCol * 0.95f);
+
+    // 5. Overhead Canal Pipeline / Floodgate Support Girders across top every slice
+    float pipeY = dykeTopY + 12.0f;
+    float pipeR = 1.4f;
+    for (int s = 0; s < 6; ++s) {
+        float a0 = glm::radians(s * 60.0f), a1 = glm::radians((s + 1) * 60.0f);
+        glm::vec3 b0(-42.0f, pipeY + std::sin(a0) * pipeR, std::cos(a0) * pipeR);
+        glm::vec3 b1(-42.0f, pipeY + std::sin(a1) * pipeR, std::cos(a1) * pipeR);
+        glm::vec3 t0( 42.0f, pipeY + std::sin(a0) * pipeR, std::cos(a0) * pipeR);
+        glm::vec3 t1( 42.0f, pipeY + std::sin(a1) * pipeR, std::cos(a1) * pipeR);
+        AddQuad(verts, inds, b0, b1, t1, t0, rustMetal * (0.85f + 0.15f * (s % 2)));
     }
 
     return Mesh(verts, inds);

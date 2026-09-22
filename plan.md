@@ -225,3 +225,24 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 39.3 — Design Pattern Library (`docs/game-design/patterns/`)**: Document reusable level design patterns (`wingman-rescue.md`, `collapsing-hazard.md`, `enemy-formation.md`, `boss-arena-transition.md`).
 - [x] **Task 39.4 — Stage 1 Beat Sheet (`docs/levels/stage1-fallen-city.md`)**: Formalize Stage 1's 5-act structure, pacing, encounter beats, and boss design into persistent documentation.
 - [x] **Task 39.5 — Knowledge Graph Sync & Verification**: Run `graphify update .` to capture any new docs/rules and update `GEMINI_TOOLBOX.md`.
+
+## Phase 40: Corneria-Style 5-Zone Topography & Modular Terrain Engine
+- [x] **Task 40.1 — 3 New Modular Terrain Mesh Factories**: Implement `Mesh::CreateCoastlineTerrain`, `Mesh::CreateElevatedHighway`, and `Mesh::CreateCityCanal` in `Mesh.h` & `Mesh.cpp`.
+- [x] **Task 40.2 — Zone-Based Chunk Generator in `WorldEnvironment`**: Update `WorldEnvironment` with slice types and dynamic chunk generation based on player Z coordinates (Zone A Coastline, Zone B Elevated Highway, Zone C Downtown Chasm, Zone D Sunken Canal, Zone E Colossus Arena).
+- [x] **Task 40.3 — Visual Props & Distinct Zone Set Dressing**: Scatter zone-specific props (Sea arches & rocky sea stacks in Zone A, highway bridge pylons in Zone B, brutalist skyscrapers & collapsing spire in Zone C, floodgates & aqueduct arches in Zone D, arena perimeter pillars in Zone E).
+- [x] **Task 40.4 — Build Verification, Compilation & Anti-Slop Audit**: Compile Release build with MinGW GCC, verify 0 errors, verify smooth visual transitions across all 5 zones at 60 FPS.
+
+## Phase 41: Coastal Viaduct Overhaul, Organic Winding Geometry & Marine Set-Pieces
+- [x] **Task 41.1 — Off-Screen Sweeping Transition**: Update `Mesh::CreateCoastalHighwayTransition` to curve from $X = 145 \to 0$ over continuous blue water ($X \in [-220, 220]$); remove portal arch and island collision; preserve left cape lighthouse.
+- [x] **Task 41.2 — 2200m Continuous Winding Viaduct & Suspension Bridge**: Overhaul `Mesh::CreateElevatedHighway` into a continuous winding causeway ($X(t) = 16.0 \sin(3\pi t)\sin(\pi t)$) over blue bay water ($X \in [-220, 220]$) with pylons, streetlights, and dual 38m suspension bridge cable towers.
+- [x] **Task 41.3 — Creative Marine Props & Zero Land Buildings on Water**: Create `Mesh::CreateNavalFortress` and `Mesh::CreateCargoShip`; restrict buildings in `WorldEnvironment` to $Z \le -5000$ (Zone C Downtown); anchor fortresses and container freighters in Zone B bay waters.
+- [x] **Task 41.4 — Aerial Dogfight Pacing in Act 2 Timeline**: Tune `stage1.json` Act 2 encounters to pure aerial interceptor and drone wings over the bay causeway.
+- [x] **Task 41.5 — Build Verification & Knowledge Graph Sync**: Compile Release build with MinGW GCC, smoke test, and update knowledge graph via `graphify update .`.
+
+## Phase 42: Zone C Downtown Concrete Jungle Overhaul & Dynamic Marine Life
+- [x] **Task 42.1 — Dynamic Cruising Cargo Freighters**: Added forward heading velocity movement (~3.0 units/s) to `CargoShipObstacle` in `WorldEnvironment::Update` for slow cruising cargo ships in Zone B bay waters.
+- [x] **Task 42.2 — 4-Way Cross-Street Avenue Intersections**: Implemented `Mesh::CreateCityIntersection` with 40m-wide cross-avenues extending to $X = \pm 180\text{m}$, yellow lane dividers, zebra crosswalks, sidewalk plazas, and 4 cantilever traffic signal masts with glowing red/yellow/green signals and cyan street signs. Slices generated at $Z = -5400, -5940, -6480, -7020, -7560, -8160$.
+- [x] **Task 42.3 — Sky-High Mega Skyscraper Canyon (125m–165m)**: Added 3 new mega skyscraper variants (125m, 150m, 165m) to `buildingMeshes[5..7]`, creating a colossal, claustrophobic urban canyon towering over the player starfighter ($Y \in [-5, 18]$).
+- [x] **Task 42.4 — Sheared Ruined Skyscrapers with Battle Damage**: Implemented `Mesh::CreateRuinedBuilding` (110m tower sheared at a 30° angle, exposing internal concrete floor slabs, glowing embers, blast scorch marks, and twisted steel rebar spikes) and scattered concrete rubble mounds at the breach base.
+- [x] **Task 42.5 — Holographic Cyberpunk Billboard Towers & Multi-Level Skybridges**: Implemented `Mesh::CreateCyberBillboardBuilding` (145m tower with rooftop helipad and 3 retro ad variants: magenta Cyber Arrow Nova, cyan Titan Heavy Dynamics, gold Hyperion Starburst) and `Mesh::CreateSkybridge` (illuminated glass-and-steel skybridge tube with panoramic glowing windows, hazard chevrons, and aviation strobes spanning across the corridor at $Z = -5640, -6240, -7260, -7860$).
+- [x] **Task 42.6 — Build Verification & Knowledge Graph Sync**: Compiled Release build with MinGW GCC (0 errors), verified 60 FPS gameplay, and updated codebase knowledge graph via `graphify update .`.

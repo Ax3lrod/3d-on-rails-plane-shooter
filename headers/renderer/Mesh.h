@@ -99,10 +99,22 @@ public:
                                const glm::vec3& roofCol, int windowRows = 4, int windowCols = 3);
     static Mesh CreateRubblePile(float radius, const glm::vec3& concreteCol, const glm::vec3& dirtCol);
     static Mesh CreateCityRoad(float length, float width);
+    static Mesh CreateCityIntersection(float length, float width);
+    static Mesh CreateRuinedBuilding(float w, float h, float d, const glm::vec3& wallCol, const glm::vec3& windowCol);
+    static Mesh CreateSkybridge(float spanWidth, float clearanceHeight, float bridgeThickness);
+    static Mesh CreateCyberBillboardBuilding(float w, float h, float d, const glm::vec3& wallCol, const glm::vec3& windowCol, const glm::vec3& neonCol, int adType = 0);
     static Mesh CreateCityGantry(float spanWidth, float height);
     static Mesh CreateCollapsingSpire(float height, float baseRadius, const glm::vec3& trussCol, const glm::vec3& beaconCol);
     static Mesh CreateArenaPlaza(float radius, const glm::vec3& floorColA, const glm::vec3& floorColB, const glm::vec3& ringCol);
     static Mesh CreateArenaPillar(float height, float radius, const glm::vec3& stoneCol, const glm::vec3& neonCol);
+    // Phase 40: Corneria-Style 5-Zone Modular Terrain Meshes
+    static Mesh CreateCoastlineTerrain(float length, float width);
+    static Mesh CreateOceanIsland(float radiusX, float radiusZ, float height);
+    static Mesh CreateCoastalHighwayTransition(float length, float width);
+    static Mesh CreateElevatedHighway(float length, float width);
+    static Mesh CreateNavalFortress(float radius, float height);
+    static Mesh CreateCargoShip(float length, float width);
+    static Mesh CreateCityCanal(float length, float width);
     static Mesh CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol, const glm::vec3& legCol,
                                         const glm::vec3& coreCol);
     static Mesh CreateBiomeHorizon(const std::string& biome, float radius, float height,

@@ -19,3 +19,8 @@ scores.dat
 *.dat
 CMakeUserPresets.json
 .DS_Store
+
+# Graphify AST cache and date backups
+graphify-out/cache/ast/
+graphify-out/20*
+

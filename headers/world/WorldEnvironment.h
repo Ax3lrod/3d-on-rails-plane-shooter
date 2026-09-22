@@ -23,8 +23,43 @@ struct AsteroidObstacle {
     bool destroyed;
 };
 
+enum class TerrainSliceType {
+    Default,
+    Coastline,
+    HighwayTransition,
+    ElevatedHighway,
+    CityRoad,
+    CityIntersection,
+    SunkenCanal
+};
+
+struct OceanIslandObstacle {
+    glm::vec3 position;
+    float scale;
+    float rotation;
+};
+
+struct NavalFortressObstacle {
+    glm::vec3 position;
+    float scale;
+    float rotation;
+};
+
+struct CargoShipObstacle {
+    glm::vec3 position;
+    float scale;
+    float rotation;
+    float speed = 3.0f;
+};
+
+struct SkybridgeObstacle {
+    glm::vec3 position;
+    float scale;
+};
+
 struct CanyonSlice {
     glm::vec3 position;
+    TerrainSliceType sliceType = TerrainSliceType::Default;
 };
 
 struct RockArchway {
@@ -134,6 +169,9 @@ public:
     std::vector<FloatingDomeObstacle> floatingDomes;
     std::vector<WindTurbineObstacle> windTurbines;
     std::vector<TreeObstacle> trees;
+    std::vector<OceanIslandObstacle> oceanIslands;
+    std::vector<NavalFortressObstacle> navalFortresses;
+    std::vector<CargoShipObstacle> cargoShips;
     // Phase 35: biome-specific prop instance lists
     std::vector<IceCrystalSpire> iceCrystals;
     std::vector<CactusObstacle> cacti;
@@ -141,6 +179,7 @@ public:
     std::vector<BuildingObstacle> buildings;
     std::vector<CityGantryObstacle> cityGantries;
     std::vector<CollapsingSpireHazard> collapsingSpires;
+    std::vector<SkybridgeObstacle> skybridges;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -160,7 +199,11 @@ public:
     Mesh iceCrystalMesh;
     Mesh cactusMesh;
     Mesh desertPyramidMesh;
-    Mesh buildingMeshes[5];
+    Mesh buildingMeshes[8];
+    Mesh ruinedBuildingMesh;
+    Mesh skybridgeMesh;
+    Mesh cityIntersectionMesh;
+    Mesh billboardBuildingMesh[3];
     Mesh roadMesh;
     Mesh rubbleMesh;
     // City gantries & arena plaza
@@ -168,6 +211,14 @@ public:
     Mesh spireMesh;
     Mesh arenaPlazaMesh;
     Mesh arenaPillarMesh;
+    // Phase 40: Corneria-style 5-zone modular terrain meshes
+    Mesh coastlineMesh;
+    Mesh oceanIslandMesh;
+    Mesh highwayTransitionMesh;
+    Mesh elevatedHighwayMesh;
+    Mesh navalFortressMesh;
+    Mesh cargoShipMesh;
+    Mesh canalMesh;
     // Odd-parity terrain mesh: same geometry but rowOffset=1 so adjacent slabs tile seamlessly
     Mesh canyonMeshOdd;
 
