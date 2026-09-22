@@ -2655,8 +2655,28 @@ Mesh Mesh::CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol,
         {-s*0.35f, bodyTopY + s*1.32f, s*0.91f},
         coreCol * 2.5f);
 
+    // Rear Exhaust Coolant Port (Tactical Granga weak point exposed during stagger)
+    float rearZ = -s * 1.1f - 0.05f;
+    float ventY = bodyTopY - s * 1.5f;
+    glm::vec3 ventCol(1.0f, 0.72f, 0.15f); // radiant amber/gold exhaust glow
+    glm::vec3 grateCol(0.12f, 0.12f, 0.15f);
+    // Outer vent housing
+    addBox({0.0f, ventY, rearZ + 0.05f}, s * 1.1f, s * 0.9f, 0.2f, grateCol);
+    // 3 glowing horizontal exhaust slats
+    for (int slat = -1; slat <= 1; ++slat) {
+        float sy = ventY + slat * s * 0.45f;
+        AddQuad(verts, inds,
+            { -s * 0.85f, sy - s * 0.14f, rearZ - 0.08f },
+            {  s * 0.85f, sy - s * 0.14f, rearZ - 0.08f },
+            {  s * 0.85f, sy + s * 0.14f, rearZ - 0.08f },
+            { -s * 0.85f, sy + s * 0.14f, rearZ - 0.08f },
+            ventCol * 2.8f);
+    }
+
     // Left upper leg
     addBox({-s*1.2f, s*1.8f, 0.0f}, s*0.55f, s*1.8f, s*0.55f, legCol);
+    // Left knee joint actuator (destructible weak joint)
+    addBox({-s * 1.2f, s * 1.8f, s * 0.62f}, s * 0.65f, s * 0.45f, s * 0.32f, glm::vec3(0.98f, 0.48f, 0.15f));
     // Left lower leg (angled slightly forward)
     addBox({-s*1.1f, s*0.55f - s*0.1f, s*0.15f}, s*0.45f, s*0.8f, s*0.45f, legCol * 0.9f);
     // Left foot
@@ -2664,6 +2684,8 @@ Mesh Mesh::CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol,
 
     // Right upper leg
     addBox({s*1.2f, s*1.8f, 0.0f}, s*0.55f, s*1.8f, s*0.55f, legCol);
+    // Right knee joint actuator (destructible weak joint)
+    addBox({s * 1.2f, s * 1.8f, s * 0.62f}, s * 0.65f, s * 0.45f, s * 0.32f, glm::vec3(0.98f, 0.48f, 0.15f));
     // Right lower leg
     addBox({s*1.1f, s*0.55f - s*0.1f, s*0.15f}, s*0.45f, s*0.8f, s*0.45f, legCol * 0.9f);
     // Right foot
@@ -2772,5 +2794,69 @@ Mesh Mesh::CreateArenaPillar(float height, float radius, const glm::vec3& stoneC
         glm::vec3 t1(std::cos(a1) * (radius * 0.85f), baseY + height, std::sin(a1) * (radius * 0.85f));
         AddTriangle(verts, inds, {0.0f, baseY + height + 2.0f, 0.0f}, t0, t1, stoneCol * 1.2f);
     }
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateCollapsingSpire(float height, float baseRadius, const glm::vec3& trussCol, const glm::vec3& beaconCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    float baseY = 0.0f; // Pivot at ground origin
+    float topY = height;
+    float br = baseRadius;
+    float tr = baseRadius * 0.22f;
+
+    // 4 Corner Pillars (Square cross-section pyramid)
+    glm::vec3 bCorners[4] = {
+        {-br, baseY, -br},
+        { br, baseY, -br},
+        { br, baseY,  br},
+        {-br, baseY,  br}
+    };
+    glm::vec3 tCorners[4] = {
+        {-tr, topY, -tr},
+        { tr, topY, -tr},
+        { tr, topY,  tr},
+        {-tr, topY,  tr}
+    };
+
+    // 4 Slanted Truss Faces with X-bracing tiers
+    const int tiers = 8;
+    for (int t = 0; t < tiers; ++t) {
+        float f0 = (float)t / tiers;
+        float f1 = (float)(t + 1) / tiers;
+        glm::vec3 tierCol = (t % 2 == 0) ? trussCol : trussCol * 0.75f;
+        // Hazard warning bands on tier 2 and tier 5
+        if (t == 2 || t == 5) {
+            tierCol = glm::vec3(0.95f, 0.45f, 0.12f);
+        }
+
+        for (int side = 0; side < 4; ++side) {
+            int nextSide = (side + 1) % 4;
+            glm::vec3 p0 = glm::mix(bCorners[side], tCorners[side], f0);
+            glm::vec3 p1 = glm::mix(bCorners[nextSide], tCorners[nextSide], f0);
+            glm::vec3 p2 = glm::mix(bCorners[nextSide], tCorners[nextSide], f1);
+            glm::vec3 p3 = glm::mix(bCorners[side], tCorners[side], f1);
+
+            // Cross truss X-struts
+            glm::vec3 mid = (p0 + p1 + p2 + p3) * 0.25f;
+            AddTriangle(verts, inds, p0, p1, mid, tierCol);
+            AddTriangle(verts, inds, p1, p2, mid, tierCol * 0.85f);
+            AddTriangle(verts, inds, p2, p3, mid, tierCol);
+            AddTriangle(verts, inds, p3, p0, mid, tierCol * 0.85f);
+
+            // Outer perimeter strut band
+            glm::vec3 thick(0.0f, 0.35f, 0.0f);
+            AddQuad(verts, inds, p0 - thick, p1 - thick, p1 + thick, p0 + thick, trussCol * 1.1f);
+        }
+    }
+
+    // Glowing Warning Beacon at top
+    float beaconH = 3.5f;
+    glm::vec3 apex(0.0f, topY + beaconH, 0.0f);
+    for (int side = 0; side < 4; ++side) {
+        int nextSide = (side + 1) % 4;
+        AddTriangle(verts, inds, tCorners[side], tCorners[nextSide], apex, beaconCol * 3.0f);
+    }
+
     return Mesh(verts, inds);
 }

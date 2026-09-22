@@ -1,5 +1,6 @@
 #include "LevelTimeline.h"
 #include "TrainConvoy.h"
+#include "WorldEnvironment.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -260,6 +261,17 @@ bool LevelTimeline::LoadFromFile(const std::string& filepath) {
                 ev.line1 = evObj["line1"].asString();
                 ev.line2 = evObj["line2"].asString();
                 ev.duration = evObj["duration"].asFloat(4.0f);
+            } else if (typeStr == "wingman_rescue") {
+                ev.type = TimelineEventType::WingmanRescue;
+                std::string spk = evObj["wingman"].asString("Striker");
+                ev.rescueTarget = (spk == "Echo2" || spk == "Aegis") ? WingmanID::Aegis : WingmanID::Striker;
+                ev.threatCount = evObj["threat_count"].asInt(3);
+                ev.rescueTimeout = evObj["timeout"].asFloat(14.0f);
+                ev.line1 = evObj["line1"].asString("Hostiles on my six! Need immediate backup!");
+                ev.line2 = evObj["line2"].asString("Commander, get them off me before shields collapse!");
+            } else if (typeStr == "collapsing_hazard") {
+                ev.type = TimelineEventType::CollapsingHazard;
+                ev.hazardX = evObj["hazard_x"].asFloat(-32.0f);
             } else if (typeStr == "boss_trigger") {
                 ev.type = TimelineEventType::BossTrigger;
             } else if (typeStr == "clear_enemies") {
@@ -284,7 +296,7 @@ void LevelTimeline::Reset() {
 }
 
 void LevelTimeline::Update(float playerZ, EnemyManager& enemies, WingmanSquadron* wingmen,
-                           TrainConvoy* train, SoundManager* audio) {
+                           TrainConvoy* train, SoundManager* audio, WorldEnvironment* environment) {
     if (!isLoaded) return;
 
     for (auto& ev : events) {
@@ -310,6 +322,29 @@ void LevelTimeline::Update(float playerZ, EnemyManager& enemies, WingmanSquadron
                 case TimelineEventType::Transmission: {
                     if (wingmen) {
                         wingmen->TriggerTransmission(ev.speaker, ev.line1, ev.line2, ev.duration, audio);
+                    }
+                    break;
+                }
+
+                case TimelineEventType::WingmanRescue: {
+                    if (wingmen) {
+                        wingmen->TriggerScriptedRescue(ev.rescueTarget, ev.threatCount, ev.rescueTimeout,
+                                                       ev.line1, ev.line2, enemies, audio);
+                    }
+                    break;
+                }
+
+                case TimelineEventType::CollapsingHazard: {
+                    if (environment) {
+                        environment->SpawnCollapsingSpire(ev.triggerZ, ev.hazardX);
+                    }
+                    if (wingmen) {
+                        wingmen->TriggerTransmission(WingmanID::Striker,
+                            "WATCH OUT! That communications tower is coming down!",
+                            "Boost low under the beam or shoot the joint!", 3.8f, audio);
+                    }
+                    if (audio) {
+                        audio->Play(SoundID::WarningSiren, 0.75f, 1.1f);
                     }
                     break;
                 }

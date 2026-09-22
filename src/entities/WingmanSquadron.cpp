@@ -70,6 +70,8 @@ void WingmanSquadron::Reset() {
     victoryTriggered = false;
     wingDamageAlertTriggered = false;
     nextDistressCheckTime = 14.0f;
+    pendingSupplyDrop = false;
+    supplyDropPosition = glm::vec3(0.0f);
 }
 
 void WingmanSquadron::TriggerTransmission(WingmanID speaker, const std::string& line1,
@@ -94,6 +96,34 @@ void WingmanSquadron::TriggerTransmission(WingmanID speaker, const std::string& 
         }
     } else {
         messageQueue.push_back(msg);
+    }
+}
+
+void WingmanSquadron::TriggerScriptedRescue(WingmanID target, int threatCount, float timeout,
+                                           const std::string& line1, const std::string& line2,
+                                           EnemyManager& enemies, SoundManager* audio) {
+    for (auto& wm : wingmen) {
+        if (wm.id == target) {
+            wm.state = WingmanState::Distressed;
+            wm.distressTimer = timeout;
+            wm.evasiveTimer = 0.0f;
+            wm.pursuerIndices.clear();
+
+            // Spawn the threat interceptors behind the distressed wingman
+            size_t startIdx = enemies.enemies.size();
+            float spawnZ = wm.transform.position.z + 24.0f;
+            enemies.SpawnCustomWave(EnemyType::EliteInterceptor, "v_formation", threatCount,
+                                   wm.transform.position.x, wm.transform.position.y + 1.0f, spawnZ,
+                                   7.0f, 12.0f);
+            for (size_t i = startIdx; i < enemies.enemies.size(); ++i) {
+                wm.pursuerIndices.push_back(static_cast<int>(i));
+            }
+            wm.tailingEnemyIndex = (!wm.pursuerIndices.empty()) ? wm.pursuerIndices[0] : -1;
+
+            TriggerTransmission(target, line1, line2, 4.2f, audio);
+            nextDistressCheckTime = 9999.0f; // Don't trigger random distress during scripted rescue
+            break;
+        }
     }
 }
 
@@ -264,9 +294,18 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
                 wm.currentBank = std::sin(wm.evasiveTimer * 6.0f) * 45.0f;
                 wm.currentPitch = std::cos(wm.evasiveTimer * 4.0f) * 15.0f;
 
-                // Check if pursuing enemy is destroyed -> RESCUE!
+                // Check if pursuing enemies are destroyed -> RESCUE!
                 bool pursuerAlive = false;
-                if (wm.tailingEnemyIndex >= 0 && wm.tailingEnemyIndex < static_cast<int>(enemies.enemies.size())) {
+                if (!wm.pursuerIndices.empty()) {
+                    for (int idx : wm.pursuerIndices) {
+                        if (idx >= 0 && idx < static_cast<int>(enemies.enemies.size())) {
+                            if (enemies.enemies[idx].active && enemies.enemies[idx].health > 0.0f) {
+                                pursuerAlive = true;
+                                break;
+                            }
+                        }
+                    }
+                } else if (wm.tailingEnemyIndex >= 0 && wm.tailingEnemyIndex < static_cast<int>(enemies.enemies.size())) {
                     const auto& pursuer = enemies.enemies[wm.tailingEnemyIndex];
                     if (pursuer.active && pursuer.health > 0.0f) {
                         pursuerAlive = true;
@@ -276,23 +315,25 @@ void WingmanSquadron::Update(float dt, const glm::vec3& playerPos, float playerH
                 if (!pursuerAlive) {
                     // RESCUE EVENT!
                     wm.state = WingmanState::Rescued;
-                    outScoreGained += 500; // Rescue bonus!
-                    wm.shield = std::min(wm.maxShield, wm.shield + 35.0f);
+                    outScoreGained += 5000; // Big Corneria-style rescue score bonus!
+                    wm.shield = wm.maxShield;
+                    pendingSupplyDrop = true;
+                    supplyDropPosition = wm.transform.position + glm::vec3(0.0f, -0.5f, -25.0f);
 
                     if (wm.id == WingmanID::Striker) {
-                        TriggerTransmission(WingmanID::Striker, "Bogey splashed! Nice shooting, Lead!",
-                                            "You saved my tail! Owe you one!", 3.6f, audio);
+                        TriggerTransmission(WingmanID::Striker, "Bogey squad splashed! Outstanding shooting, Lead!",
+                                            "Airdropping field supplies right in your lane! Grab the cargo!", 4.2f, audio);
                     } else {
-                        TriggerTransmission(WingmanID::Aegis, "Hostile eliminated! Outstanding shot, Commander!",
-                                            "Shield integrity stabilized. Resuming formation.", 3.6f, audio);
+                        TriggerTransmission(WingmanID::Aegis, "Hostiles neutralized! Outstanding shot, Commander!",
+                                            "Releasing emergency supply capsule right on your trajectory!", 4.2f, audio);
                     }
                     if (audio) {
-                        audio->Play(SoundID::RingCollect, 0.95f, 1.4f);
+                        audio->Play(SoundID::RingCollect, 1.0f, 1.4f);
                     }
                 } else if (wm.distressTimer <= 0.0f) {
-                    // Timer expired without rescue - wingman takes damage
-                    wm.shield -= 35.0f;
-                    particles.SpawnExplosion(wm.transform.position, 18, glm::vec3(1.0f, 0.4f, 0.2f));
+                    // Timer expired without rescue - wingman takes heavy damage
+                    wm.shield -= 50.0f;
+                    particles.SpawnExplosion(wm.transform.position, 22, glm::vec3(1.0f, 0.4f, 0.2f));
 
                     if (wm.shield <= 20.0f) {
                         wm.state = WingmanState::Retreating;

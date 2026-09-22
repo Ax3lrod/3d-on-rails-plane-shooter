@@ -100,6 +100,7 @@ public:
     static Mesh CreateRubblePile(float radius, const glm::vec3& concreteCol, const glm::vec3& dirtCol);
     static Mesh CreateCityRoad(float length, float width);
     static Mesh CreateCityGantry(float spanWidth, float height);
+    static Mesh CreateCollapsingSpire(float height, float baseRadius, const glm::vec3& trussCol, const glm::vec3& beaconCol);
     static Mesh CreateArenaPlaza(float radius, const glm::vec3& floorColA, const glm::vec3& floorColB, const glm::vec3& ringCol);
     static Mesh CreateArenaPillar(float height, float radius, const glm::vec3& stoneCol, const glm::vec3& neonCol);
     static Mesh CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol, const glm::vec3& legCol,

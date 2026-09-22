@@ -29,6 +29,12 @@ public:
 
     float GetHealthRatio() const override { return hp / maxHp; }
     
+    // Leg status for tactical HUD readouts
+    bool IsStaggered() const { return isStaggered; }
+    float GetStaggerTimer() const { return staggerTimer; }
+    float GetLeftLegHealthFraction() const { return leftLegHp / maxLegHp; }
+    float GetRightLegHealthFraction() const { return rightLegHp / maxLegHp; }
+
     // Arena bounds for all-range mode
     glm::vec3 GetArenaCenter() const { return arenaCenter; }
     float GetArenaRadius() const { return 280.0f; }
@@ -55,6 +61,16 @@ private:
     bool isDead;
     bool isWarningActive;
     glm::vec3 arenaCenter;
+
+    // Tactical Multi-Part Granga Mechanics
+    float leftLegHp;
+    float rightLegHp;
+    float maxLegHp;
+    bool isStaggered;
+    float staggerTimer;
+    float staggerSinkY;
+    float staggerSteamTimer;
+    bool wasStaggerRadioTriggered;
 };
 
 #endif

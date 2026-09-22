@@ -966,6 +966,67 @@ void Engine::HandleCollisions() {
         }
     }
 
+    // 5b. Collapsing Communication Antenna Spire Hazard
+    for (auto& sp : environment->collapsingSpires) {
+        if (sp.destroyed) continue;
+
+        // Player Blasters / Charged Shot vs Spire
+        for (auto& p : projectiles->projectiles) {
+            if (!p.active || !p.isPlayer) continue;
+            float dz = std::abs(p.position.z - sp.position.z);
+            if (dz < (p.radius + 3.5f)) {
+                float rad = glm::radians(sp.currentAngle);
+                float sinA = std::sin(rad), cosA = std::cos(rad);
+                float relX = p.position.x - sp.position.x;
+                float relY = p.position.y - sp.position.y;
+                float beamDistAlong = relX * sinA + relY * cosA;
+                float beamDistPerp = std::abs(-relX * cosA + relY * sinA);
+                if (beamDistAlong >= 0.0f && beamDistAlong <= sp.height && beamDistPerp < (p.radius + 3.2f)) {
+                    p.active = false;
+                    sp.health -= 35.0f;
+                    particles->SpawnExplosion(p.position, 10, glm::vec3(1.0f, 0.5f, 0.2f));
+                    if (sp.health <= 0.0f) {
+                        sp.destroyed = true;
+                        RegisterHitCombo(p.position, 2500);
+                        particles->SpawnExplosion(sp.position + glm::vec3(sinA * 20.0f, cosA * 20.0f, 0.0f), 55, glm::vec3(1.0f, 0.4f, 0.1f));
+                        camera.TriggerShake(0.85f, 0.35f);
+                        if (audio) audio->Play(SoundID::ExplosionLarge, 0.95f);
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Starfighter collision vs Spire
+        if (!sp.destroyed) {
+            float dz = std::abs(player->transform.position.z - sp.position.z);
+            if (dz < 3.2f) {
+                float rad = glm::radians(sp.currentAngle);
+                float sinA = std::sin(rad), cosA = std::cos(rad);
+                float relX = player->transform.position.x - sp.position.x;
+                float relY = player->transform.position.y - sp.position.y;
+                float beamDistAlong = relX * sinA + relY * cosA;
+                float beamDistPerp = std::abs(-relX * cosA + relY * sinA);
+
+                if (beamDistAlong >= 2.0f && beamDistAlong <= sp.height && beamDistPerp < 3.8f) {
+                    if (player->IsDeflecting()) {
+                        particles->SpawnExplosion(player->transform.position, 30, glm::vec3(0.2f, 0.9f, 1.0f));
+                        camera.TriggerShake(0.45f, 0.2f);
+                        if (audio) audio->Play(SoundID::ExplosionLarge, 0.85f);
+                    } else {
+                        player->TakeDamage(35.0f);
+                        particles->SpawnExplosion(player->transform.position, 40, glm::vec3(1.0f, 0.4f, 0.2f));
+                        camera.TriggerShake(1.2f, 0.55f);
+                        if (audio) audio->Play(SoundID::ExplosionLarge, 1.0f, 0.65f);
+                        if (player->shield <= 0.0f) {
+                            HandlePlayerFatalHit();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // 6. Enemy Lasers vs Player
     for (auto& p : projectiles->projectiles) {
         if (!p.active || p.isPlayer) continue;
@@ -1305,7 +1366,7 @@ void Engine::Update(float dt) {
 
         if (levelTimeline && levelTimeline->isLoaded && environment->currentSector == SectorStage::Sector1_Canyon) {
             enemies->spawnTimer = 0.0f; // Scripted level timeline drives waves
-            levelTimeline->Update(player->transform.position.z, *enemies, wingmen.get(), trainConvoy.get(), audio.get());
+            levelTimeline->Update(player->transform.position.z, *enemies, wingmen.get(), trainConvoy.get(), audio.get(), environment.get());
         } else {
             if (boss && boss->IsActive()) {
                 enemies->spawnTimer = 0.0f;
@@ -1320,6 +1381,16 @@ void Engine::Update(float dt) {
                             player->leftWingLost, player->rightWingLost,
                             *projectiles, *particles, *enemies, audio.get(), rescueBonus);
             player->score += rescueBonus;
+
+            // Handle tactical supply drop after rescuing wingman
+            if (wingmen->pendingSupplyDrop) {
+                wingmen->pendingSupplyDrop = false;
+                environment->rings.push_back({wingmen->supplyDropPosition, 3.5f, 0.0f, false, false});
+                player->AddBombs(1);
+                player->AddShield(40.0f);
+                particles->SpawnExplosion(wingmen->supplyDropPosition, 35, glm::vec3(0.25f, 0.95f, 1.0f));
+                if (audio) audio->Play(SoundID::RingCollect, 1.0f, 1.5f);
+            }
         }
 
         if (boss) {

@@ -108,6 +108,18 @@ struct CityGantryObstacle {
     float spanWidth;
 };
 
+struct CollapsingSpireHazard {
+    glm::vec3 position;
+    float height = 55.0f;
+    float currentAngle = 0.0f;
+    float targetAngle = 54.0f;
+    float collapseSpeed = 24.0f;
+    float triggerDist = 210.0f;
+    bool isTriggered = false;
+    bool destroyed = false;
+    float health = 160.0f;
+};
+
 class WorldEnvironment {
 public:
     SectorStage currentSector;
@@ -128,6 +140,7 @@ public:
     std::vector<DesertPyramidObstacle> desertPyramids;
     std::vector<BuildingObstacle> buildings;
     std::vector<CityGantryObstacle> cityGantries;
+    std::vector<CollapsingSpireHazard> collapsingSpires;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -152,6 +165,7 @@ public:
     Mesh rubbleMesh;
     // City gantries & arena plaza
     Mesh gantryMesh;
+    Mesh spireMesh;
     Mesh arenaPlazaMesh;
     Mesh arenaPillarMesh;
     // Odd-parity terrain mesh: same geometry but rowOffset=1 so adjacent slabs tile seamlessly
@@ -168,6 +182,7 @@ public:
 
     void SetSector(SectorStage sector);
     void SetTerrainTheme(const std::string& theme);
+    void SpawnCollapsingSpire(float z, float x = -32.0f);
     int GetDestroyedRelayCount() const;
     int GetTotalRelayCount() const { return 3; }
 

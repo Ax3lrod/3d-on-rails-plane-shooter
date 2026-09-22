@@ -9,13 +9,16 @@
 #include "SoundManager.h"
 
 class TrainConvoy;
+class WorldEnvironment;
 
 enum class TimelineEventType {
     SpawnWave,
     Transmission,
     SpawnTrain,
     BossTrigger,
-    ClearEnemies
+    ClearEnemies,
+    WingmanRescue,
+    CollapsingHazard
 };
 
 struct TimelineEvent {
@@ -41,6 +44,15 @@ struct TimelineEvent {
     std::string line1;
     std::string line2;
     float duration = 4.0f;
+
+    // Wingman rescue fields
+    WingmanID rescueTarget = WingmanID::Striker;
+    int threatCount = 3;
+    float rescueTimeout = 14.0f;
+
+    // Collapsing hazard fields
+    float hazardX = 0.0f;
+    float hazardSpan = 54.0f;
 };
 
 struct StageDefinition {
@@ -69,7 +81,7 @@ public:
     bool LoadFromFile(const std::string& filepath);
     void Reset();
     void Update(float playerZ, EnemyManager& enemies, WingmanSquadron* wingmen,
-                TrainConvoy* train, SoundManager* audio);
+                TrainConvoy* train, SoundManager* audio, WorldEnvironment* environment = nullptr);
 
     static std::vector<StageDefinition> GetStandardCampaignStages();
 };

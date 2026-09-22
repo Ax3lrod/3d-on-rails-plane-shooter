@@ -212,11 +212,11 @@ A modular C++ / OpenGL 3D rail-shooter game engine inspired by the arcade corrid
 - [x] **Task 34.4**: Implement **Boss 3: Giant Mechanical Burrowing Sandworm** (`BossMechaWorm`) with IK-segmented body, subterranean burrowing dust geysers, and aerial breach loops.
 - [x] **Task 34.5**: Full Release compilation, verification of all stages and bosses, and push to GitHub remote repository.
 
-## Phase 35: Visual & Gameplay Overhaul — Biomes, Pixel-Art Horizon, Worm Fix & Per-Stage Music
-- [x] **Task 35.1 — Biome Terrain Props**: Added `CreateIceCrystal`, `CreateCactus`, `CreateDesertPyramid` to `Mesh.h/cpp`. Added `glacial` theme. Upgraded `desert` and `railway_canyon` with distinct scatter props per biome (ice crystals for glacial, cacti+pyramids for desert).
-- [x] **Task 35.2 — Pixel-Art Style Horizon per Biome**: Added `CreateBiomeHorizon(biome, ...)` — coarse 16-segment flat-shaded chunky silhouettes. Desert=pyramid outlines+dunes, Glacial=ice spires+snow, Canyon=mesa cliffs, Fortress=basalt towers+lava+curtain walls. Replaced all `CreateArcadeHorizon` calls.
-- [x] **Task 35.3 — Sandworm Visibility Fix**: Worm now tracks `playerZ - 120` during underground phase and breach erupts at `playerZ - 50` (clearly in front of player). Fixed both Approaching and SubterraneanBurrow states.
-- [x] **Task 35.4 — Per-Stage Unique BGM**: Added `BGMTrack::Stage2`, `Stage3`, `Stage4` enum values. Implemented 3 new synth tracks (145BPM A major, 120BPM E minor industrial, 138BPM Phrygian desert). Wired in `Engine::StartMission()` by stage ID.
-- [x] **Task 35.5 — Level Design Variety**: WorldEnvironment now spawns biome-specific props per terrain theme in `GenerateChunk()`. Each biome has distinct environmental identity.
-- [x] **Task 35.6**: Build verified (exit 0, 0 errors). Committed `b2322a5` and pushed to GitHub remote.
+## Phase 38: Corneria-Style Encounter Choreography & Level Set Pieces
+- [x] **Task 38.1 — Granga-Style Multi-Part Boss Tactics**: Upgrade `BossWalkingRobot` with shootable Left & Right Knee Joints (250 HP each). Breaking a knee causes the Colossus to stagger and kneel for 5 seconds with heavy smoke/sparks, exposing the glowing Rear Exhaust Coolant Port for 4.0x critical damage. Lock-on targeting updates dynamically.
+- [x] **Task 38.2 — Interactive Wingman Rescue Event**: Add `TimelineEventType::WingmanRescue` to `LevelTimeline` and wire into `Engine` and `WingmanSquadron`. Script a high-stakes rescue at $Z = -4500$ where Striker is tailed by 3 Ace Interceptors. Rescuing Striker restores his shield, triggers gratitude dialogue, and spawns a combat supply cache (Dual Laser / Silver Ring / Bomb + 5,000 pts).
+- [x] **Task 38.3 — Telegraphed Collapsing Hazard Set Piece**: Implement a dynamic collapsing highway antenna/spire in `WorldEnvironment` at $Z = -6800$ in Downtown. Spire is telegraphed with warning siren, explosion FX, and a gradual 45° topple across the highway that the player can boost under, bank over, or shoot down.
+- [x] **Task 38.4 — Full 5-Act Encounter Choreography in `stage1.json`**: Restructure `stage1.json` into 5 distinct narrative and tactical acts (Outskirts Approach, Suburban Combat, Striker Rescue & Breathing Room, Downtown Canyon & Collapsing Spire, and Industrial Citadel to Arena).
+- [x] **Task 38.5 — Build, Verification & Testing**: Compile Release build with MinGW GCC, verify all mechanics, check memory/bounds safety, and ensure 0 regressions.
+
 

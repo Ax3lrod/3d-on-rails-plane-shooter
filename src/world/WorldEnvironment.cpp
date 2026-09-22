@@ -33,6 +33,7 @@ WorldEnvironment::WorldEnvironment()
       roadMesh(Mesh::CreateCityRoad(60.0f, 68.0f)),
       rubbleMesh(Mesh::CreateRubblePile(4.5f, glm::vec3(0.35f,0.33f,0.30f), glm::vec3(0.22f,0.20f,0.18f))),
       gantryMesh(Mesh::CreateCityGantry(54.0f, 18.0f)),
+      spireMesh(Mesh::CreateCollapsingSpire(55.0f, 4.2f, glm::vec3(0.35f, 0.38f, 0.42f), glm::vec3(1.0f, 0.2f, 0.1f))),
       arenaPlazaMesh(Mesh::CreateArenaPlaza(300.0f, glm::vec3(0.12f, 0.13f, 0.16f), glm::vec3(0.18f, 0.19f, 0.22f), glm::vec3(0.95f, 0.22f, 0.15f))),
       arenaPillarMesh(Mesh::CreateArenaPillar(45.0f, 6.0f, glm::vec3(0.22f, 0.24f, 0.28f), glm::vec3(0.20f, 0.70f, 0.95f))),
       nextSpawnZ(0.0f),
@@ -52,6 +53,12 @@ WorldEnvironment::WorldEnvironment()
 void WorldEnvironment::SetSector(SectorStage sector) {
     currentSector = sector;
     Clear();
+}
+
+void WorldEnvironment::SpawnCollapsingSpire(float z, float x) {
+    CollapsingSpireHazard sp;
+    sp.position = glm::vec3(x, -7.5f, z);
+    collapsingSpires.push_back(sp);
 }
 
 void WorldEnvironment::SetTerrainTheme(const std::string& theme) {
@@ -135,6 +142,14 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
                         rings.push_back({glm::vec3(0.0f, 1.5f, z), 3.2f, 0.0f, false, false});
                     }
                 }
+            }
+
+            // 1b. COLLAPSING COMMUNICATIONS SPIRES (Corneria-style cinematic hazards)
+            if (startZ >= -6800.0f && endZ < -6800.0f) {
+                SpawnCollapsingSpire(-6800.0f, -32.0f);
+            }
+            if (startZ >= -10800.0f && endZ < -10800.0f) {
+                SpawnCollapsingSpire(-10800.0f, 32.0f);
             }
 
             // 2. RARE GOLDEN CHALLENGE RINGS (Only ~6 in entire 10-minute level)
@@ -478,6 +493,25 @@ void WorldEnvironment::Update(float playerZ, float dt, bool allRange) {
                        }),
         cityGantries.end()
     );
+
+    // Update and animate Collapsing Antenna Spires
+    for (auto& sp : collapsingSpires) {
+        float dz = sp.position.z - playerZ;
+        if (!sp.isTriggered && dz > -sp.triggerDist && dz < 40.0f) {
+            sp.isTriggered = true;
+        }
+        if (sp.isTriggered && !sp.destroyed) {
+            sp.currentAngle = std::min(sp.targetAngle, sp.currentAngle + sp.collapseSpeed * dt);
+        }
+    }
+    collapsingSpires.erase(
+        std::remove_if(collapsingSpires.begin(), collapsingSpires.end(),
+                       [cullZ, allRange](const CollapsingSpireHazard& s) {
+                           if (allRange || s.position.z <= -12700.0f) return false;
+                           return s.position.z > cullZ;
+                       }),
+        collapsingSpires.end()
+    );
 }
 
 void WorldEnvironment::Draw(const Shader& shader) const {
@@ -614,6 +648,16 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             gantryMesh.Draw(shader);
         }
 
+        // 9f2. Draw Collapsing Communication Antenna Spires
+        for (const auto& sp : collapsingSpires) {
+            if (sp.destroyed) continue;
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, sp.position);
+            model = glm::rotate(model, glm::radians(sp.currentAngle), glm::vec3(0.0f, 0.0f, 1.0f));
+            shader.SetMat4("uModel", model);
+            spireMesh.Draw(shader);
+        }
+
         // 9g. Draw Grand Boss Arena Plaza & Stadium Perimeter Columns
         if (arenaSpawned) {
             glm::mat4 model = glm::mat4(1.0f);
@@ -707,6 +751,7 @@ void WorldEnvironment::Clear() {
     desertPyramids.clear();
     buildings.clear();
     cityGantries.clear();
+    collapsingSpires.clear();
     arenaSpawned = false;
     isAllRangeActive = false;
     nextSpawnZ = 0.0f;

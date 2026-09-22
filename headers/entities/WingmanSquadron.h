@@ -46,6 +46,7 @@ struct Wingman {
     // Distress system
     float distressTimer;
     int tailingEnemyIndex; // index into EnemyManager::enemies
+    std::vector<int> pursuerIndices; // tracked pursuer enemies for scripted rescue
 
     // Flight animation
     float bobOffset;
@@ -88,11 +89,17 @@ public:
     bool wingDamageAlertTriggered;
 
     float nextDistressCheckTime;
+    bool pendingSupplyDrop;
+    glm::vec3 supplyDropPosition;
 
     WingmanSquadron();
 
     void TriggerTransmission(WingmanID speaker, const std::string& line1, const std::string& line2,
                              float duration = 3.6f, SoundManager* audio = nullptr);
+
+    void TriggerScriptedRescue(WingmanID target, int threatCount, float timeout,
+                               const std::string& line1, const std::string& line2,
+                               EnemyManager& enemies, SoundManager* audio = nullptr);
 
     void Update(float dt, const glm::vec3& playerPos, float playerHeadingYaw,
                 float playerSpeed, bool isAllRange, bool playerLeftWingLost, bool playerRightWingLost,

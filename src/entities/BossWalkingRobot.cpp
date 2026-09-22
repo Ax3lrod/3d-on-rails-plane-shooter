@@ -10,6 +10,9 @@ BossWalkingRobot::BossWalkingRobot()
       stompCooldown(4.5f), beamCooldown(6.0f), beamBurstTimer(0.0f),
       beamBurstCount(0), deathTimer(0.0f), isDead(false),
       isWarningActive(false), arenaCenter(0.0f, -7.5f, -13180.0f),
+      leftLegHp(250.0f), rightLegHp(250.0f), maxLegHp(250.0f),
+      isStaggered(false), staggerTimer(0.0f), staggerSinkY(0.0f),
+      staggerSteamTimer(0.0f), wasStaggerRadioTriggered(false),
       bodyMesh(Mesh::CreateBipedalWalkerMesh(3.8f,
           glm::vec3(0.22f, 0.24f, 0.28f),   // dark brutalist concrete armor
           glm::vec3(0.16f, 0.18f, 0.22f),   // heavy steel leg chassis
@@ -18,6 +21,13 @@ BossWalkingRobot::BossWalkingRobot()
 
 void BossWalkingRobot::Reset() {
     hp = maxHp;
+    leftLegHp = maxLegHp;
+    rightLegHp = maxLegHp;
+    isStaggered = false;
+    staggerTimer = 0.0f;
+    staggerSinkY = 0.0f;
+    staggerSteamTimer = 0.0f;
+    wasStaggerRadioTriggered = false;
     isDead = false;
     isWarningActive = false;
     stateTimer = 0.0f;
@@ -79,6 +89,45 @@ void BossWalkingRobot::Update(float dt, float playerZ, const glm::vec3& playerPo
         return;
     }
 
+    // 1. Tactical Granga Stagger State (broken knee causes Colossus to buckle and expose rear exhaust)
+    if (isStaggered) {
+        staggerTimer -= dt;
+        staggerSinkY = glm::mix(staggerSinkY, -4.5f, dt * 5.0f);
+        transform.position.y = -7.5f + staggerSinkY;
+
+        // Smoke and sparks venting from damaged knee actuator
+        staggerSteamTimer -= dt;
+        if (staggerSteamTimer <= 0.0f) {
+            staggerSteamTimer = 0.07f;
+            glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), yawAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::vec3 localKnee = (leftLegHp <= 0.0f) ? glm::vec3(-4.56f, 4.5f, 2.35f) : glm::vec3(4.56f, 4.5f, 2.35f);
+            glm::vec3 worldKnee = transform.position + glm::vec3(rotMat * glm::vec4(localKnee, 1.0f));
+            particles.SpawnExplosion(worldKnee, 4, glm::vec3(1.0f, 0.45f, 0.1f));
+
+            // Rear exhaust core venting intense energy
+            glm::vec3 localVent(0.0f, 11.4f, -4.5f);
+            glm::vec3 worldVent = transform.position + glm::vec3(rotMat * glm::vec4(localVent, 1.0f));
+            particles.SpawnExplosion(worldVent, 3, glm::vec3(1.0f, 0.85f, 0.2f));
+        }
+
+        if (staggerTimer <= 0.0f) {
+            // Joint emergency reset & steam vent
+            isStaggered = false;
+            staggerSinkY = 0.0f;
+            leftLegHp = 180.0f;
+            rightLegHp = 180.0f;
+            particles.SpawnExplosion(transform.position + glm::vec3(0.0f, 2.0f, 0.0f), 28, glm::vec3(0.9f, 0.95f, 1.0f));
+            camera.TriggerShake(1.2f, 0.4f);
+            if (audio) {
+                audio->Play(SoundID::ExplosionLarge, 0.9f, 0.7f);
+            }
+        }
+        return; // Halted while staggered!
+    } else {
+        staggerSinkY = glm::mix(staggerSinkY, 0.0f, dt * 6.0f);
+        transform.position.y = -7.5f + staggerSinkY;
+    }
+
     // Dynamic locomotion across the arena floor
     float walkSpeed = (currentPhase == Phase::Berserk) ? 1.6f : 1.0f;
     walkCycle += dt * walkSpeed;
@@ -86,7 +135,6 @@ void BossWalkingRobot::Update(float dt, float playerZ, const glm::vec3& playerPo
     float strideZ = std::cos(walkCycle * 0.35f) * 45.0f;
     transform.position.x = arenaCenter.x + strideX;
     transform.position.z = arenaCenter.z - 40.0f + strideZ;
-    transform.position.y = -7.5f;
 
     // Heavy footstep impact & dust
     if (std::sin(walkCycle * 1.1f) > 0.95f) {
@@ -175,6 +223,10 @@ void BossWalkingRobot::Draw(const Shader& shader) const {
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, transform.position);
     model = glm::rotate(model, yawAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+    if (isStaggered) {
+        // Forward buckle/kneel posture while staggered
+        model = glm::rotate(model, glm::radians(12.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    }
     shader.SetMat4("uModel", model);
     bodyMesh.Draw(shader);
 
@@ -187,7 +239,40 @@ void BossWalkingRobot::Draw(const Shader& shader) const {
 
 int BossWalkingRobot::FindLockTarget(const glm::vec3& playerPos, const glm::vec3& aimPos, glm::vec3& outLockPos) const {
     if (isDead) return -1;
-    // Lock onto the glowing head core weak point
+
+    glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), yawAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+
+    if (isStaggered) {
+        // Check if player is behind the boss (targeting exposed rear exhaust vent)
+        glm::vec3 bossFwd = glm::vec3(std::sin(yawAngle), 0.0f, std::cos(yawAngle));
+        glm::vec3 toPlayer = glm::normalize(playerPos - transform.position);
+        float dotFwd = glm::dot(bossFwd, toPlayer);
+
+        if (dotFwd < 0.35f) {
+            // Player has flanked behind the boss! Lock onto Rear Exhaust Coolant Port
+            glm::vec3 localVent(0.0f, 11.4f, -4.5f);
+            outLockPos = transform.position + glm::vec3(rotMat * glm::vec4(localVent, 1.0f));
+            return 3;
+        }
+    }
+
+    // If knee joint is still intact, prioritize knee lock if player aims near lower body
+    if (!isStaggered && aimPos.y < 8.0f) {
+        glm::vec3 localLeftKnee(-4.56f, 6.84f, 2.35f);
+        glm::vec3 localRightKnee(4.56f, 6.84f, 2.35f);
+        glm::vec3 worldLeftKnee = transform.position + glm::vec3(rotMat * glm::vec4(localLeftKnee, 1.0f));
+        glm::vec3 worldRightKnee = transform.position + glm::vec3(rotMat * glm::vec4(localRightKnee, 1.0f));
+
+        if (leftLegHp > 0.0f && glm::distance(aimPos, worldLeftKnee) < glm::distance(aimPos, worldRightKnee)) {
+            outLockPos = worldLeftKnee;
+            return 2;
+        } else if (rightLegHp > 0.0f) {
+            outLockPos = worldRightKnee;
+            return 2;
+        }
+    }
+
+    // Default lock onto glowing head core weak point
     glm::vec3 headPos = transform.position + glm::vec3(0.0f, 18.0f, 0.0f);
     outLockPos = headPos;
     return 1;
@@ -197,11 +282,72 @@ bool BossWalkingRobot::CheckLaserHit(const glm::vec3& laserPos, float laserRadiu
                                    ParticleSystem& particles, Camera& camera, int& outScoreGained) {
     if (isDead || currentPhase == Phase::Death) return false;
 
-    // 1. Weak Point Hit Check: Head glowing core
+    glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), yawAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+
+    // 1. STAGGERED WEAK POINT: Rear Exhaust Coolant Port (4.0x Massive Critical Damage!)
+    if (isStaggered) {
+        glm::vec3 localVent(0.0f, 11.4f, -4.5f);
+        glm::vec3 worldVent = transform.position + glm::vec3(rotMat * glm::vec4(localVent, 1.0f));
+        float distVent = glm::distance(laserPos, worldVent);
+        if (distVent < 5.2f + laserRadius) {
+            float effectiveDmg = damage * 4.0f;
+            hp -= effectiveDmg;
+            particles.SpawnExplosion(laserPos, 14, glm::vec3(1.0f, 0.92f, 0.25f));
+            camera.TriggerShake(0.65f, 0.2f);
+            outScoreGained += 1800;
+
+            if (hp <= 0.0f) {
+                currentPhase = Phase::Death;
+                deathTimer = 0.0f;
+                outScoreGained += 25000;
+            }
+            return true;
+        }
+    }
+
+    // 2. KNEE JOINTS: Left & Right Leg Actuators (Can trigger STAGGER)
+    if (!isStaggered) {
+        glm::vec3 localLeftKnee(-4.56f, 6.84f, 2.35f);
+        glm::vec3 worldLeftKnee = transform.position + glm::vec3(rotMat * glm::vec4(localLeftKnee, 1.0f));
+        if (leftLegHp > 0.0f && glm::distance(laserPos, worldLeftKnee) < 4.2f + laserRadius) {
+            leftLegHp -= damage * 1.5f;
+            particles.SpawnExplosion(laserPos, 8, glm::vec3(1.0f, 0.5f, 0.2f));
+            camera.TriggerShake(0.35f, 0.15f);
+            outScoreGained += 600;
+
+            if (leftLegHp <= 0.0f) {
+                isStaggered = true;
+                staggerTimer = 5.2f;
+                particles.SpawnExplosion(worldLeftKnee, 25, glm::vec3(1.0f, 0.3f, 0.1f));
+                camera.TriggerShake(0.95f, 0.35f);
+                outScoreGained += 3500;
+            }
+            return true;
+        }
+
+        glm::vec3 localRightKnee(4.56f, 6.84f, 2.35f);
+        glm::vec3 worldRightKnee = transform.position + glm::vec3(rotMat * glm::vec4(localRightKnee, 1.0f));
+        if (rightLegHp > 0.0f && glm::distance(laserPos, worldRightKnee) < 4.2f + laserRadius) {
+            rightLegHp -= damage * 1.5f;
+            particles.SpawnExplosion(laserPos, 8, glm::vec3(1.0f, 0.5f, 0.2f));
+            camera.TriggerShake(0.35f, 0.15f);
+            outScoreGained += 600;
+
+            if (rightLegHp <= 0.0f) {
+                isStaggered = true;
+                staggerTimer = 5.2f;
+                particles.SpawnExplosion(worldRightKnee, 25, glm::vec3(1.0f, 0.3f, 0.1f));
+                camera.TriggerShake(0.95f, 0.35f);
+                outScoreGained += 3500;
+            }
+            return true;
+        }
+    }
+
+    // 3. Head Glowing Core Weak Point (2.5x Damage)
     glm::vec3 headPos = transform.position + glm::vec3(0.0f, 18.0f, 0.0f);
     float distHead = glm::distance(laserPos, headPos);
     if (distHead < 4.5f + laserRadius) {
-        // Critical hit! 2.5x damage on glowing core
         float effectiveDmg = damage * 2.5f;
         hp -= effectiveDmg;
         particles.SpawnExplosion(laserPos, 9, glm::vec3(1.0f, 0.85f, 0.2f));
@@ -210,7 +356,7 @@ bool BossWalkingRobot::CheckLaserHit(const glm::vec3& laserPos, float laserRadiu
         if (hp <= 0.0f) {
             currentPhase = Phase::Death;
             deathTimer = 0.0f;
-            outScoreGained += 15000;
+            outScoreGained += 25000;
         } else if (hp < maxHp * 0.35f) {
             currentPhase = Phase::Berserk;
         } else if (hp < maxHp * 0.70f) {
@@ -219,17 +365,17 @@ bool BossWalkingRobot::CheckLaserHit(const glm::vec3& laserPos, float laserRadiu
         return true;
     }
 
-    // 2. Heavy Armored Chassis Hit Check: 0.35x damage
+    // 4. Heavy Armored Chassis (0.25x Deflection Damage)
     float distBody = glm::distance(laserPos, transform.position + glm::vec3(0.0f, 9.0f, 0.0f));
     if (distBody < 12.0f + laserRadius) {
-        float effectiveDmg = damage * 0.35f;
+        float effectiveDmg = damage * 0.25f;
         hp -= effectiveDmg;
         particles.SpawnExplosion(laserPos, 3, glm::vec3(0.5f, 0.5f, 0.6f));
 
         if (hp <= 0.0f) {
             currentPhase = Phase::Death;
             deathTimer = 0.0f;
-            outScoreGained += 15000;
+            outScoreGained += 25000;
         } else if (hp < maxHp * 0.35f) {
             currentPhase = Phase::Berserk;
         } else if (hp < maxHp * 0.70f) {
@@ -245,12 +391,13 @@ void BossWalkingRobot::ApplyShockwaveDamage(const glm::vec3& shockPos, float rad
                                           ParticleSystem& particles, Camera& camera, int& outScoreGained) {
     if (isDead || currentPhase == Phase::Death) return;
     if (glm::distance(shockPos, transform.position) < radius + 12.0f) {
-        hp -= damage;
+        float mult = isStaggered ? 2.5f : 1.0f;
+        hp -= damage * mult;
         particles.SpawnExplosion(transform.position + glm::vec3(0.0f, 8.0f, 0.0f), 12, glm::vec3(1.0f, 0.5f, 0.2f));
         if (hp <= 0.0f) {
             currentPhase = Phase::Death;
             deathTimer = 0.0f;
-            outScoreGained += 15000;
+            outScoreGained += 25000;
         } else if (hp < maxHp * 0.35f) {
             currentPhase = Phase::Berserk;
         } else if (hp < maxHp * 0.70f) {
@@ -258,3 +405,4 @@ void BossWalkingRobot::ApplyShockwaveDamage(const glm::vec3& shockPos, float rad
         }
     }
 }
+
