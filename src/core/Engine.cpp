@@ -1297,7 +1297,7 @@ void Engine::Update(float dt) {
         projectiles->Update(dt);
         ordnance->Update(dt);
         particles->Update(dt);
-        environment->Update(player->transform.position.z, dt);
+        environment->Update(player->transform.position.z, dt, player->isAllRangeMode);
 
         if (trainConvoy && trainConvoy->active) {
             trainConvoy->Update(dt, player->transform.position.z, player->transform.position, *projectiles, *particles, audio.get());
@@ -1580,7 +1580,8 @@ void Engine::Render() {
         }
         if (state == GameState::Playing) {
             reticle->Draw(shader, player->GetNearTargetPos(), player->GetFarTargetPos(),
-                          player->hasLockOn, player->lockTargetPos, player->lockRotation);
+                          player->hasLockOn, player->lockTargetPos, player->lockRotation,
+                          camera.GetViewMatrix());
         }
     }
 

@@ -126,7 +126,8 @@ public:
     TargetingReticle();
 
     void Draw(const Shader& shader, const glm::vec3& nearPos, const glm::vec3& farPos,
-              bool hasLockOn, const glm::vec3& lockTargetPos, float lockAngle) const;
+              bool hasLockOn, const glm::vec3& lockTargetPos, float lockAngle,
+              const glm::mat4& viewMatrix = glm::mat4(1.0f)) const;
 };
 
 #endif

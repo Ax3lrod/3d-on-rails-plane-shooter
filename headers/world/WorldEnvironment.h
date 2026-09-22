@@ -99,6 +99,13 @@ struct BuildingObstacle {
     glm::vec3 position;
     float width, height, depth;
     float rotation; // degrees around Y
+    int meshVariant; // 0..4 (fixed identity, never changes!)
+    float scale;
+};
+
+struct CityGantryObstacle {
+    glm::vec3 position;
+    float spanWidth;
 };
 
 class WorldEnvironment {
@@ -120,6 +127,7 @@ public:
     std::vector<CactusObstacle> cacti;
     std::vector<DesertPyramidObstacle> desertPyramids;
     std::vector<BuildingObstacle> buildings;
+    std::vector<CityGantryObstacle> cityGantries;
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -142,12 +150,19 @@ public:
     Mesh buildingMeshes[5];
     Mesh roadMesh;
     Mesh rubbleMesh;
+    // City gantries & arena plaza
+    Mesh gantryMesh;
+    Mesh arenaPlazaMesh;
+    Mesh arenaPillarMesh;
     // Odd-parity terrain mesh: same geometry but rowOffset=1 so adjacent slabs tile seamlessly
     Mesh canyonMeshOdd;
 
     float nextSpawnZ;
     float despawnDistBehind;
     float lastPlayerZ;
+    bool isAllRangeActive;
+    bool arenaSpawned;
+    glm::vec3 arenaCenter;
 
     WorldEnvironment();
 
@@ -158,7 +173,7 @@ public:
 
     std::string terrainTheme;
 
-    void Update(float playerZ, float dt);
+    void Update(float playerZ, float dt, bool allRange = false);
     void Draw(const Shader& shader) const;
     void Clear();
 

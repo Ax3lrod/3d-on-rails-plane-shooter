@@ -2671,3 +2671,106 @@ Mesh Mesh::CreateBipedalWalkerMesh(float scale, const glm::vec3& bodyCol,
 
     return Mesh(verts, inds);
 }
+
+Mesh Mesh::CreateCityGantry(float spanWidth, float height) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    float baseY = -7.5f;
+    float hw = spanWidth * 0.5f;
+    float topY = baseY + height;
+    glm::vec3 steelCol(0.28f, 0.30f, 0.35f);
+    glm::vec3 darkSteel = steelCol * 0.75f;
+    glm::vec3 signGreen(0.12f, 0.55f, 0.32f);
+    glm::vec3 amberText(0.95f, 0.75f, 0.20f);
+
+    auto addPost = [&](float x) {
+        float pw = 1.2f;
+        AddQuad(verts, inds, {x - pw, baseY, -pw}, {x + pw, baseY, -pw}, {x + pw, topY, -pw}, {x - pw, topY, -pw}, steelCol);
+        AddQuad(verts, inds, {x + pw, baseY, pw}, {x - pw, baseY, pw}, {x - pw, topY, pw}, {x + pw, topY, pw}, darkSteel);
+        AddQuad(verts, inds, {x - pw, baseY, pw}, {x - pw, baseY, -pw}, {x - pw, topY, -pw}, {x - pw, topY, pw}, steelCol * 0.85f);
+        AddQuad(verts, inds, {x + pw, baseY, -pw}, {x + pw, baseY, pw}, {x + pw, topY, pw}, {x + pw, topY, -pw}, steelCol * 0.85f);
+    };
+
+    addPost(-hw);
+    addPost(hw);
+
+    float trussH = 3.5f;
+    float trussD = 2.0f;
+    AddQuad(verts, inds, {-hw, topY - trussH, -trussD}, {hw, topY - trussH, -trussD}, {hw, topY, -trussD}, {-hw, topY, -trussD}, steelCol * 0.9f);
+    AddQuad(verts, inds, {hw, topY - trussH, trussD}, {-hw, topY - trussH, trussD}, {-hw, topY, trussD}, {hw, topY, trussD}, steelCol * 0.75f);
+    AddQuad(verts, inds, {-hw, topY, -trussD}, {hw, topY, -trussD}, {hw, topY, trussD}, {-hw, topY, trussD}, steelCol * 1.1f);
+    AddQuad(verts, inds, {-hw, topY - trussH, trussD}, {hw, topY - trussH, trussD}, {hw, topY - trussH, -trussD}, {-hw, topY - trussH, -trussD}, darkSteel);
+
+    float signW = 16.0f, signH = 2.4f;
+    float signY = topY - 0.5f - signH;
+    AddQuad(verts, inds, {-signW, signY, -trussD - 0.2f}, {signW, signY, -trussD - 0.2f}, {signW, signY + signH, -trussD - 0.2f}, {-signW, signY + signH, -trussD - 0.2f}, signGreen);
+    AddQuad(verts, inds, {-signW + 1.0f, signY + 0.4f, -trussD - 0.25f}, {-signW + 4.0f, signY + 0.4f, -trussD - 0.25f}, {-signW + 4.0f, signY + signH - 0.4f, -trussD - 0.25f}, {-signW + 1.0f, signY + signH - 0.4f, -trussD - 0.25f}, amberText * 1.5f);
+    AddQuad(verts, inds, {signW - 4.0f, signY + 0.4f, -trussD - 0.25f}, {signW - 1.0f, signY + 0.4f, -trussD - 0.25f}, {signW - 1.0f, signY + signH - 0.4f, -trussD - 0.25f}, {signW - 4.0f, signY + signH - 0.4f, -trussD - 0.25f}, amberText * 1.5f);
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateArenaPlaza(float radius, const glm::vec3& floorColA, const glm::vec3& floorColB, const glm::vec3& ringCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    float baseY = -7.5f;
+    const int segs = 36;
+    float dAngle = glm::two_pi<float>() / segs;
+
+    float r1 = radius * 0.25f;
+    float r2 = radius * 0.65f;
+    float r3 = radius * 0.92f;
+    float r4 = radius;
+
+    for (int i = 0; i < segs; ++i) {
+        float a0 = i * dAngle;
+        float a1 = (i + 1) * dAngle;
+        float c0 = std::cos(a0), s0 = std::sin(a0);
+        float c1 = std::cos(a1), s1 = std::sin(a1);
+
+        glm::vec3 colA = (i % 2 == 0) ? floorColA : floorColB;
+        glm::vec3 colB = (i % 2 == 0) ? floorColB : floorColA;
+
+        AddTriangle(verts, inds, {0.0f, baseY, 0.0f}, {c0 * r1, baseY, s0 * r1}, {c1 * r1, baseY, s1 * r1}, colA * 1.15f);
+        AddQuad(verts, inds, {c0 * r1, baseY, s0 * r1}, {c1 * r1, baseY, s1 * r1}, {c1 * r2, baseY, s1 * r2}, {c0 * r2, baseY, s0 * r2}, colB);
+        AddQuad(verts, inds, {c0 * r2, baseY, s0 * r2}, {c1 * r2, baseY, s1 * r2}, {c1 * r3, baseY, s1 * r3}, {c0 * r3, baseY, s0 * r3}, colA);
+
+        glm::vec3 neonCol = (i % 3 == 0) ? ringCol * 2.2f : ringCol * 1.4f;
+        AddQuad(verts, inds, {c0 * r3, baseY + 0.1f, s0 * r3}, {c1 * r3, baseY + 0.1f, s1 * r3}, {c1 * r4, baseY + 0.1f, s1 * r4}, {c0 * r4, baseY + 0.1f, s0 * r4}, neonCol);
+    }
+
+    return Mesh(verts, inds);
+}
+
+Mesh Mesh::CreateArenaPillar(float height, float radius, const glm::vec3& stoneCol, const glm::vec3& neonCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+    float baseY = -7.5f;
+    const int segs = 8;
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+        glm::vec3 b0(std::cos(a0) * radius, baseY, std::sin(a0) * radius);
+        glm::vec3 b1(std::cos(a1) * radius, baseY, std::sin(a1) * radius);
+        glm::vec3 t0(std::cos(a0) * (radius * 0.85f), baseY + height, std::sin(a0) * (radius * 0.85f));
+        glm::vec3 t1(std::cos(a1) * (radius * 0.85f), baseY + height, std::sin(a1) * (radius * 0.85f));
+        glm::vec3 c = (i % 2 == 0) ? stoneCol : stoneCol * 0.75f;
+        AddQuad(verts, inds, b0, b1, t1, t0, c);
+
+        if (i == 0 || i == 4) {
+            glm::vec3 n0 = glm::mix(b0, b1, 0.35f);
+            glm::vec3 n1 = glm::mix(b0, b1, 0.65f);
+            glm::vec3 nt0 = glm::mix(t0, t1, 0.35f);
+            glm::vec3 nt1 = glm::mix(t0, t1, 0.65f);
+            AddQuad(verts, inds, n0 * 1.02f, n1 * 1.02f, nt1 * 1.02f, nt0 * 1.02f, neonCol * 2.0f);
+        }
+    }
+    for (int i = 0; i < segs; ++i) {
+        float a0 = (float)i / segs * glm::two_pi<float>();
+        float a1 = (float)(i + 1) / segs * glm::two_pi<float>();
+        glm::vec3 t0(std::cos(a0) * (radius * 0.85f), baseY + height, std::sin(a0) * (radius * 0.85f));
+        glm::vec3 t1(std::cos(a1) * (radius * 0.85f), baseY + height, std::sin(a1) * (radius * 0.85f));
+        AddTriangle(verts, inds, {0.0f, baseY + height + 2.0f, 0.0f}, t0, t1, stoneCol * 1.2f);
+    }
+    return Mesh(verts, inds);
+}

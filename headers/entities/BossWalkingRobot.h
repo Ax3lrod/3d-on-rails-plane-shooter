@@ -23,7 +23,7 @@ public:
                               ParticleSystem& particles, Camera& camera, int& outScoreGained) override;
 
     bool IsActive() const override { return !isDead && currentPhase != Phase::Death; }
-    bool IsWarning() const override { return false; }
+    bool IsWarning() const override { return isWarningActive; }
     bool IsDefeated() const override { return isDead; }
     std::string GetBossName() const override { return "IRON COLOSSUS"; }
 
@@ -34,31 +34,27 @@ public:
     float GetArenaRadius() const { return 280.0f; }
 
 private:
-    enum class Phase { Walk, Stomp, Cannon, Death };
+    enum class Phase { Walk, Stomp, Berserk, Death };
     Phase currentPhase = Phase::Walk;
 
     Mesh bodyMesh;
     Mesh shadowMesh;
-    Mesh shellMesh;
 
     float hp;
     float maxHp;
     float stateTimer;
-    float walkCycle;     // 0..2pi, drives leg animation
-    float yawAngle;      // faces toward player
+    float walkCycle;
+    float yawAngle;
     float targetYaw;
     float cannonCooldown;
+    float stompCooldown;
+    float beamCooldown;
+    float beamBurstTimer;
+    int beamBurstCount;
     float deathTimer;
-    bool  isDead;
+    bool isDead;
+    bool isWarningActive;
     glm::vec3 arenaCenter;
-
-    // Projectile tracking for cannon shots
-    struct CannonShell {
-        glm::vec3 pos;
-        glm::vec3 vel;
-        float life;
-    };
-    std::vector<CannonShell> shells;
 };
 
 #endif

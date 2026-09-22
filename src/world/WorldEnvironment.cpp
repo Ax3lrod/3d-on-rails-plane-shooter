@@ -32,9 +32,15 @@ WorldEnvironment::WorldEnvironment()
       desertPyramidMesh(Mesh::CreateDesertPyramid(22.0f, 18.0f, glm::vec3(0.85f, 0.72f, 0.46f), glm::vec3(0.58f, 0.46f, 0.26f))),
       roadMesh(Mesh::CreateCityRoad(60.0f, 68.0f)),
       rubbleMesh(Mesh::CreateRubblePile(4.5f, glm::vec3(0.35f,0.33f,0.30f), glm::vec3(0.22f,0.20f,0.18f))),
+      gantryMesh(Mesh::CreateCityGantry(54.0f, 18.0f)),
+      arenaPlazaMesh(Mesh::CreateArenaPlaza(300.0f, glm::vec3(0.12f, 0.13f, 0.16f), glm::vec3(0.18f, 0.19f, 0.22f), glm::vec3(0.95f, 0.22f, 0.15f))),
+      arenaPillarMesh(Mesh::CreateArenaPillar(45.0f, 6.0f, glm::vec3(0.22f, 0.24f, 0.28f), glm::vec3(0.20f, 0.70f, 0.95f))),
       nextSpawnZ(0.0f),
       despawnDistBehind(60.0f),
-      lastPlayerZ(0.0f) {
+      lastPlayerZ(0.0f),
+      isAllRangeActive(false),
+      arenaSpawned(false),
+      arenaCenter(0.0f, -7.5f, -13180.0f) {
     buildingMeshes[0] = Mesh::CreateBuilding(18.0f, 35.0f, 14.0f, glm::vec3(0.22f,0.24f,0.28f), glm::vec3(0.15f,0.60f,0.85f), glm::vec3(0.18f,0.20f,0.24f), 5, 3);
     buildingMeshes[1] = Mesh::CreateBuilding(24.0f, 55.0f, 18.0f, glm::vec3(0.20f,0.22f,0.26f), glm::vec3(0.90f,0.25f,0.55f), glm::vec3(0.15f,0.17f,0.20f), 7, 4);
     buildingMeshes[2] = Mesh::CreateBuilding(14.0f, 28.0f, 12.0f, glm::vec3(0.25f,0.26f,0.30f), glm::vec3(0.20f,0.75f,0.50f), glm::vec3(0.20f,0.22f,0.25f), 4, 2);
@@ -106,129 +112,186 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
     if (currentSector == SectorStage::Sector1_Canyon) {
         float sliceLen = 60.0f;
 
-        // 1. Generate seamless open field slices (wide expanse, no side walls)
-        for (float z = startZ; z >= endZ; z -= sliceLen) {
-            canyonSlices.push_back({glm::vec3(0.0f, 0.0f, z)});
-        }
-
-        // 2. Generate massive Low-Poly Rock Archways across the open plains
-        for (float z = startZ - 80.0f; z >= endZ; z -= 180.0f) {
-            rockArches.push_back({glm::vec3(0.0f, 0.0f, z), 54.0f, 22.0f});
-            // Golden Ring nested under arch
-            rings.push_back({glm::vec3(0.0f, -0.5f, z), 3.2f, 0.0f, true, false});
-        }
-
-        // 3. Generate Low-Poly Trees scattered across the wide open plains (Ex-Zodiac Image 3)
-        for (float z = startZ - 12.0f; z >= endZ; z -= 22.0f) {
-            // Left flank grove
-            float lx = -22.0f - ((float)rand() / RAND_MAX) * 85.0f;
-            float lScale = 0.85f + ((float)rand() / RAND_MAX) * 0.45f;
-            float lRot = ((float)rand() / RAND_MAX) * 360.0f;
-            trees.push_back({glm::vec3(lx, -7.5f, z + ((float)rand() / RAND_MAX * 10.0f - 5.0f)), lScale, lRot});
-
-            // Right flank grove
-            float rx = 22.0f + ((float)rand() / RAND_MAX) * 85.0f;
-            float rScale = 0.85f + ((float)rand() / RAND_MAX) * 0.45f;
-            float rRot = ((float)rand() / RAND_MAX) * 360.0f;
-            trees.push_back({glm::vec3(rx, -7.5f, z + ((float)rand() / RAND_MAX * 10.0f - 5.0f)), rScale, rRot});
-        }
-
-        // 4. Giant Wind Turbines along the open plains (Ex-Zodiac Image 3)
-        for (float z = startZ - 40.0f; z >= endZ; z -= 70.0f) {
-            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
-            float tx = side * (32.0f + ((float)rand() / RAND_MAX) * 65.0f);
-            windTurbines.push_back({
-                glm::vec3(tx, -7.5f, z),
-                ((float)rand() / RAND_MAX) * 360.0f,
-                55.0f + ((float)rand() / RAND_MAX) * 35.0f
-            });
-        }
-
-        // 5. Generate Hazard Monolith Pillars on the plains
-        for (float z = startZ - 40.0f; z >= endZ; z -= 80.0f) {
-            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
-            float rx = side * (6.0f + ((float)rand() / RAND_MAX) * 35.0f);
-            pillars.push_back({
-                glm::vec3(rx, 0.0f, z),
-                1.8f,   // Collision radius
-                16.0f,  // Height
-                50.0f,  // Health
-                false
-            });
-        }
-
-        // 6. Generate Energy Recovery Rings
-        for (float z = startZ - 45.0f; z >= endZ; z -= 85.0f) {
-            float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 11.0f;
-            float ry = -3.5f + ((float)rand() / RAND_MAX) * 7.5f;
-            bool isGold = ((float)rand() / RAND_MAX) > 0.55f;
-            rings.push_back({glm::vec3(rx, ry, z), 3.2f, 0.0f, isGold, false});
-        }
-
-        // 7. High-altitude floating asteroid debris
-        for (float z = startZ - 30.0f; z >= endZ; z -= 95.0f) {
-            float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 15.0f;
-            float ry = 4.5f + ((float)rand() / RAND_MAX) * 4.5f;
-            float radius = 1.8f + ((float)rand() / RAND_MAX) * 1.5f;
-            glm::vec3 rotSpeed(
-                ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 40.0f,
-                ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 50.0f,
-                ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 30.0f
-            );
-            asteroids.push_back({
-                glm::vec3(rx, ry, z),
-                glm::vec3(0.0f),
-                rotSpeed,
-                radius,
-                false
-            });
-        }
-
-        // 8. Floating High-Tech Dome Pavilions (Ex-Zodiac Image 1)
-        for (float z = startZ - 60.0f; z >= endZ; z -= 140.0f) {
-            float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
-            floatingDomes.push_back({
-                glm::vec3(side * (36.0f + ((float)rand() / RAND_MAX) * 25.0f), 8.5f, z),
-                6.5f
-            });
-        }
-
-        // 9. Biome-specific props
-        if (terrainTheme == "glacial") {
-            // Scatter ice crystal clusters on both flanks
-            for (float z = startZ - 15.0f; z >= endZ; z -= 30.0f) {
-                float lx = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 55.0f;
-                float sc = 0.7f + (float)rand()/RAND_MAX * 0.6f;
-                float rot = (float)rand()/RAND_MAX * 360.0f;
-                iceCrystals.push_back({glm::vec3(lx, 0.0f, z), sc, rot});
-                float rx = -lx * 0.7f + ((float)rand()/RAND_MAX - 0.5f) * 20.0f;
-                iceCrystals.push_back({glm::vec3(rx, 0.0f, z - 8.0f), sc*0.8f, rot+60.0f});
+        if (terrainTheme == "city") {
+            // CITY HIGHWAY: Spawn road slices until Z = -12800 (where the highway terminates into the arena)
+            for (float z = startZ; z >= endZ; z -= sliceLen) {
+                if (z > -12800.0f) {
+                    canyonSlices.push_back({glm::vec3(0.0f, 0.0f, z)});
+                }
             }
-        } else if (terrainTheme == "dune_pass") {
-            // Scatter cacti on both flanks
-            for (float z = startZ - 20.0f; z >= endZ; z -= 38.0f) {
-                float lx = -20.0f - (float)rand()/RAND_MAX * 60.0f;
-                float sc = 0.8f + (float)rand()/RAND_MAX * 0.4f;
-                cacti.push_back({glm::vec3(lx, 0.0f, z), sc, (float)rand()/RAND_MAX*360.0f});
-                float rx = 20.0f + (float)rand()/RAND_MAX * 60.0f;
-                cacti.push_back({glm::vec3(rx, 0.0f, z - 10.0f), sc*0.9f, (float)rand()/RAND_MAX*360.0f});
+
+            // GRAND ARENA PLAZA: Spawn when approaching the boss area
+            if (endZ <= -12700.0f && !arenaSpawned) {
+                arenaSpawned = true;
+                arenaCenter = glm::vec3(0.0f, -7.5f, -13180.0f);
             }
-            // Scatter distant pyramids at sparser interval
-            for (float z = startZ - 60.0f; z >= endZ; z -= 120.0f) {
-                float px = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 80.0f;
-                float sc = 1.0f + (float)rand()/RAND_MAX * 0.8f;
-                desertPyramids.push_back({glm::vec3(px, 0.0f, z), sc});
+
+            // 1. HIGHWAY OVERHEAD GANTRIES (Futuristic road signs spanning highway)
+            for (float z = startZ - 120.0f; z >= endZ; z -= 450.0f) {
+                if (z > -12600.0f && z < -350.0f) {
+                    cityGantries.push_back({glm::vec3(0.0f, 0.0f, z), 54.0f});
+                    // Nest a rare silver ring under every other gantry for precision fly-through
+                    if ((static_cast<int>(std::abs(z)) % 900) < 450) {
+                        rings.push_back({glm::vec3(0.0f, 1.5f, z), 3.2f, 0.0f, false, false});
+                    }
+                }
             }
-        } else if (terrainTheme == "city") {
-            for (float z = startZ - 10.0f; z >= endZ; z -= 45.0f) {
-                // Left buildings
-                float lx = -45.0f - (float)rand()/RAND_MAX * 75.0f;
-                buildings.push_back({glm::vec3(lx, -7.5f, z + ((float)rand()/RAND_MAX*10.0f - 5.0f)),
-                                     0.0f, 0.0f, 0.0f, (float)rand()/RAND_MAX * 360.0f});
-                // Right buildings
-                float rx = 45.0f + (float)rand()/RAND_MAX * 75.0f;
-                buildings.push_back({glm::vec3(rx, -7.5f, z + ((float)rand()/RAND_MAX*10.0f - 5.0f)),
-                                     0.0f, 0.0f, 0.0f, (float)rand()/RAND_MAX * 360.0f});
+
+            // 2. RARE GOLDEN CHALLENGE RINGS (Only ~6 in entire 10-minute level)
+            for (float z = startZ - 200.0f; z >= endZ; z -= 1900.0f) {
+                if (z > -12500.0f && z < -1000.0f) {
+                    float sideX = ((rand() % 2 == 0) ? -1.0f : 1.0f) * 16.0f;
+                    rings.push_back({glm::vec3(sideX, 4.0f, z), 3.2f, 0.0f, true, false});
+                }
+            }
+
+            // 3. FIVE DISTINCT ZONES OF BRUTALIST BUILDINGS
+            for (float z = startZ - 15.0f; z >= endZ; z -= 40.0f) {
+                if (z <= -12750.0f) {
+                    // Arena floor: Keep central battlefield wide open for all-range combat!
+                    continue;
+                }
+
+                // ZONE 1: OUTSKIRTS (Z = 0 to -2500) - Low ruined depots, wide spacing, military checkpoints
+                if (z > -2500.0f) {
+                    float lx = -50.0f - ((rand() % 100) / 100.0f) * 35.0f;
+                    float rx =  50.0f + ((rand() % 100) / 100.0f) * 35.0f;
+                    int vL = (rand() % 2 == 0) ? 2 : 4; // Low-rise 18m to 28m
+                    int vR = (rand() % 2 == 0) ? 2 : 4;
+                    buildings.push_back({glm::vec3(lx, -7.5f, z), 14.0f, 28.0f, 12.0f, (float)(rand() % 4) * 90.0f, vL, 1.0f});
+                    buildings.push_back({glm::vec3(rx, -7.5f, z), 14.0f, 28.0f, 12.0f, (float)(rand() % 4) * 90.0f, vR, 1.0f});
+                }
+                // ZONE 2: SUBURBS & COMMERCIAL (Z = -2500 to -5500) - Mid-rise commercial blocks
+                else if (z > -5500.0f) {
+                    float lx = -44.0f - ((rand() % 100) / 100.0f) * 30.0f;
+                    float rx =  44.0f + ((rand() % 100) / 100.0f) * 30.0f;
+                    int vL = rand() % 3; // variants 0, 1, 2 (35m to 55m)
+                    int vR = rand() % 3;
+                    buildings.push_back({glm::vec3(lx, -7.5f, z), 18.0f, 35.0f, 14.0f, (float)(rand() % 4) * 90.0f, vL, 1.0f});
+                    buildings.push_back({glm::vec3(rx, -7.5f, z), 18.0f, 35.0f, 14.0f, (float)(rand() % 4) * 90.0f, vR, 1.0f});
+                }
+                // ZONE 3: DOWNTOWN SKYSCRAPER CANYON (Z = -5500 to -9000) - TIGHT 75m MEGA SKYSCRAPERS!
+                else if (z > -9000.0f) {
+                    // First row right along highway: X = ±38 to ±48
+                    float lx = -38.0f - ((rand() % 100) / 100.0f) * 10.0f;
+                    float rx =  38.0f + ((rand() % 100) / 100.0f) * 10.0f;
+                    int vL = (rand() % 2 == 0) ? 1 : 3; // 55m and 75m skyscrapers!
+                    int vR = (rand() % 2 == 0) ? 1 : 3;
+                    buildings.push_back({glm::vec3(lx, -7.5f, z), 30.0f, 75.0f, 22.0f, 0.0f, vL, 1.0f});
+                    buildings.push_back({glm::vec3(rx, -7.5f, z), 30.0f, 75.0f, 22.0f, 0.0f, vR, 1.0f});
+
+                    // Second row in background (dense skyline)
+                    buildings.push_back({glm::vec3(lx - 34.0f, -7.5f, z - 15.0f), 24.0f, 55.0f, 18.0f, 0.0f, 1, 1.0f});
+                    buildings.push_back({glm::vec3(rx + 34.0f, -7.5f, z - 15.0f), 24.0f, 55.0f, 18.0f, 0.0f, 1, 1.0f});
+                }
+                // ZONE 4: HEAVY INDUSTRIAL CITADEL (Z = -9000 to -12500) - Dark fortress complexes
+                else {
+                    float lx = -42.0f - ((rand() % 100) / 100.0f) * 26.0f;
+                    float rx =  42.0f + ((rand() % 100) / 100.0f) * 26.0f;
+                    int vL = rand() % 5;
+                    int vR = rand() % 5;
+                    buildings.push_back({glm::vec3(lx, -7.5f, z), 24.0f, 40.0f, 20.0f, (float)(rand() % 4) * 90.0f, vL, 1.0f});
+                    buildings.push_back({glm::vec3(rx, -7.5f, z), 24.0f, 40.0f, 20.0f, (float)(rand() % 4) * 90.0f, vR, 1.0f});
+                }
+            }
+        } else {
+            // NON-CITY THEMES: Natural canyon plains, glacial spires, or desert dunes
+            for (float z = startZ; z >= endZ; z -= sliceLen) {
+                canyonSlices.push_back({glm::vec3(0.0f, 0.0f, z)});
+            }
+
+            // Rock Archways
+            for (float z = startZ - 80.0f; z >= endZ; z -= 180.0f) {
+                rockArches.push_back({glm::vec3(0.0f, 0.0f, z), 54.0f, 22.0f});
+                rings.push_back({glm::vec3(0.0f, -0.5f, z), 3.2f, 0.0f, true, false});
+            }
+
+            // Trees
+            for (float z = startZ - 12.0f; z >= endZ; z -= 22.0f) {
+                float lx = -22.0f - ((float)rand() / RAND_MAX) * 85.0f;
+                float lScale = 0.85f + ((float)rand() / RAND_MAX) * 0.45f;
+                float lRot = ((float)rand() / RAND_MAX) * 360.0f;
+                trees.push_back({glm::vec3(lx, -7.5f, z + ((float)rand() / RAND_MAX * 10.0f - 5.0f)), lScale, lRot});
+
+                float rx = 22.0f + ((float)rand() / RAND_MAX) * 85.0f;
+                float rScale = 0.85f + ((float)rand() / RAND_MAX) * 0.45f;
+                float rRot = ((float)rand() / RAND_MAX) * 360.0f;
+                trees.push_back({glm::vec3(rx, -7.5f, z + ((float)rand() / RAND_MAX * 10.0f - 5.0f)), rScale, rRot});
+            }
+
+            // Wind Turbines
+            for (float z = startZ - 40.0f; z >= endZ; z -= 70.0f) {
+                float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+                float tx = side * (32.0f + ((float)rand() / RAND_MAX) * 65.0f);
+                windTurbines.push_back({
+                    glm::vec3(tx, -7.5f, z),
+                    ((float)rand() / RAND_MAX) * 360.0f,
+                    55.0f + ((float)rand() / RAND_MAX) * 35.0f
+                });
+            }
+
+            // Monolith Pillars
+            for (float z = startZ - 40.0f; z >= endZ; z -= 80.0f) {
+                float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+                float rx = side * (6.0f + ((float)rand() / RAND_MAX) * 35.0f);
+                pillars.push_back({
+                    glm::vec3(rx, 0.0f, z),
+                    1.8f, 16.0f, 50.0f, false
+                });
+            }
+
+            // Recovery Rings
+            for (float z = startZ - 45.0f; z >= endZ; z -= 85.0f) {
+                float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 11.0f;
+                float ry = -3.5f + ((float)rand() / RAND_MAX) * 7.5f;
+                bool isGold = ((float)rand() / RAND_MAX) > 0.55f;
+                rings.push_back({glm::vec3(rx, ry, z), 3.2f, 0.0f, isGold, false});
+            }
+
+            // Asteroids
+            for (float z = startZ - 30.0f; z >= endZ; z -= 95.0f) {
+                float rx = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 15.0f;
+                float ry = 4.5f + ((float)rand() / RAND_MAX) * 4.5f;
+                float radius = 1.8f + ((float)rand() / RAND_MAX) * 1.5f;
+                glm::vec3 rotSpeed(
+                    ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 40.0f,
+                    ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 50.0f,
+                    ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 30.0f
+                );
+                asteroids.push_back({glm::vec3(rx, ry, z), glm::vec3(0.0f), rotSpeed, radius, false});
+            }
+
+            // Floating Domes
+            for (float z = startZ - 60.0f; z >= endZ; z -= 140.0f) {
+                float side = ((rand() % 2) == 0) ? -1.0f : 1.0f;
+                floatingDomes.push_back({
+                    glm::vec3(side * (36.0f + ((float)rand() / RAND_MAX) * 25.0f), 8.5f, z), 6.5f
+                });
+            }
+
+            // Biome Props
+            if (terrainTheme == "glacial") {
+                for (float z = startZ - 15.0f; z >= endZ; z -= 30.0f) {
+                    float lx = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 55.0f;
+                    float sc = 0.7f + (float)rand()/RAND_MAX * 0.6f;
+                    float rot = (float)rand()/RAND_MAX * 360.0f;
+                    iceCrystals.push_back({glm::vec3(lx, 0.0f, z), sc, rot});
+                    float rx = -lx * 0.7f + ((float)rand()/RAND_MAX - 0.5f) * 20.0f;
+                    iceCrystals.push_back({glm::vec3(rx, 0.0f, z - 8.0f), sc*0.8f, rot+60.0f});
+                }
+            } else if (terrainTheme == "dune_pass") {
+                for (float z = startZ - 20.0f; z >= endZ; z -= 38.0f) {
+                    float lx = -20.0f - (float)rand()/RAND_MAX * 60.0f;
+                    float sc = 0.8f + (float)rand()/RAND_MAX * 0.4f;
+                    cacti.push_back({glm::vec3(lx, 0.0f, z), sc, (float)rand()/RAND_MAX*360.0f});
+                    float rx = 20.0f + (float)rand()/RAND_MAX * 60.0f;
+                    cacti.push_back({glm::vec3(rx, 0.0f, z - 10.0f), sc*0.9f, (float)rand()/RAND_MAX*360.0f});
+                }
+                for (float z = startZ - 60.0f; z >= endZ; z -= 120.0f) {
+                    float px = ((float)rand()/RAND_MAX * 2.0f - 1.0f) * 80.0f;
+                    float sc = 1.0f + (float)rand()/RAND_MAX * 0.8f;
+                    desertPyramids.push_back({glm::vec3(px, 0.0f, z), sc});
+                }
             }
         }
     } else {
@@ -281,11 +344,12 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
     nextSpawnZ = endZ;
 }
 
-void WorldEnvironment::Update(float playerZ, float dt) {
+void WorldEnvironment::Update(float playerZ, float dt, bool allRange) {
     lastPlayerZ = playerZ;
+    isAllRangeActive = allRange;
 
-    // Generate new chunks ahead as player advances
-    if (playerZ - 350.0f < nextSpawnZ) {
+    // Generate new chunks ahead as player advances (suppress when fighting in arena)
+    if (!allRange && playerZ - 350.0f < nextSpawnZ) {
         GenerateChunk(nextSpawnZ, nextSpawnZ - 420.0f);
     }
 
@@ -316,12 +380,15 @@ void WorldEnvironment::Update(float playerZ, float dt) {
         rel.pulseTimer += dt * 3.0f;
     }
 
-    // Cull objects behind player
+    // Cull objects behind player, but FREEZE culling in arena when in All-Range mode!
     float cullZ = playerZ + despawnDistBehind;
 
     canyonSlices.erase(
         std::remove_if(canyonSlices.begin(), canyonSlices.end(),
-                       [cullZ](const CanyonSlice& c) { return c.position.z > cullZ + 30.0f; }),
+                       [cullZ, allRange](const CanyonSlice& c) {
+                           if (allRange || c.position.z <= -12700.0f) return false;
+                           return c.position.z > cullZ + 30.0f;
+                       }),
         canyonSlices.end()
     );
 
@@ -339,7 +406,10 @@ void WorldEnvironment::Update(float playerZ, float dt) {
 
     rings.erase(
         std::remove_if(rings.begin(), rings.end(),
-                       [cullZ](const RingGate& r) { return r.position.z > cullZ || r.collected; }),
+                       [cullZ, allRange](const RingGate& r) {
+                           if (allRange && r.position.z <= -12700.0f) return r.collected;
+                           return r.position.z > cullZ || r.collected;
+                       }),
         rings.end()
     );
 
@@ -393,8 +463,20 @@ void WorldEnvironment::Update(float playerZ, float dt) {
 
     buildings.erase(
         std::remove_if(buildings.begin(), buildings.end(),
-                       [cullZ](const BuildingObstacle& b) { return b.position.z > cullZ; }),
+                       [cullZ, allRange](const BuildingObstacle& b) {
+                           if (allRange || b.position.z <= -12700.0f) return false;
+                           return b.position.z > cullZ;
+                       }),
         buildings.end()
+    );
+
+    cityGantries.erase(
+        std::remove_if(cityGantries.begin(), cityGantries.end(),
+                       [cullZ, allRange](const CityGantryObstacle& g) {
+                           if (allRange || g.position.z <= -12700.0f) return false;
+                           return g.position.z > cullZ;
+                       }),
+        cityGantries.end()
     );
 }
 
@@ -508,22 +590,46 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             desertPyramidMesh.Draw(shader);
         }
 
-        // 9e. Draw Buildings and Rubble
-        int bIdx = 0;
+        // 9e. Draw Buildings and Rubble (Fixed persistent mesh variant per building!)
         for (const auto& b : buildings) {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, b.position);
             model = glm::rotate(model, glm::radians(b.rotation), glm::vec3(0.0f, 1.0f, 0.0f));
             shader.SetMat4("uModel", model);
-            buildingMeshes[bIdx % 5].Draw(shader);
+            int v = std::clamp(b.meshVariant, 0, 4);
+            buildingMeshes[v].Draw(shader);
             
             // Draw rubble near the building
             glm::mat4 rubbleModel = glm::mat4(1.0f);
             rubbleModel = glm::translate(rubbleModel, b.position + glm::vec3(15.0f, 0.0f, 10.0f));
             shader.SetMat4("uModel", rubbleModel);
             rubbleMesh.Draw(shader);
-            
-            bIdx++;
+        }
+
+        // 9f. Draw Highway Overhead Gantries
+        for (const auto& g : cityGantries) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, g.position);
+            shader.SetMat4("uModel", model);
+            gantryMesh.Draw(shader);
+        }
+
+        // 9g. Draw Grand Boss Arena Plaza & Stadium Perimeter Columns
+        if (arenaSpawned) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, arenaCenter);
+            shader.SetMat4("uModel", model);
+            arenaPlazaMesh.Draw(shader);
+
+            // 16 colossal perimeter stadium floodlight pillars surrounding the arena boundary
+            for (int p = 0; p < 16; ++p) {
+                float a = p * (glm::two_pi<float>() / 16.0f);
+                glm::vec3 pPos = arenaCenter + glm::vec3(std::cos(a) * 285.0f, 0.0f, std::sin(a) * 285.0f);
+                glm::mat4 pModel = glm::mat4(1.0f);
+                pModel = glm::translate(pModel, pPos);
+                shader.SetMat4("uModel", pModel);
+                arenaPillarMesh.Draw(shader);
+            }
         }
 
         // 6. Draw Secret Planetary Radar Relays
@@ -600,6 +706,9 @@ void WorldEnvironment::Clear() {
     cacti.clear();
     desertPyramids.clear();
     buildings.clear();
+    cityGantries.clear();
+    arenaSpawned = false;
+    isAllRangeActive = false;
     nextSpawnZ = 0.0f;
     lastPlayerZ = 0.0f;
 

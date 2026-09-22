@@ -180,14 +180,14 @@ bool PlayerStarfighter::TriggerSomersault() {
 bool PlayerStarfighter::TriggerUTurn() {
     if (!isAllRangeMode) return false; // Only in open arenas
     if (isSomersaulting || isUTurning || isSpinning) return false;
-    if (boostMeter < 12.0f || isOverheated) return false;
 
     isUTurning = true;
     uTurnTimer = 0.0f;
-    uTurnDuration = 1.05f;
+    uTurnDuration = 0.90f;
     uTurnStartYaw = headingYaw;
     somersaultPitch = 0.0f;
-    boostMeter = std::max(0.0f, boostMeter - 18.0f);
+    boostMeter = std::max(0.0f, boostMeter - 10.0f);
+    invulnerableTimer = std::max(invulnerableTimer, 1.2f);
     return true;
 }
 
@@ -314,7 +314,11 @@ void PlayerStarfighter::HandleInput(float dt, bool allowInput) {
         bool chordSomersault = (pressDown && justBoost) || (justDown && wantsBoost);
 
         if (keySomersault || chordSomersault) {
-            TriggerSomersault();
+            if (isAllRangeMode) {
+                TriggerUTurn();
+            } else {
+                TriggerSomersault();
+            }
             Input::SetRumble(0.25f, 0.50f, 0.20f);
         } else if ((pressDown && justBrake) || (justDown && wantsBrake)) {
             TriggerUTurn();
@@ -461,7 +465,7 @@ void PlayerStarfighter::Update(float dt, bool allowInput) {
         }
     }
 
-    // Evasive U-Turn Maneuver
+    // Evasive U-Turn Maneuver (All-Range Mode 180-degree reversal)
     if (isUTurning) {
         uTurnTimer += dt;
         float t = uTurnTimer / uTurnDuration;
@@ -471,16 +475,25 @@ void PlayerStarfighter::Update(float dt, bool allowInput) {
             if (headingYaw > 180.0f) headingYaw -= 360.0f;
             if (headingYaw < -180.0f) headingYaw += 360.0f;
             somersaultPitch = 0.0f;
+            currentPitch = 0.0f;
         } else {
             somersaultPitch = std::sin(t * 3.14159f) * 85.0f;
             float smoothT = t * t * (3.0f - 2.0f * t);
             headingYaw = uTurnStartYaw + smoothT * 180.0f;
+
+            // Climb altitude during reversal arc
+            float arc = std::sin(t * 3.14159f);
+            transform.position.y += arc * 10.0f * dt;
+
+            // Move along reversing heading vector
+            glm::vec3 fwd = glm::vec3(-std::sin(glm::radians(headingYaw)), 0.0f, -std::cos(glm::radians(headingYaw)));
+            transform.position += fwd * (currentSpeed * 0.85f * dt);
         }
     }
 
     // Forward motion: 360-degree vector in All-Range mode, -Z in Rail mode
     if (isAllRangeMode) {
-        if (!isSomersaulting) {
+        if (!isSomersaulting && !isUTurning) {
             glm::vec3 fwd = transform.GetForward();
             transform.position += fwd * (currentSpeed * dt);
         }

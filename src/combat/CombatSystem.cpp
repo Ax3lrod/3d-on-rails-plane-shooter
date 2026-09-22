@@ -558,28 +558,40 @@ TargetingReticle::TargetingReticle()
       lockOnMesh(Mesh::CreateLockOnDiamond(3.2f, glm::vec3(1.0f, 0.2f, 0.2f))) {}
 
 void TargetingReticle::Draw(const Shader& shader, const glm::vec3& nearPos, const glm::vec3& farPos,
-                            bool hasLockOn, const glm::vec3& lockTargetPos, float lockAngle) const {
+                            bool hasLockOn, const glm::vec3& lockTargetPos, float lockAngle,
+                            const glm::mat4& viewMatrix) const {
     shader.SetInt("uUseLighting", 0);
     shader.SetInt("uUseFog", 0);
     shader.SetFloat("uAlpha", 0.95f);
 
+    // Extract camera basis from viewMatrix for 100% planar, distortion-free billboarding in all directions
+    glm::vec3 camRight(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+    glm::vec3 camUp(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+    glm::vec3 camFwd(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]);
+
+    auto makeBillboard = [&](const glm::vec3& pos) {
+        glm::mat4 m(1.0f);
+        m[0] = glm::vec4(camRight, 0.0f);
+        m[1] = glm::vec4(camUp, 0.0f);
+        m[2] = glm::vec4(camFwd, 0.0f);
+        m[3] = glm::vec4(pos, 1.0f);
+        return m;
+    };
+
     // Near reticle
-    glm::mat4 modelNear = glm::mat4(1.0f);
-    modelNear = glm::translate(modelNear, nearPos);
+    glm::mat4 modelNear = makeBillboard(nearPos);
     shader.SetMat4("uModel", modelNear);
     crosshairMesh.Draw(shader);
 
     // Far convergence point
-    glm::mat4 modelFar = glm::mat4(1.0f);
-    modelFar = glm::translate(modelFar, farPos);
+    glm::mat4 modelFar = makeBillboard(farPos);
     shader.SetMat4("uModel", modelFar);
     farPointMesh.Draw(shader);
 
     // Lock-on brackets on enemy target
     if (hasLockOn) {
-        glm::mat4 modelLock = glm::mat4(1.0f);
-        modelLock = glm::translate(modelLock, lockTargetPos);
-        modelLock = glm::rotate(modelLock, glm::radians(lockAngle), glm::vec3(0, 0, 1));
+        glm::mat4 modelLock = makeBillboard(lockTargetPos);
+        modelLock = glm::rotate(modelLock, glm::radians(lockAngle), camFwd);
         shader.SetMat4("uModel", modelLock);
         shader.SetFloat("uAlpha", 1.0f);
         lockOnMesh.Draw(shader);
