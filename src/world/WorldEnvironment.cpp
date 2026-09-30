@@ -43,6 +43,10 @@ WorldEnvironment::WorldEnvironment()
       navalFortressMesh(Mesh::CreateNavalFortress(22.0f, 14.0f)),
       cargoShipMesh(Mesh::CreateCargoShip(72.0f, 18.0f)),
       canalMesh(Mesh::CreateCityCanal(60.0f, 140.0f)),
+      cityGroundPlateMesh(Mesh::CreateCityGroundPlate(60.0f, 440.0f)),
+      destroyedCarMesh(Mesh::CreateDestroyedCar(glm::vec3(0.22f, 0.15f, 0.12f), glm::vec3(0.08f, 0.07f, 0.06f))),
+      militaryBarricadeMesh(Mesh::CreateMilitaryBarricade()),
+      bombCraterMesh(Mesh::CreateBombCrater(2.8f)),
       ruinedBuildingMesh(Mesh::CreateRuinedBuilding(32.0f, 110.0f, 26.0f, glm::vec3(0.20f, 0.22f, 0.26f), glm::vec3(0.15f, 0.65f, 0.90f))),
       skybridgeMesh(Mesh::CreateSkybridge(76.0f, 14.0f, 6.0f)),
       cityIntersectionMesh(Mesh::CreateCityIntersection(60.0f, 68.0f)),
@@ -267,79 +271,112 @@ void WorldEnvironment::GenerateChunk(float startZ, float endZ) {
                     continue;
                 }
 
-                // ZONE C: DOWNTOWN CONCRETE JUNGLE (Z = -5000 to -8500) - SKY-HIGH MEGA SKYSCRAPERS & CROSS-STREET AVENUES!
+                // ZONE C: DOWNTOWN CONCRETE JUNGLE (Z = -5000 to -8500)
                 if (z > -8500.0f) {
-                    // Check if near an intersection (within 36m)
+                    // Check if within 40m of a cross-street intersection
                     bool nearIntersection = false;
                     for (float iz : {-5400.0f, -5940.0f, -6480.0f, -7020.0f, -7560.0f, -8160.0f}) {
-                        if (std::abs(z - iz) < 36.0f) {
-                            nearIntersection = true;
-                            break;
-                        }
+                        if (std::abs(z - iz) < 40.0f) { nearIntersection = true; break; }
                     }
 
+                    // Variant picker: realistic city mix (more variety, less pigeonholed)
+                    auto pickVariant = [](int r) -> int {
+                        int roll = r % 100;
+                        if (roll <  8) return 8;   // Sheared Ruined Skyscraper
+                        if (roll < 14) return 9;   // Cyber Arrow Nova Billboard
+                        if (roll < 20) return 10;  // Titan Heavy Dynamics Billboard
+                        if (roll < 24) return 11;  // Hyperion Starburst Billboard
+                        if (roll < 36) return 3;   // 75m mid-rise skyscraper
+                        if (roll < 50) return 4;   // 18m low-rise flat block
+                        if (roll < 64) return 5;   // 125m Mega Skyscraper
+                        if (roll < 78) return 6;   // 150m Mega Skyscraper
+                        return 7;                  // 165m Colossal Skyscraper
+                    };
+
+                    auto getDims = [](int v, float& w, float& h, float& d) {
+                        if      (v == 8)  { w = 32.0f; h = 110.0f; d = 26.0f; }
+                        else if (v >= 9 && v <= 11) { w = 38.0f; h = 145.0f; d = 30.0f; }
+                        else if (v == 7)  { w = 48.0f; h = 165.0f; d = 36.0f; }
+                        else if (v == 6)  { w = 42.0f; h = 150.0f; d = 32.0f; }
+                        else if (v == 5)  { w = 36.0f; h = 125.0f; d = 28.0f; }
+                        else if (v == 4)  { w = 22.0f; h =  18.0f; d = 18.0f; }
+                        else              { w = 30.0f; h =  75.0f; d = 22.0f; }
+                    };
+
                     if (nearIntersection) {
-                        // At intersections: Keep central 40m cross avenue open!
-                        // Flank the cross-avenue wings (X = ±80m to ±150m) with towering skyscrapers rotated 90 deg
-                        float lx = -85.0f - ((rand() % 100) / 100.0f) * 45.0f;
-                        float rx =  85.0f + ((rand() % 100) / 100.0f) * 45.0f;
+                        // Buildings line up behind the cross-avenue wing, not ON the street
+                        // Street width = 68m (hw=34), sidewalk = 12m → edge at X=±46
+                        // Cross-avenue is 40m wide at center — buildings start at X=±90
+                        float lx = -92.0f - ((rand() % 100) / 100.0f) * 40.0f;
+                        float rx =  92.0f + ((rand() % 100) / 100.0f) * 40.0f;
                         int vL = (rand() % 3 == 0) ? 9 : (5 + rand() % 3);
                         int vR = (rand() % 3 == 0) ? 10 : (5 + rand() % 3);
-                        buildings.push_back({glm::vec3(lx, -7.5f, z - 28.0f), 38.0f, 145.0f, 30.0f, 90.0f, vL, 1.0f});
-                        buildings.push_back({glm::vec3(rx, -7.5f, z - 28.0f), 38.0f, 145.0f, 30.0f, -90.0f, vR, 1.0f});
-                        buildings.push_back({glm::vec3(lx, -7.5f, z + 28.0f), 38.0f, 145.0f, 30.0f, 90.0f, vL, 1.0f});
-                        buildings.push_back({glm::vec3(rx, -7.5f, z + 28.0f), 38.0f, 145.0f, 30.0f, -90.0f, vR, 1.0f});
+                        buildings.push_back({glm::vec3(lx, -7.5f, z - 30.0f), 38.0f, 145.0f, 30.0f, 90.0f, vL, 1.0f});
+                        buildings.push_back({glm::vec3(rx, -7.5f, z - 30.0f), 38.0f, 145.0f, 30.0f, -90.0f, vR, 1.0f});
+                        buildings.push_back({glm::vec3(lx, -7.5f, z + 30.0f), 38.0f, 145.0f, 30.0f, 90.0f, vL, 1.0f});
+                        buildings.push_back({glm::vec3(rx, -7.5f, z + 30.0f), 38.0f, 145.0f, 30.0f, -90.0f, vR, 1.0f});
+                        // Deep background towers behind the intersection wings
+                        buildings.push_back({glm::vec3(lx - 42.0f, -7.5f, z), 48.0f, 165.0f, 36.0f, 0.0f, 7, 1.0f});
+                        buildings.push_back({glm::vec3(rx + 42.0f, -7.5f, z), 48.0f, 165.0f, 36.0f, 0.0f, 7, 1.0f});
                     } else {
-                        // Varied sky-high variants (75m to 165m), ruined buildings, and neon billboard towers
-                        auto pickVariant = [](int r) -> int {
-                            int roll = r % 100;
-                            if (roll < 18) return 8;               // Sheared Ruined Skyscraper (18%)
-                            if (roll < 28) return 9;               // Cyber Arrow Nova Billboard Tower (10%)
-                            if (roll < 38) return 10;              // Titan Heavy Dynamics Billboard Tower (10%)
-                            if (roll < 46) return 11;              // Hyperion Starburst Billboard Tower (8%)
-                            if (roll < 65) return 5;               // 125m Mega Skyscraper (19%)
-                            if (roll < 82) return 6;               // 150m Mega Skyscraper (17%)
-                            if (roll < 94) return 7;               // 165m Colossal Skyscraper (12%)
-                            return 3;                              // 75m Skyscraper (6%)
-                        };
-
                         int vL = pickVariant(rand());
                         int vR = pickVariant(rand());
 
-                        float lx = -38.0f - ((rand() % 100) / 100.0f) * 6.0f;
-                        float rx =  38.0f + ((rand() % 100) / 100.0f) * 6.0f;
+                        // SETBACK: street hw=34, sidewalk=12m → sidewalk outer edge X=±46
+                        // Front-row buildings start at X=±56 (10m clear of sidewalk edge)
+                        float setback = 56.0f + ((rand() % 100) / 100.0f) * 12.0f;
+                        float lx = -setback;
+                        float rx =  setback;
 
-                        // Ruined buildings face their sheared breach toward the flight corridor
                         float rotL = (vL == 8) ? 0.0f : ((vL >= 9 && vL <= 11) ? 0.0f : (float)(rand() % 2) * 180.0f);
                         float rotR = (vR == 8) ? 180.0f : ((vR >= 9 && vR <= 11) ? 0.0f : (float)(rand() % 2) * 180.0f);
-
-                        auto getDims = [](int v, float& w, float& h, float& d) {
-                            if (v == 8) { w = 32.0f; h = 110.0f; d = 26.0f; }
-                            else if (v >= 9 && v <= 11) { w = 38.0f; h = 145.0f; d = 30.0f; }
-                            else if (v == 7) { w = 48.0f; h = 165.0f; d = 36.0f; }
-                            else if (v == 6) { w = 42.0f; h = 150.0f; d = 32.0f; }
-                            else if (v == 5) { w = 36.0f; h = 125.0f; d = 28.0f; }
-                            else { w = 30.0f; h = 75.0f; d = 22.0f; }
-                        };
 
                         float wL, hL, dL, wR, hR, dR;
                         getDims(vL, wL, hL, dL);
                         getDims(vR, wR, hR, dR);
 
-                        // Front-row towers right alongside highway
+                        // Front-row towers: clear of sidewalk, planted firmly on ground plate
                         buildings.push_back({glm::vec3(lx, -7.5f, z), wL, hL, dL, rotL, vL, 1.0f});
                         buildings.push_back({glm::vec3(rx, -7.5f, z), wR, hR, dR, rotR, vR, 1.0f});
 
-                        // Mid-row background skyline (X = ±72m)
-                        int vMidL = (rand() % 2 == 0) ? 5 : 6;
-                        int vMidR = (rand() % 2 == 0) ? 5 : 6;
-                        buildings.push_back({glm::vec3(lx - 34.0f, -7.5f, z - 15.0f), 36.0f, 125.0f, 28.0f, 0.0f, vMidL, 1.0f});
-                        buildings.push_back({glm::vec3(rx + 34.0f, -7.5f, z - 15.0f), 36.0f, 125.0f, 28.0f, 0.0f, vMidR, 1.0f});
+                        // Mid-row towers (X = ±90m to ±110m) — different footprint every spawn
+                        int vMidL = pickVariant(rand() + 31);
+                        int vMidR = pickVariant(rand() + 71);
+                        float mxL = lx - 32.0f - ((rand() % 100) / 100.0f) * 12.0f;
+                        float mxR = rx + 32.0f + ((rand() % 100) / 100.0f) * 12.0f;
+                        float mwL, mhL, mdL, mwR, mhR, mdR;
+                        getDims(vMidL, mwL, mhL, mdL);
+                        getDims(vMidR, mwR, mhR, mdR);
+                        buildings.push_back({glm::vec3(mxL, -7.5f, z - 12.0f), mwL, mhL, mdL, 0.0f, vMidL, 1.0f});
+                        buildings.push_back({glm::vec3(mxR, -7.5f, z - 12.0f), mwR, mhR, mdR, 0.0f, vMidR, 1.0f});
 
-                        // Deep background colossal skyline (X = ±115m)
+                        // Deep background colossal skyline (X = ±140m to ±160m) every 80m
                         if (static_cast<int>(std::abs(z)) % 80 == 0) {
-                            buildings.push_back({glm::vec3(lx - 75.0f, -7.5f, z - 20.0f), 48.0f, 165.0f, 36.0f, 0.0f, 7, 1.0f});
-                            buildings.push_back({glm::vec3(rx + 75.0f, -7.5f, z - 20.0f), 48.0f, 165.0f, 36.0f, 0.0f, 7, 1.0f});
+                            buildings.push_back({glm::vec3(mxL - 45.0f, -7.5f, z - 18.0f), 48.0f, 165.0f, 36.0f, 0.0f, 7, 1.0f});
+                            buildings.push_back({glm::vec3(mxR + 45.0f, -7.5f, z - 18.0f), 48.0f, 165.0f, 36.0f, 0.0f, 7, 1.0f});
+                        }
+
+                        // WAR DEBRIS: scatter destroyed cars and barricades on sidewalk margins
+                        // Sidewalk occupies X = ±34 to ±46 — props spawn there
+                        int debrisRoll = rand() % 4;
+                        if (debrisRoll == 0) {
+                            // Destroyed car on left sidewalk
+                            float carX = -36.0f - ((rand() % 100) / 100.0f) * 6.0f;
+                            float carRot = (float)(rand() % 360);
+                            streetProps.push_back({glm::vec3(carX, 0.0f, z + ((rand() % 20) - 10.0f)), carRot, 0});
+                        } else if (debrisRoll == 1) {
+                            // Destroyed car on right sidewalk
+                            float carX = 36.0f + ((rand() % 100) / 100.0f) * 6.0f;
+                            streetProps.push_back({glm::vec3(carX, 0.0f, z + ((rand() % 20) - 10.0f)), (float)(rand() % 360), 0});
+                        } else if (debrisRoll == 2) {
+                            // Barricade cluster across both sides
+                            streetProps.push_back({glm::vec3(-40.0f, 0.0f, z), 0.0f, 1});
+                            streetProps.push_back({glm::vec3(-44.0f, 0.0f, z + 3.0f), 15.0f, 1});
+                            streetProps.push_back({glm::vec3(40.0f, 0.0f, z), 180.0f, 1});
+                        } else {
+                            // Bomb crater in road
+                            float craterX = ((rand() % 60) - 30) * 0.5f;
+                            streetProps.push_back({glm::vec3(craterX, 0.0f, z), 0.0f, 2});
                         }
                     }
                 }
@@ -669,6 +706,12 @@ void WorldEnvironment::Update(float playerZ, float dt, bool allRange) {
         skybridges.end()
     );
 
+    streetProps.erase(
+        std::remove_if(streetProps.begin(), streetProps.end(),
+                       [cullZ](const StreetPropObstacle& p) { return p.position.z > cullZ; }),
+        streetProps.end()
+    );
+
     // Update and animate Collapsing Antenna Spires
     for (auto& sp : collapsingSpires) {
         float dz = sp.position.z - playerZ;
@@ -714,8 +757,10 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             } else if (cs.sliceType == TerrainSliceType::ElevatedHighway) {
                 elevatedHighwayMesh.Draw(shader);
             } else if (cs.sliceType == TerrainSliceType::CityRoad) {
+                cityGroundPlateMesh.Draw(shader); // wide concrete fill behind sidewalks
                 roadMesh.Draw(shader);
             } else if (cs.sliceType == TerrainSliceType::CityIntersection) {
+                cityGroundPlateMesh.Draw(shader);
                 cityIntersectionMesh.Draw(shader);
             } else if (cs.sliceType == TerrainSliceType::SunkenCanal) {
                 canalMesh.Draw(shader);
@@ -899,6 +944,21 @@ void WorldEnvironment::Draw(const Shader& shader) const {
             gantryMesh.Draw(shader);
         }
 
+        // 9g. Draw Zone C War Debris: destroyed cars, military barricades, bomb craters
+        for (const auto& sp : streetProps) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, sp.position);
+            model = glm::rotate(model, glm::radians(sp.rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+            shader.SetMat4("uModel", model);
+            if (sp.type == 0) {
+                destroyedCarMesh.Draw(shader);
+            } else if (sp.type == 1) {
+                militaryBarricadeMesh.Draw(shader);
+            } else {
+                bombCraterMesh.Draw(shader);
+            }
+        }
+
         // 9f2. Draw Collapsing Communication Antenna Spires
         for (const auto& sp : collapsingSpires) {
             if (sp.destroyed) continue;
@@ -1007,6 +1067,7 @@ void WorldEnvironment::Clear() {
     cityGantries.clear();
     collapsingSpires.clear();
     skybridges.clear();
+    streetProps.clear();
     arenaSpawned = false;
     isAllRangeActive = false;
     nextSpawnZ = 0.0f;

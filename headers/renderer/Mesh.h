@@ -119,6 +119,11 @@ public:
                                         const glm::vec3& coreCol);
     static Mesh CreateBiomeHorizon(const std::string& biome, float radius, float height,
                                    const glm::vec3& skyTopCol, const glm::vec3& horizonCol);
+    // Phase 43: Zone C ground plate + war debris props
+    static Mesh CreateCityGroundPlate(float length, float width);
+    static Mesh CreateDestroyedCar(const glm::vec3& bodyCol, const glm::vec3& charCol);
+    static Mesh CreateMilitaryBarricade();
+    static Mesh CreateBombCrater(float radius);
 };
 
 #endif

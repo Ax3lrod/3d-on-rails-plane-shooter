@@ -3972,3 +3972,183 @@ Mesh Mesh::CreateCityCanal(float length, float width) {
 
     return Mesh(verts, inds);
 }
+
+// ─── Phase 43: Zone C Polish ─────────────────────────────────────────────────
+
+// Wide dark-concrete ground plate that fills X=[-width/2, width/2] behind every
+// Zone C road slice, eliminating the ocean/sky bleedthrough past the sidewalks.
+Mesh Mesh::CreateCityGroundPlate(float length, float width) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float hw = width * 0.5f;
+    float hl = length * 0.5f;
+    float floorY = -7.52f; // sit 0.02 below roadMesh to avoid Z-fighting
+
+    glm::vec3 concreteA(0.14f, 0.14f, 0.16f);
+    glm::vec3 concreteB(0.11f, 0.11f, 0.13f);
+
+    AddQuad(verts, inds, {-hw, floorY, -hl}, {hw, floorY, -hl},
+                         {hw, floorY,  hl}, {-hw, floorY,  hl}, concreteA);
+
+    // Low curb walls at outer edges hide the transition seam
+    float curbH = 0.8f;
+    AddQuad(verts, inds, {-hw, floorY, -hl}, {-hw, floorY, hl},
+                         {-hw, floorY + curbH, hl}, {-hw, floorY + curbH, -hl}, concreteB);
+    AddQuad(verts, inds, {hw, floorY, hl}, {hw, floorY, -hl},
+                         {hw, floorY + curbH, -hl}, {hw, floorY + curbH, hl}, concreteB);
+
+    return Mesh(verts, inds);
+}
+
+// Crushed/burnt car carcass — 2 deformed body boxes, smashed windshield, 4 flat tyre stumps.
+// Pivot at origin bottom-center. ~4m × 2m footprint, fits in sidewalk margins.
+Mesh Mesh::CreateDestroyedCar(const glm::vec3& bodyCol, const glm::vec3& charCol) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float baseY = -7.5f;
+    glm::vec3 glassCol  = charCol * 0.5f;
+    glm::vec3 tyreCol(0.10f, 0.10f, 0.10f);
+    glm::vec3 rustCol = bodyCol * 0.55f;
+
+    // Crushed body box (squashed height)
+    float bw = 1.8f, bh = 1.0f, bd = 3.8f;
+    float by = baseY + 0.35f;
+    AddQuad(verts, inds, {-bw,by,-bd*0.5f},{bw,by,-bd*0.5f},{bw,by,bd*0.5f},{-bw,by,bd*0.5f}, bodyCol*0.60f);
+    AddQuad(verts, inds, {-bw,by+bh,-bd*0.5f},{bw,by+bh,-bd*0.5f},{bw,by+bh,bd*0.5f},{-bw,by+bh,bd*0.5f}, charCol);
+    AddQuad(verts, inds, {-bw,by,-bd*0.5f},{-bw,by,bd*0.5f},{-bw,by+bh,bd*0.5f},{-bw,by+bh,-bd*0.5f}, bodyCol*0.75f);
+    AddQuad(verts, inds, {bw,by,bd*0.5f},{bw,by,-bd*0.5f},{bw,by+bh,-bd*0.5f},{bw,by+bh,bd*0.5f}, bodyCol*0.70f);
+    AddQuad(verts, inds, {-bw,by,-bd*0.5f},{bw,by,-bd*0.5f},{bw,by+bh,-bd*0.5f},{-bw,by+bh,-bd*0.5f}, bodyCol*0.65f);
+    AddQuad(verts, inds, {bw,by,bd*0.5f},{-bw,by,bd*0.5f},{-bw,by+bh,bd*0.5f},{bw,by+bh,bd*0.5f}, rustCol);
+
+    // Smashed windshield overlay
+    float ww = bw * 0.70f;
+    AddQuad(verts, inds, {-ww,by+bh*0.2f,-bd*0.5f-0.05f},{ww,by+bh*0.2f,-bd*0.5f-0.05f},
+                         {ww*0.8f,by+bh-0.1f,-bd*0.5f-0.05f},{-ww*0.8f,by+bh-0.1f,-bd*0.5f-0.05f}, glassCol);
+
+    // Deformed hood — asymmetric crumple
+    float hw2 = bw * 0.9f;
+    AddTriangle(verts, inds, {-hw2,by+0.05f,-bd*0.5f-1.0f},{hw2,by+0.05f,-bd*0.5f-1.0f},{hw2,by+0.65f,-bd*0.5f}, charCol*0.8f);
+    AddTriangle(verts, inds, {-hw2,by+0.05f,-bd*0.5f-1.0f},{hw2,by+0.65f,-bd*0.5f},{-hw2,by+0.30f,-bd*0.5f}, bodyCol*0.55f);
+
+    // 4 flat tyre stumps (6-sided cylinders)
+    float wr = 0.42f, wthick = 0.35f;
+    float wxOffs[2] = {-(bw - 0.15f), (bw - 0.15f)};
+    float wzOffs[2] = {-bd * 0.32f, bd * 0.32f};
+    for (int wi = 0; wi < 2; ++wi) {
+        for (int wj = 0; wj < 2; ++wj) {
+            float cx = wxOffs[wi], cz = wzOffs[wj];
+            for (int s = 0; s < 6; ++s) {
+                float a0 = glm::radians(s * 60.0f), a1 = glm::radians((s+1)*60.0f);
+                glm::vec3 b0(cx+std::cos(a0)*wr, baseY,           cz+std::sin(a0)*wthick);
+                glm::vec3 b1(cx+std::cos(a1)*wr, baseY,           cz+std::sin(a1)*wthick);
+                glm::vec3 t0(cx+std::cos(a0)*wr, baseY+0.35f,     cz+std::sin(a0)*wthick);
+                glm::vec3 t1(cx+std::cos(a1)*wr, baseY+0.35f,     cz+std::sin(a1)*wthick);
+                AddQuad(verts, inds, b0, b1, t1, t0, tyreCol);
+            }
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+// Military concrete jersey barrier (T-profile) with hazard stripes + sandbag stack on top.
+// Pivot at origin bottom-center. ~1.2m tall, 2.8m long — group 2-3 at a spawn point.
+Mesh Mesh::CreateMilitaryBarricade() {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float baseY = -7.5f;
+    glm::vec3 concreteCol(0.50f, 0.48f, 0.44f);
+    glm::vec3 concreteDark(0.36f, 0.34f, 0.30f);
+    glm::vec3 sandbagCol(0.62f, 0.55f, 0.35f);
+    glm::vec3 sandbagShade(0.48f, 0.42f, 0.26f);
+    glm::vec3 warnStripe(0.92f, 0.62f, 0.10f);
+
+    float baseW = 0.55f, topW = 0.30f, bh = 1.2f, bd = 1.4f, midH = bh * 0.42f;
+
+    // Base slab
+    AddQuad(verts, inds, {-baseW,baseY,-bd},{baseW,baseY,-bd},{baseW,baseY,bd},{-baseW,baseY,bd}, concreteDark);
+    AddQuad(verts, inds, {-baseW,baseY,-bd},{-baseW,baseY+midH,-bd},{-baseW,baseY+midH,bd},{-baseW,baseY,bd}, concreteDark*0.9f);
+    AddQuad(verts, inds, {baseW,baseY,bd},{baseW,baseY+midH,bd},{baseW,baseY+midH,-bd},{baseW,baseY,-bd}, concreteDark*0.85f);
+    AddQuad(verts, inds, {-baseW,baseY,-bd},{baseW,baseY,-bd},{baseW,baseY+midH,-bd},{-baseW,baseY+midH,-bd}, concreteDark*0.92f);
+    AddQuad(verts, inds, {baseW,baseY,bd},{-baseW,baseY,bd},{-baseW,baseY+midH,bd},{baseW,baseY+midH,bd}, concreteDark*0.88f);
+    // Sloped shoulder (wide base → narrow top)
+    AddQuad(verts, inds, {-baseW,baseY+midH,-bd},{baseW,baseY+midH,-bd},{topW,baseY+bh,-bd},{-topW,baseY+bh,-bd}, concreteCol);
+    AddQuad(verts, inds, {baseW,baseY+midH,bd},{-baseW,baseY+midH,bd},{-topW,baseY+bh,bd},{topW,baseY+bh,bd}, concreteCol*0.9f);
+    AddQuad(verts, inds, {-baseW,baseY+midH,-bd},{-topW,baseY+bh,-bd},{-topW,baseY+bh,bd},{-baseW,baseY+midH,bd}, concreteCol*0.85f);
+    AddQuad(verts, inds, {topW,baseY+bh,-bd},{baseW,baseY+midH,-bd},{baseW,baseY+midH,bd},{topW,baseY+bh,bd}, concreteCol*0.80f);
+    // Top slab
+    AddQuad(verts, inds, {-topW,baseY+bh,-bd},{topW,baseY+bh,-bd},{topW,baseY+bh,bd},{-topW,baseY+bh,bd}, concreteCol*1.1f);
+
+    // Hazard warning stripes on front face
+    float sY0 = baseY + midH * 0.15f, sY1 = baseY + midH * 0.75f;
+    float sX = baseW + 0.01f;
+    for (int s = 0; s < 3; ++s) {
+        float sz0 = -bd + s * (bd * 2.0f / 3.0f);
+        float sz1 = sz0 + bd * 0.28f;
+        AddQuad(verts, inds, {-sX,sY0,sz0},{-sX,sY0,sz1},{-sX,sY1,sz1},{-sX,sY1,sz0}, warnStripe);
+    }
+
+    // Sandbags stacked on top — 2 rows of 3 blobs
+    float sbW = 0.28f, sbH = 0.20f, sbD = 0.38f;
+    for (int row = 0; row < 2; ++row) {
+        float sy = baseY + bh + row * sbH * 0.88f;
+        float stagger = (row % 2 == 0) ? 0.0f : sbD * 0.5f;
+        for (int col = -1; col <= 1; ++col) {
+            float sz = col * sbD * 1.05f + stagger;
+            glm::vec3 sbCol = ((row + col) % 2 == 0) ? sandbagCol : sandbagShade;
+            for (int s = 0; s < 6; ++s) {
+                float a0 = glm::radians(s * 60.0f), a1 = glm::radians((s+1)*60.0f);
+                glm::vec3 top(0.0f, sy + sbH, sz);
+                glm::vec3 b0(std::cos(a0)*sbW, sy, sz+std::sin(a0)*sbD*0.5f);
+                glm::vec3 b1(std::cos(a1)*sbW, sy, sz+std::sin(a1)*sbD*0.5f);
+                AddTriangle(verts, inds, b0, b1, top, sbCol*(0.85f+0.15f*(s%2)));
+            }
+        }
+    }
+
+    return Mesh(verts, inds);
+}
+
+// Artillery/bomb impact crater — sunken bowl with scorched center and raised asphalt rim.
+Mesh Mesh::CreateBombCrater(float radius) {
+    std::vector<Vertex> verts;
+    std::vector<GLuint> inds;
+
+    float baseY  = -7.5f;
+    glm::vec3 asphaltCol(0.18f, 0.18f, 0.20f);
+    glm::vec3 scorchCol(0.08f, 0.07f, 0.06f);
+    glm::vec3 rimCol(0.24f, 0.22f, 0.20f);
+
+    const int segs = 16;
+    float innerR = radius * 0.22f;
+    float depth  = 0.55f;
+    float rimH   = 0.30f;
+
+    for (int s = 0; s < segs; ++s) {
+        float a0 = glm::two_pi<float>() * s / segs;
+        float a1 = glm::two_pi<float>() * (s+1) / segs;
+        float c0 = std::cos(a0), s0 = std::sin(a0);
+        float c1 = std::cos(a1), s1 = std::sin(a1);
+
+        // Scorched center cap
+        glm::vec3 center(0.0f, baseY - depth, 0.0f);
+        glm::vec3 iB0(c0*innerR, baseY - depth * 0.7f, s0*innerR);
+        glm::vec3 iB1(c1*innerR, baseY - depth * 0.7f, s1*innerR);
+        AddTriangle(verts, inds, center, iB0, iB1, scorchCol);
+
+        // Bowl slope
+        glm::vec3 outerBot0(c0*radius, baseY, s0*radius);
+        glm::vec3 outerBot1(c1*radius, baseY, s1*radius);
+        AddQuad(verts, inds, iB0, iB1, outerBot1, outerBot0, glm::mix(scorchCol, asphaltCol, 0.6f));
+
+        // Raised asphalt rim
+        glm::vec3 rimTop0(c0*(radius+0.3f), baseY+rimH, s0*(radius+0.3f));
+        glm::vec3 rimTop1(c1*(radius+0.3f), baseY+rimH, s1*(radius+0.3f));
+        AddQuad(verts, inds, outerBot0, outerBot1, rimTop1, rimTop0, rimCol);
+    }
+
+    return Mesh(verts, inds);
+}

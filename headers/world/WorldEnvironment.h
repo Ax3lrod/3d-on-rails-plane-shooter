@@ -155,6 +155,13 @@ struct CollapsingSpireHazard {
     float health = 160.0f;
 };
 
+// Phase 43: Street-level war debris (destroyed cars, barricades, craters) for Zone C
+struct StreetPropObstacle {
+    glm::vec3 position;
+    float rotation;
+    int type; // 0=destroyed car, 1=military barricade cluster, 2=bomb crater
+};
+
 class WorldEnvironment {
 public:
     SectorStage currentSector;
@@ -180,6 +187,7 @@ public:
     std::vector<CityGantryObstacle> cityGantries;
     std::vector<CollapsingSpireHazard> collapsingSpires;
     std::vector<SkybridgeObstacle> skybridges;
+    std::vector<StreetPropObstacle> streetProps; // Phase 43: war debris
 
     Mesh goldRingMesh;
     Mesh silverRingMesh;
@@ -219,6 +227,11 @@ public:
     Mesh navalFortressMesh;
     Mesh cargoShipMesh;
     Mesh canalMesh;
+    // Phase 43: Zone C ground plate + war debris props
+    Mesh cityGroundPlateMesh;
+    Mesh destroyedCarMesh;
+    Mesh militaryBarricadeMesh;
+    Mesh bombCraterMesh;
     // Odd-parity terrain mesh: same geometry but rowOffset=1 so adjacent slabs tile seamlessly
     Mesh canyonMeshOdd;
 
